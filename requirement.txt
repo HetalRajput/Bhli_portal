@@ -1,0 +1,232 @@
+Below is a clean sitemap and development roadmap for the Booking Hospitality & Leisure Infra LLP (BHLI LLP) website.
+
+Website Roadmap
+
+HOME
+│
+├── Hero Banner
+├── Booking Search (Hotel | Flight | Bus | Train | Taxi)
+├── Our Services
+├── Defence Help Desk
+├── Government & Corporate Solutions
+├── Holiday Packages
+├── Why Choose Us
+├── Our Clients
+├── Testimonials
+├── Partners
+├── Latest Offers
+├── Contact CTA
+└── Footer
+
+
+---
+
+SERVICES
+
+Services
+│
+├── Hotel Reservations
+├── Flight Bookings
+├── Train Ticket Booking
+├── Bus Ticket Booking
+├── Taxi Services
+├── Self-Drive Car Rentals
+├── Holiday Packages
+├── Cruise Holidays
+├── Visa Assistance
+├── Travel Insurance
+├── Currency Exchange
+├── Event Management
+├── Catering Services
+└── Travel Consultancy
+
+
+---
+
+DEFENCE HELP DESK
+
+Defence Help Desk
+│
+├── MoU Partners
+├── Government & Defence Bookings
+├── Reservation Assistance
+├── LTC Travel Packages
+├── Eligibility & Benefits
+├── Documentation
+├── FAQs
+└── Contact Defence Team
+
+
+---
+
+ABOUT US
+
+About Us
+│
+├── Company Profile
+├── Vision & Mission
+├── Why Choose BHLI LLP
+├── Our Journey
+├── Certifications
+├── Awards
+└── CSR
+
+
+---
+
+OUR TEAM
+
+Our Team
+│
+├── Leadership
+├── Management
+├── Sales Team
+├── Operations Team
+├── Customer Support
+└── Team Portfolio
+
+
+---
+
+GALLERY
+
+Gallery
+│
+├── Photo Gallery
+├── Hotel Gallery
+├── Event Gallery
+├── Corporate Events
+├── Video Gallery
+└── Media Coverage
+
+
+---
+
+CLIENTS
+
+Clients
+│
+├── Ministry of Defence
+├── Indian Army
+├── Indian Navy
+├── Indian Air Force
+├── Paramilitary Forces
+├── Government Departments
+├── Public Sector Undertakings (PSUs)
+├── Corporate Clients
+└── Educational Institutions
+
+
+---
+
+CHANNEL PARTNERS
+
+Channel Partners
+│
+├── Hotel Partners
+├── Airline Partners
+├── Travel Partners
+├── Tourism Boards
+├── DMC Partners
+└── Technology Partners
+
+
+---
+
+TESTIMONIALS
+
+Testimonials
+│
+├── Customer Reviews
+├── Corporate Reviews
+├── Government Clients
+└── Video Testimonials
+
+
+---
+
+CONTACT US
+
+Contact Us
+│
+├── Office Locations
+├── Travel Desk
+├── Defence Desk
+├── Enquiry Form
+├── Customer Support
+├── WhatsApp Support
+├── Email Support
+└── Careers
+
+
+---
+
+EXTRA PAGES (Recommended)
+
+Offers & Deals
+Blogs
+FAQs
+Careers
+Vendor Registration
+Become a Partner
+Privacy Policy
+Terms & Conditions
+Cancellation & Refund
+Cookies Policy
+
+
+---
+
+ADMIN PANEL
+
+Dashboard
+│
+├── Bookings
+├── Hotels
+├── Flights
+├── Bus
+├── Train
+├── Taxi
+├── Packages
+├── Visa Requests
+├── Catering
+├── Events
+├── Customers
+├── Defence Desk
+├── Partners
+├── Leads
+├── CMS
+├── Testimonials
+├── Gallery
+├── Users & Roles
+├── Reports
+└── Settings
+
+Development Phases
+
+1. Phase 1: UI/UX Design (Desktop + Mobile)
+
+
+2. Phase 2: Frontend Development
+
+
+3. Phase 3: Backend & Admin Panel
+
+
+4. Phase 4: API Integrations (Flight, Hotel, Bus, Train, Taxi, Payment, WhatsApp)
+
+
+5. Phase 5: Testing & QA
+
+
+6. Phase 6: SEO, Performance & Security
+
+
+7. Phase 7: Production Deployment
+
+
+8. Phase 8: Maintenance & Feature Enhancements
+
+
+
+This roadmap provides a scalable structure suitable for a premium travel, hospitality, defence, and government booking platform.
