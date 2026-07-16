@@ -113,16 +113,16 @@ export default function Home() {
               {/* Premium Glass Search Bar */}
               <motion.div variants={itemVariants} className="mt-12 w-full max-w-2xl relative">
                 <div className="absolute -inset-1 bg-gradient-to-r from-[#cda653]/20 to-transparent rounded-2xl blur-md" />
-                <div className="relative bg-[#ffffff]/5 border border-white/10 backdrop-blur-2xl rounded-2xl p-2 flex items-center shadow-2xl transition-all focus-within:bg-[#ffffff]/10 focus-within:border-[#cda653]/50">
-                  <div className="pl-5 pr-3 text-[#cda653]">
+                <div className="relative bg-[#ffffff]/5 border border-white/10 backdrop-blur-2xl rounded-2xl p-2 flex flex-col sm:flex-row items-center gap-2 sm:gap-0 shadow-2xl transition-all focus-within:bg-[#ffffff]/10 focus-within:border-[#cda653]/50">
+                  <div className="hidden sm:flex pl-5 pr-3 text-[#cda653]">
                     <Search className="w-5 h-5" />
                   </div>
                   <input 
                     type="text" 
-                    placeholder="Search city, hotel, or military station..." 
-                    className="flex-1 bg-transparent border-none outline-none text-white placeholder:text-gray-400 text-sm md:text-base py-3"
+                    placeholder="Search city, hotel, or station..." 
+                    className="flex-1 w-full min-w-0 bg-transparent border-none outline-none text-white placeholder:text-gray-400 text-sm md:text-base py-3 px-4 sm:px-0"
                   />
-                  <button className="bg-gradient-to-r from-[#cda653] to-[#b38b3c] hover:from-[#b38b3c] hover:to-[#96722d] text-[#0a170f] font-semibold text-sm md:text-base rounded-xl px-8 py-3 transition-all shadow-[0_0_20px_rgba(205,166,83,0.3)] hover:shadow-[0_0_25px_rgba(205,166,83,0.5)] tracking-wide">
+                  <button className="w-full sm:w-auto whitespace-nowrap bg-gradient-to-r from-[#cda653] to-[#b38b3c] hover:from-[#b38b3c] hover:to-[#96722d] text-[#0a170f] font-semibold text-sm md:text-base rounded-xl px-8 py-3 transition-all shadow-[0_0_20px_rgba(205,166,83,0.3)] hover:shadow-[0_0_25px_rgba(205,166,83,0.5)] tracking-wide">
                     Book Now
                   </button>
                 </div>

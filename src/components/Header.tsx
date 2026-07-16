@@ -47,8 +47,11 @@ export default function Header() {
           <a href="/contact-us" className="hover:text-foreground transition-colors">Contact</a>
         </nav>
         <div className="flex items-center gap-4">
-          <a href="/admin/dashboard" className="text-sm font-medium hover:text-accent transition-colors">
-            Admin Panel
+          <a href="/login" className="text-sm font-medium hover:text-[#cda653] transition-colors">
+            Log In
+          </a>
+          <a href="/register" className="text-sm font-medium bg-[#cda653] text-[#0a170f] px-5 py-2 rounded-full hover:bg-[#b38b3c] transition-colors shadow-sm">
+            Register
           </a>
         </div>
       </div>
