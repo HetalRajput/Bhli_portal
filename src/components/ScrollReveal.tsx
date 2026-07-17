@@ -1,0 +1,4 @@
+"use client";
+import{usePathname}from"next/navigation";import{useEffect}from"react";
+const selector="main section, main article, main figure, main .rounded-3xl";
+export default function ScrollReveal(){const pathname=usePathname();useEffect(()=>{if(window.matchMedia("(prefers-reduced-motion: reduce)").matches)return;const elements=Array.from(document.querySelectorAll<HTMLElement>(selector));const observer=new IntersectionObserver(entries=>{entries.forEach(entry=>{if(entry.isIntersecting){entry.target.classList.add("is-revealed");observer.unobserve(entry.target)}})},{threshold:.12,rootMargin:"0px 0px -7% 0px"});elements.forEach((element,index)=>{if(element.closest("header, footer")||element.classList.contains("scroll-reveal"))return;element.classList.add("scroll-reveal");element.style.setProperty("--reveal-delay",`${(index%4)*70}ms`);observer.observe(element)});return()=>observer.disconnect()},[pathname]);return null}

@@ -202,31 +202,15 @@ Dashboard
 ├── Reports
 └── Settings
 
-Development Phases
-
-1. Phase 1: UI/UX Design (Desktop + Mobile)
 
 
-2. Phase 2: Frontend Development
-
-
-3. Phase 3: Backend & Admin Panel
-
-
-4. Phase 4: API Integrations (Flight, Hotel, Bus, Train, Taxi, Payment, WhatsApp)
-
-
-5. Phase 5: Testing & QA
-
-
-6. Phase 6: SEO, Performance & Security
-
-
-7. Phase 7: Production Deployment
-
-
-8. Phase 8: Maintenance & Feature Enhancements
 
 
 
 This roadmap provides a scalable structure suitable for a premium travel, hospitality, defence, and government booking platform.
+
+
+RULE
+1.webside should be responsive
+2.code should be optimize 
+3.ui ux should be top notch relate to the defence of india 

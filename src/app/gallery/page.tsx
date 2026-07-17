@@ -1,18 +1,3 @@
-"use client";
-
-import React from 'react';
-
-export default function GalleryPage() {
-  return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-8 bg-background">
-      <div className="max-w-4xl text-center space-y-6">
-        <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-foreground font-serif">
-          Gallery
-        </h1>
-        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-          This is the auto-generated boilerplate page for Gallery. Edit this file in `src/app/gallery/page.tsx`.
-        </p>
-      </div>
-    </div>
-  );
-}
+import Link from"next/link";import{ArrowRight,Camera}from"lucide-react";
+const photos=[["https://images.pexels.com/photos/258154/pexels-photo-258154.jpeg?auto=compress&cs=tinysrgb&w=1200","Resort stays","Hotels"],["https://images.pexels.com/photos/3225531/pexels-photo-3225531.jpeg?auto=compress&cs=tinysrgb&w=1200","Himalayan escapes","Destinations"],["https://images.pexels.com/photos/261102/pexels-photo-261102.jpeg?auto=compress&cs=tinysrgb&w=1200","Curated hospitality","Hotels"],["https://images.pexels.com/photos/1190297/pexels-photo-1190297.jpeg?auto=compress&cs=tinysrgb&w=1200","Memorable events","Events"],["https://images.pexels.com/photos/358319/pexels-photo-358319.jpeg?auto=compress&cs=tinysrgb&w=1200","Journeys in the sky","Travel"],["https://images.pexels.com/photos/417074/pexels-photo-417074.jpeg?auto=compress&cs=tinysrgb&w=1200","Remarkable India","Destinations"],["https://images.pexels.com/photos/1699025/pexels-photo-1699025.jpeg?auto=compress&cs=tinysrgb&w=1200","Corporate gatherings","Events"],["https://images.pexels.com/photos/1485894/pexels-photo-1485894.jpeg?auto=compress&cs=tinysrgb&w=1200","Coastal retreats","Holidays"]];
+export default function Gallery(){return <div className="bg-[#051b33] text-white"><section className="mx-auto max-w-7xl px-5 pb-14 pt-20 lg:px-8"><div className="flex flex-col justify-between gap-7 md:flex-row md:items-end"><div><p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[.25em] text-[#13a5d8]"><Camera className="size-4"/>Our gallery</p><h1 className="mt-5 max-w-3xl font-serif text-5xl md:text-7xl">A glimpse of where great journeys can lead.</h1></div><p className="max-w-sm leading-7 text-white/50">Stays, destinations, official gatherings and experiences selected to inspire your next plan.</p></div><div className="mt-10 flex flex-wrap gap-2">{["All","Hotels","Destinations","Events","Travel"].map((x,i)=><button key={x} className={`rounded-full px-5 py-2 text-sm ${i===0?"bg-[#13a5d8] font-bold text-[#061f3b]":"border border-white/15 text-white/60"}`}>{x}</button>)}</div></section><section className="mx-auto grid max-w-7xl auto-rows-[260px] grid-cols-1 gap-4 px-5 pb-24 sm:grid-cols-2 lg:grid-cols-3 lg:px-8">{photos.map((p,i)=><figure key={p[1]} className={`group relative overflow-hidden rounded-3xl ${i===0||i===5?"sm:row-span-2":""}`}><img src={p[0]} alt={p[1]} className="h-full w-full object-cover transition duration-700 group-hover:scale-105"/><div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"/><figcaption className="absolute inset-x-0 bottom-0 p-6"><small className="uppercase tracking-widest text-[#13a5d8]">{p[2]}</small><h2 className="mt-1 font-serif text-2xl">{p[1]}</h2></figcaption></figure>)}</section><section className="border-t border-white/10 px-5 py-20 text-center"><h2 className="font-serif text-4xl">Let us turn the inspiration into an itinerary.</h2><Link href="/contact-us" className="mt-7 inline-flex items-center gap-2 rounded-full bg-[#13a5d8] px-6 py-3 font-bold text-[#061f3b]">Plan your journey <ArrowRight className="size-4"/></Link></section></div>}
