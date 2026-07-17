@@ -6,6 +6,27 @@ import Link from 'next/link';
 
 const EMAIL_REGEX = /^[^\s@]+@gmail\.com$/i;
 
+type AuthApiResponse = { success: boolean; message?: string };
+
+async function readAuthResponse(response: Response): Promise<AuthApiResponse> {
+  const contentType = response.headers.get('content-type') ?? '';
+
+  if (contentType.includes('application/json')) {
+    try {
+      return await response.json() as AuthApiResponse;
+    } catch {
+      return { success: false, message: 'The authentication API returned invalid JSON.' };
+    }
+  }
+
+  return {
+    success: false,
+    message: response.status === 404
+      ? 'Authentication API is not connected yet.'
+      : `Authentication service returned an unexpected response (${response.status}).`,
+  };
+}
+
 export default function LoginPage() {
   const [step, setStep] = useState(1);
   const [email, setEmail] = useState('');
@@ -58,13 +79,13 @@ export default function LoginPage() {
         body: JSON.stringify({ email }),
       });
 
-      const data = await response.json();
+      const data = await readAuthResponse(response);
       if (!response.ok || !data.success) {
         throw new Error(data.message || 'Unable to send OTP.');
       }
 
       setStep(2);
-      setStatusMessage(data.message);
+      setStatusMessage(data.message ?? 'OTP sent successfully.');
     } catch (error) {
       setStatusMessage(error instanceof Error ? error.message : 'Unable to send OTP.');
     } finally {
@@ -91,7 +112,7 @@ export default function LoginPage() {
         body: JSON.stringify({ email, otp: enteredOtp }),
       });
 
-      const data = await response.json();
+      const data = await readAuthResponse(response);
       if (!response.ok || !data.success) {
         throw new Error(data.message || 'OTP verification failed.');
       }
@@ -99,7 +120,7 @@ export default function LoginPage() {
       window.localStorage.setItem('bhli-auth', JSON.stringify({ email, authenticatedAt: new Date().toISOString() }));
       setIsAuthenticated(true);
       setStep(3);
-      setStatusMessage(data.message);
+      setStatusMessage(data.message ?? 'OTP verified successfully.');
     } catch (error) {
       setStatusMessage(error instanceof Error ? error.message : 'OTP verification failed.');
     } finally {
@@ -229,4 +250,8 @@ export default function LoginPage() {
     </div>
   );
 }
+
+
+
+
 
