@@ -1,12 +1,12 @@
-@import "tailwindcss";
+﻿@import "tailwindcss";
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
-  --font-sans: var(--font-plus-jakarta);
-  --font-serif: var(--font-playfair);
+  --font-sans: var(--font-manrope);
+  --font-serif: var(--font-cormorant);
 }
 
 :root {
@@ -105,3 +105,151 @@ main section:nth-of-type(even).scroll-reveal.is-revealed {
 
 @keyframes payment-enter { from { opacity: 0; transform: translateY(28px) scale(.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
 
+
+
+/* Consistent premium interaction easing */
+a, button, input, select, textarea, article, figure, img {
+  transition-timing-function: cubic-bezier(.22, 1, .36, 1);
+}
+
+a, button {
+  transition-duration: 320ms;
+}
+
+article, figure {
+  transition-duration: 450ms;
+}
+
+img {
+  transition-duration: 700ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  a, button, input, select, textarea, article, figure, img {
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Unified smooth card hover system */
+main article,
+main figure,
+main a.rounded-3xl,
+main div.rounded-3xl {
+  transition-property: transform, box-shadow, border-color, background-color, color;
+  transition-duration: 480ms;
+  transition-timing-function: cubic-bezier(.22, 1, .36, 1);
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+main article img,
+main figure img,
+main a.rounded-3xl img,
+main div.rounded-3xl img,
+main article svg,
+main a.rounded-3xl svg,
+main div.rounded-3xl svg {
+  transition-property: transform, color, background-color, opacity;
+  transition-duration: 520ms;
+  transition-timing-function: cubic-bezier(.22, 1, .36, 1);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  main article:hover,
+  main figure:hover,
+  main a.rounded-3xl:hover,
+  main div.rounded-3xl:hover {
+    transform: translate3d(0, -6px, 0);
+    border-color: rgba(8, 127, 190, .28);
+    box-shadow: 0 20px 48px rgba(6, 55, 92, .14);
+  }
+
+  main article:hover img,
+  main figure:hover img,
+  main a.rounded-3xl:hover img,
+  main div.rounded-3xl:hover img {
+    transform: scale(1.035);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  main article,
+  main figure,
+  main a.rounded-3xl,
+  main div.rounded-3xl,
+  main article img,
+  main figure img,
+  main a.rounded-3xl img,
+  main div.rounded-3xl img,
+  main article svg,
+  main a.rounded-3xl svg,
+  main div.rounded-3xl svg {
+    transition-duration: 0.01ms !important;
+    transform: none !important;
+  }
+}
+
+/* Dedicated animation for Travel solutions cards */
+main a.travel-solution-card {
+  transform: translate3d(0, 0, 0) scale(1);
+  transform-origin: center bottom;
+  transition:
+    transform 680ms cubic-bezier(.16, 1, .3, 1),
+    box-shadow 680ms cubic-bezier(.16, 1, .3, 1),
+    border-color 500ms ease,
+    background-color 500ms ease;
+  box-shadow: 0 2px 8px rgba(6, 55, 92, .03);
+  will-change: transform, box-shadow;
+}
+
+main a.travel-solution-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: linear-gradient(90deg, #0875b7, #13a5d8, #7bd5f1);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 620ms cubic-bezier(.16, 1, .3, 1);
+}
+
+main a.travel-solution-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+main a.travel-solution-card svg,
+main a.travel-solution-card span {
+  transition:
+    transform 600ms cubic-bezier(.16, 1, .3, 1),
+    color 450ms ease,
+    background-color 450ms ease,
+    opacity 450ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  main a.travel-solution-card:hover {
+    transform: translate3d(0, -9px, 0) scale(1.012);
+    border-color: rgba(19, 165, 216, .42);
+    background-color: #fbfdff;
+    box-shadow: 0 24px 55px rgba(6, 68, 110, .16);
+  }
+
+  main a.travel-solution-card:hover::before {
+    transform: scaleX(1);
+  }
+
+  main a.travel-solution-card:hover > div:first-child > svg {
+    transform: translate3d(0, -2px, 0) scale(1.12) rotate(-3deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  main a.travel-solution-card,
+  main a.travel-solution-card::before,
+  main a.travel-solution-card svg,
+  main a.travel-solution-card span {
+    transition-duration: 0.01ms !important;
+    transform: none !important;
+  }
+}

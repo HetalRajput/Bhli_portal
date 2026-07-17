@@ -1,5 +1,5 @@
-import type { Metadata } from "next";
-import { Plus_Jakarta_Sans, Playfair_Display } from "next/font/google";
+﻿import type { Metadata } from "next";
+import { Manrope, Cormorant_Garamond } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -7,15 +7,15 @@ import ScrollReveal from "@/components/ScrollReveal";
 import EnquiryWidget from "@/components/EnquiryWidget";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
-const plusJakarta = Plus_Jakarta_Sans({
+const manrope = Manrope({
   subsets: ["latin"],
-  variable: "--font-plus-jakarta",
+  variable: "--font-manrope",
   display: 'swap',
 });
 
-const playfair = Playfair_Display({
+const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
-  variable: "--font-playfair",
+  variable: "--font-cormorant",
   display: 'swap',
 });
 
@@ -30,7 +30,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" data-scroll-behavior="smooth" className={`${plusJakarta.variable} ${playfair.variable} h-full antialiased`}>
+    <html lang="en" data-scroll-behavior="smooth" className={`${manrope.variable} ${cormorant.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-background text-foreground selection:bg-accent/30">
         <ScrollReveal />
         <Header />
@@ -44,6 +44,7 @@ export default function RootLayout({
     </html>
   );
 }
+
 
 
 
