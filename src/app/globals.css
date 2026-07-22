@@ -1,4 +1,4 @@
-﻿@import "tailwindcss";
+@import "tailwindcss";
 
 @theme inline {
   --color-background: var(--background);
@@ -291,3 +291,24 @@ main :where(article, figure, a.rounded-3xl, div.rounded-3xl):not(.travel-solutio
     transform: none !important;
   }
 }
+
+/* Infinite Marquee Loop for Channel Partners Ticker */
+@keyframes marquee {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee 30s linear infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
