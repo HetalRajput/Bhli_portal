@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowRight, Building2, Bus, ShieldCheck, HeartHandshake, Stethoscope, Landmark, Phone, ExternalLink } from "lucide-react";
+import { cmsService } from "@/lib/api/cms";
 
 // Custom SVG brand logo components to match the brands recognized from the image
 const LogoGramin = () => (
@@ -209,6 +210,24 @@ const partnersList: Partner[] = [
 
 export default function ChannelPartnersPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [apiPartners, setApiPartners] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchPartners = async () => {
+      try {
+        const res = await cmsService.getChannelPartners();
+        console.log("Channel Partners API Response:", res);
+        if (res && res.success && Array.isArray(res.data)) {
+          setApiPartners(res.data);
+        } else if (res && Array.isArray(res)) {
+          setApiPartners(res);
+        }
+      } catch (err) {
+        console.warn("Failed to fetch channel partners", err);
+      }
+    };
+    fetchPartners();
+  }, []);
 
   const categories = [
     { id: "all", label: "All Partners", icon: HeartHandshake },
@@ -218,9 +237,56 @@ export default function ChannelPartnersPage() {
     { id: "civic", label: "Civic & Community", icon: Landmark }
   ];
 
+  // Map API partners to UI partner structure
+  const mappedApiPartners = apiPartners.map(ap => {
+    const slug = (ap.slug || "").toLowerCase();
+    const title = (ap.title || "").toLowerCase();
+    let category: "hospitality" | "travel" | "healthcare" | "civic" = "travel";
+    let categoryName = "Travel & Mobility";
+    let accentColor = "border-l-[#087fbe]";
+    
+    if (slug.includes("hotel") || slug.includes("stay") || slug.includes("leela") || title.includes("hotel") || title.includes("resort") || title.includes("stay") || title.includes("palace")) {
+      category = "hospitality";
+      categoryName = "Hospitality & Stays";
+      accentColor = "border-l-[#d97706]";
+    } else if (slug.includes("health") || slug.includes("clinic") || slug.includes("medical") || title.includes("health") || title.includes("care") || title.includes("hospital")) {
+      category = "healthcare";
+      categoryName = "Healthcare & Welfare";
+      accentColor = "border-l-[#0d9488]";
+    } else if (slug.includes("gramin") || slug.includes("civic") || slug.includes("seva") || title.includes("seva") || title.includes("civic")) {
+      category = "civic";
+      categoryName = "Civic & Community Services";
+      accentColor = "border-l-[#f97316]";
+    }
+
+    // Render image or a fallback default icon
+    const LogoComponent = () => {
+      if (ap.image) {
+        return <img src={ap.image} alt={ap.title} className="max-h-16 max-w-[200px] object-contain mx-auto" />;
+      }
+      return <Building2 className="w-12 h-12 text-[#087dbd] mx-auto" />;
+    };
+
+    return {
+      id: ap.slug || String(ap.id),
+      name: ap.title,
+      category,
+      categoryName,
+      tagline: ap.subtitle || "Trusted hospitality and travel provider.",
+      badge: ap.subtitle || "Verified Partner",
+      description: ap.description || "",
+      logo: LogoComponent,
+      accentColor,
+      features: ap.website_url ? ["Website Support", "Direct Integration"] : ["MoU Rates Activated"],
+      websiteUrl: ap.website_url
+    };
+  });
+
+  const allPartners = [...partnersList, ...mappedApiPartners];
+
   const filteredPartners = selectedCategory === "all"
-    ? partnersList
-    : partnersList.filter(p => p.category === selectedCategory);
+    ? allPartners
+    : allPartners.filter(p => p.category === selectedCategory);
 
   return (
     <div className="bg-[#f5f9fc] text-[#122b42] min-h-screen">

@@ -1,13 +1,14 @@
 import Link from "next/link";
-import { 
-  ArrowRight, 
-  CalendarDays, 
-  MapPin, 
-  CheckCircle2, 
-  Award, 
-  Users, 
-  Building2, 
-  Globe, 
+import HotelCard from "@/components/HotelCard";
+import {
+  ArrowRight,
+  CalendarDays,
+  MapPin,
+  CheckCircle2,
+  Award,
+  Users,
+  Building2,
+  Globe,
   Sparkles,
   Shield,
   Milestone,
@@ -186,8 +187,21 @@ const hotelTiers = [
 
 // Reusing helper icons or aliases since Compass and Settings were used
 import { Compass, Settings } from "lucide-react";
+import { cmsService } from "@/lib/api/cms";
 
-export default function Events() {
+export default async function Events() {
+  let apiEvents: any[] = [];
+  try {
+    const res = await cmsService.getEvents();
+    console.log("Events API Response:", res);
+    if (res && res.success && Array.isArray(res.data)) {
+      apiEvents = res.data;
+    } else if (res && Array.isArray(res)) {
+      apiEvents = res;
+    }
+  } catch (err) {
+    console.warn("Failed to fetch events from API", err);
+  }
   return (
     <div className="bg-[#f5f9fc] text-[#122b42]">
       {/* Hero Section */}
@@ -222,10 +236,10 @@ export default function Events() {
             </p>
           </div>
           <div className="relative overflow-hidden rounded-[2rem] border border-black/10 bg-white p-2 shadow-lg">
-            <img 
-              src="https://w4u.in/api/r2-page-asset?k=3224%2Fpages%2Fimagessa-f6cabu.jpg" 
-              alt="Welcome to Booking Hospitality Events" 
-              className="w-full h-auto rounded-[1.7rem] block" 
+            <img
+              src="https://w4u.in/api/r2-page-asset?k=3224%2Fpages%2Fimagessa-f6cabu.jpg"
+              alt="Welcome to Booking Hospitality Events"
+              className="w-full h-auto rounded-[1.7rem] block"
             />
           </div>
         </div>
@@ -236,9 +250,9 @@ export default function Events() {
         <div className="border border-black/10 rounded-[2.5rem] bg-white p-6 md:p-12 shadow-sm overflow-hidden">
           {/* Official ICAAMS Banner Image */}
           <div className="w-full rounded-2xl overflow-hidden mb-10 border border-black/5">
-            <img 
-              src="https://w4u.in/api/r2-page-asset?k=3224%2Fpages%2Ficaams20233-mzcdc4.jpg" 
-              alt="ICAAMS 2023 Banner" 
+            <img
+              src="https://w4u.in/api/r2-page-asset?k=3224%2Fpages%2Ficaams20233-mzcdc4.jpg"
+              alt="ICAAMS 2023 Banner"
               className="w-full h-auto block"
             />
           </div>
@@ -313,9 +327,9 @@ export default function Events() {
               {supporters.map((sup) => (
                 <div key={sup.name} className={`flex flex-col items-center justify-between text-center rounded-2xl bg-gradient-to-br ${sup.bg} border border-black/[0.02] p-6`}>
                   <div className="w-full h-28 flex items-center justify-center bg-white rounded-xl shadow-sm overflow-hidden p-3">
-                    <img 
-                      src={sup.image} 
-                      alt={sup.name} 
+                    <img
+                      src={sup.image}
+                      alt={sup.name}
                       className="max-h-full max-w-full object-contain"
                     />
                   </div>
@@ -367,9 +381,9 @@ export default function Events() {
               </div>
             </div>
             <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-2">
-              <img 
-                src="https://w4u.in/api/r2-page-asset?k=3224%2Fpages%2Ftaxi-rental-amritsar-v26g85.jpg" 
-                alt="Book Taxi Amritsar" 
+              <img
+                src="https://w4u.in/api/r2-page-asset?k=3224%2Fpages%2Ftaxi-rental-amritsar-v26g85.jpg"
+                alt="Book Taxi Amritsar"
                 className="w-full h-auto rounded-xl block"
               />
             </div>
@@ -390,70 +404,30 @@ export default function Events() {
             </p>
           </div>
 
-          {/* Grid of Hotel Tier Cards */}
-          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {hotelTiers.map((tier) => {
-              const IconComponent = tier.icon;
+          {/* Top 6 Hotels List */}
+          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+            {hotelTiers.slice(0, 6).map((tier) => {
               return (
-                <div 
-                  key={tier.title} 
-                  className="flex flex-col overflow-hidden rounded-[2rem] border border-black/[0.06] bg-white shadow-sm hover:shadow-md transition duration-300 group"
-                >
-                  {/* Image container */}
-                  <div className="relative h-44 w-full overflow-hidden bg-black/5">
-                    <img 
-                      src={tier.image} 
-                      alt={tier.title} 
-                      className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                    <span className="absolute top-4 right-4 text-[9px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full bg-white/95 text-[#087dbd] shadow-sm">
-                      {tier.badge}
-                    </span>
-                    <span className="absolute bottom-4 left-4 grid size-10 place-items-center rounded-xl bg-white/90 text-[#087dbd] shadow-md">
-                      <IconComponent className="size-5" />
-                    </span>
-                  </div>
-
-                  {/* Content Container */}
-                  <div className="p-6 flex flex-col justify-between flex-1">
-                    <div>
-                      <h3 className="font-serif text-lg font-bold text-[#062b50] leading-snug">{tier.title}</h3>
-                      
-                      {/* Stars */}
-                      {tier.starCount > 0 && (
-                        <div className="flex gap-1 mt-2">
-                          {Array.from({ length: tier.starCount }).map((_, i) => (
-                            <Star key={i} className="size-3.5 fill-[#facc15] text-[#facc15]" />
-                          ))}
-                        </div>
-                      )}
-
-                      <div className="mt-4 border-t border-black/5 pt-4">
-                        <p className="text-[10px] uppercase tracking-wider text-black/40">Tariff Estimate</p>
-                        <p className="text-lg font-extrabold text-[#062b50] mt-0.5">{tier.price}</p>
-                      </div>
-                    </div>
-
-                    <div className="mt-6">
-                      <Link 
-                        href={`/search?type=hotels&destination=${encodeURIComponent(tier.title)}`}
-                        className={`inline-flex w-full items-center justify-center gap-2 rounded-xl py-3 font-semibold text-sm transition-all duration-300 ${tier.btnClass}`}
-                      >
-                        Book Now <ArrowRight className="size-4" />
-                      </Link>
-                    </div>
-                  </div>
-                </div>
+                <HotelCard
+                  key={tier.title}
+                  id={tier.title}
+                  title={tier.title}
+                  description={tier.badge}
+                  image={tier.image}
+                  ratingText={tier.badge}
+                  features={["MoU Entitlement", "Free Wifi", "Official rates"]}
+                  priceLabel={tier.price}
+                  buttonHref={`/search?type=hotels&destination=${encodeURIComponent(tier.title)}`}
+                />
               );
             })}
           </div>
 
           <div className="mt-14 text-center">
-            <a 
-              href="https://drive.google.com/file/d/1TdFpH6tO7_fgW2PqRBnmTBtn5Nubssu3/view?usp=sharing" 
-              target="_blank" 
-              rel="noopener noreferrer" 
+            <a
+              href="https://drive.google.com/file/d/1TdFpH6tO7_fgW2PqRBnmTBtn5Nubssu3/view?usp=sharing"
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex items-center gap-2 rounded-full border border-[#087dbd] px-6 py-3 font-bold text-[#087dbd] transition hover:bg-[#edf6fc]"
             >
               <Award className="size-4" /> Download Hotel Tariff Card
@@ -461,6 +435,48 @@ export default function Events() {
           </div>
         </div>
       </section>
+
+      {/* Dynamic Events Section */}
+      {apiEvents.length > 0 && (
+        <section className="bg-[#edf6fc] py-16 px-5 lg:px-8">
+          <div className="mx-auto max-w-7xl">
+            <div className="text-center md:text-left mb-10">
+              <span className="text-xs font-bold uppercase tracking-[.25em] text-[#087fbe]">Explore Our Portfolio</span>
+              <h2 className="mt-4 font-serif text-3xl md:text-4xl text-[#062b50]">
+                Other Notable Events & Conferences
+              </h2>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {apiEvents.map((evt: any) => (
+                <div key={evt.id} className="bg-white border border-black/5 rounded-3xl p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition">
+                  <div>
+                    {evt.banner_image && (
+                      <div className="w-full h-40 rounded-2xl overflow-hidden mb-4 bg-slate-100">
+                        <img src={evt.banner_image} alt={evt.title} className="w-full h-full object-cover" />
+                      </div>
+                    )}
+                    <span className="text-[10px] uppercase font-bold tracking-widest text-[#087dbd] bg-[#087dbd]/8 px-2.5 py-1 rounded-full inline-block mb-3">
+                      {evt.location || "Coordinated Event"}
+                    </span>
+                    <h3 className="font-serif text-xl font-bold text-[#062b50] line-clamp-2">{evt.title}</h3>
+                    {evt.subtitle && <p className="text-xs font-semibold text-gray-500 mt-1">{evt.subtitle}</p>}
+                    {evt.description && <p className="text-xs text-gray-650 mt-3 line-clamp-3 leading-relaxed">{evt.description}</p>}
+                  </div>
+
+                  <div className="mt-6 pt-4 border-t border-black/5 flex items-center justify-between text-xs font-bold text-gray-500">
+                    <span className="flex items-center gap-1.5">
+                      <CalendarDays className="size-4 text-[#087dbd]" />
+                      {evt.time_label || "TBD"}
+                    </span>
+                    {evt.venue && <span className="line-clamp-1">{evt.venue}</span>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Event Enquiry Call to Action */}
       <section className="bg-[#061f3b] text-white py-20 text-center px-5">

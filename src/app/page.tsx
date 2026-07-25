@@ -1,4 +1,5 @@
 import HeroBackground from "@/components/HeroBackground"; import BookingSearch from "@/components/BookingSearch"; import Link from "next/link"; import { ArrowRight, Building2, Bus, CalendarDays, Car, CheckCircle2, MapPin, Plane, Search, ShieldCheck, Sparkles, Star, Train } from "lucide-react";
+import { cmsService } from "@/lib/api/cms";
 const cardImages = ["https://images.pexels.com/photos/261102/pexels-photo-261102.jpeg?auto=compress&cs=tinysrgb&w=900", "https://images.pexels.com/photos/358319/pexels-photo-358319.jpeg?auto=compress&cs=tinysrgb&w=900", "https://images.pexels.com/photos/3225531/pexels-photo-3225531.jpeg?auto=compress&cs=tinysrgb&w=900", "https://images.pexels.com/photos/417074/pexels-photo-417074.jpeg?auto=compress&cs=tinysrgb&w=900"];
 const cards = [["Hotel reservations", "Handpicked stays aligned to comfort, policy and entitlement.", Building2, "/services/hotel-reservations"], ["Air & rail", "Domestic and international journeys, coordinated end to end.", Plane, "/services/flight-bookings"], ["Defence travel", "A dedicated desk for LTC, documentation and reservation support.", ShieldCheck, "/defence-help-desk"], ["Holidays", "Thoughtfully built escapes for families, groups and individuals.", Sparkles, "/services/holiday-packages"]];
 
@@ -87,7 +88,7 @@ const LogoMarriott = () => (
   </svg>
 );
 
-const partners = [
+const fallbackPartners = [
   { id: "marriott", name: "Marriott Hotels", role: "Luxury Lodging Partner", logo: LogoMarriott },
   { id: "leela", name: "The Leela", role: "Premium Stays Partner", logo: LogoLeela },
   { id: "holiday-inn", name: "Holiday Inn", role: "Business Stays Partner", logo: LogoHolidayInn },
@@ -98,8 +99,65 @@ const partners = [
   { id: "gramin", name: "Gramin Seva Kendra", role: "Civic Services Network", logo: LogoGramin }
 ];
 
-export default function Home() {
-  return <div className="bg-[#f5f9fc] text-[#122b42]"><section className="relative isolate min-h-[760px] overflow-hidden bg-[#061f3b] text-white"><HeroBackground /><div className="mx-auto flex min-h-[680px] max-w-7xl items-center px-5 py-24 lg:px-8"><div className="max-w-3xl"><p className="mb-6 flex items-center gap-2 text-xs font-bold uppercase tracking-[.25em] text-[#7bd5f1]"><ShieldCheck className="size-4" />Trusted travel. Distinguished service.</p><h1 className="font-serif text-5xl font-semibold leading-[1.05] sm:text-6xl lg:text-7xl">Journeys planned with precision. <span className="text-[#4fc3ea]">Hospitality delivered with honour.</span></h1><p className="mt-7 max-w-2xl text-base leading-8 text-white/70 sm:text-lg">A one-stop travel management partner with access to 7,500+ hotels and service apartments, serving defence, government, corporate and leisure travellers.</p><div className="mt-9 flex flex-wrap gap-3"><Link href="/contact-us" className="inline-flex items-center gap-2 rounded-full bg-[#13a5d8] px-6 py-3.5 font-bold text-[#061f3b]">Plan your journey <ArrowRight className="size-4" /></Link><Link href="/services" className="rounded-full border border-white/25 px-6 py-3.5 font-semibold">Explore services</Link></div></div></div></section><section className="relative z-10 mx-auto -mt-16 w-full max-w-7xl px-5 lg:px-8"><BookingSearch /></section><section className="mx-auto max-w-7xl px-5 py-24 lg:px-8"><p className="text-xs font-bold uppercase tracking-[.22em] text-[#087fbe]">Everything in one place</p><div className="mt-3 flex flex-col justify-between gap-5 md:flex-row md:items-end"><h2 className="max-w-2xl font-serif text-4xl font-semibold md:text-5xl">Travel solutions built around you</h2><Link href="/services" className="flex items-center gap-2 font-bold">View all services <ArrowRight className="size-4" /></Link></div><div className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-4">{cards.map(([t, d, I, href], index) => <Link href={String(href)} key={String(t)} aria-label={`Explore ${String(t)}`} className="travel-solution-card group relative overflow-hidden rounded-3xl border border-black/10 bg-white focus:outline-none focus:ring-4 focus:ring-[#13a5d8]/20"><div className="relative h-44 overflow-hidden"><img src={cardImages[index]} alt={String(t)} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" /><div className="absolute inset-0 bg-gradient-to-t from-[#061f3b]/45 to-transparent" /><span className="absolute bottom-4 left-4 grid size-11 place-items-center rounded-xl bg-white/90 text-[#087fbe] shadow-lg backdrop-blur"><I className="size-6" /></span></div><div className="p-7"><div className="flex items-start justify-between"><h3 className="font-serif text-2xl font-semibold transition-colors group-hover:text-[#087fbe]">{String(t)}</h3><span className="grid size-9 shrink-0 place-items-center rounded-full bg-[#e7f6fc] text-[#087fbe] transition group-hover:bg-[#087fbe] group-hover:text-white"><ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" /></span></div><p className="mt-3 text-sm leading-7 text-black/55">{String(d)}</p><span className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-[#087fbe] opacity-70 transition group-hover:opacity-100">Explore service <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" /></span></div></Link>)}</div></section><section className="bg-[#07345d] text-white"><div className="mx-auto grid max-w-7xl items-center gap-12 px-5 py-20 lg:grid-cols-2 lg:px-8"><div><p className="text-xs font-bold uppercase tracking-[.22em] text-[#13a5d8]">Defence help desk</p><h2 className="mt-4 font-serif text-4xl md:text-5xl">Service that understands your service.</h2><p className="mt-6 max-w-xl leading-8 text-white/60">Specialised support for government and defence bookings, LTC travel, documentation, entitlements and reservation assistance.</p><ul className="mt-7 grid gap-3 text-sm">{["Dedicated reservation assistance", "Policy-aware travel planning", "Responsive support across India"].map(x => <li className="flex gap-2" key={x}><CheckCircle2 className="size-5 text-[#13a5d8]" />{x}</li>)}</ul><Link href="/defence-help-desk" className="mt-8 inline-flex items-center gap-2 rounded-full bg-[#13a5d8] px-6 py-3 font-bold text-[#061f3b]">Visit defence desk <ArrowRight className="size-4" /></Link></div><img src="https://images.pexels.com/photos/3225531/pexels-photo-3225531.jpeg?auto=compress&cs=tinysrgb&w=1200" alt="Indian mountain destination" className="h-[440px] w-full rounded-[2rem] object-cover" /></div></section><section className="mx-auto max-w-7xl px-5 py-24 lg:px-8"><div className="text-center"><p className="text-xs font-bold uppercase tracking-[.22em] text-[#087fbe]">Why BHLI</p><h2 className="mt-3 font-serif text-4xl">Confidence at every step</h2></div><div className="mt-12 grid gap-8 md:grid-cols-3">{[["01", "One accountable partner", "From the first enquiry to your return, one team coordinates the details."], ["02", "Curated, not crowded", "Relevant options selected for your purpose, policy and preferences."], ["03", "Support that stays", "Real people and dedicated desks when plans change or help is needed."]].map(x => <div key={x[0]} className="border-t border-black/15 pt-6"><span className="text-sm text-[#087fbe]">{x[0]}</span><h3 className="mt-5 font-serif text-2xl">{x[1]}</h3><p className="mt-3 text-sm leading-7 text-black/55">{x[2]}</p></div>)}</div></section>
+export default async function Home() {
+  let apiServices: any[] = [];
+  let apiClients: any[] = [];
+  
+  try {
+    const [servicesRes, clientsRes] = await Promise.all([
+      cmsService.getServices({ is_featured: true }),
+      cmsService.getClients()
+    ]);
+    
+    if (servicesRes && servicesRes.success) {
+      apiServices = servicesRes.data;
+    }
+    if (clientsRes && clientsRes.success) {
+      apiClients = clientsRes.data;
+    }
+  } catch (err) {
+    console.error("Failed to fetch home page data", err);
+  }
+
+  const iconMap: Record<string, any> = { hotel: Building2, flight: Plane, holiday: Sparkles };
+
+  const getIcon = (slug: string, serviceType?: string) => {
+    const normalized = (slug || "").toLowerCase();
+    const type = (serviceType || "").toLowerCase();
+    if (normalized.includes("hotel") || type.includes("hotel")) return Building2;
+    if (normalized.includes("flight") || type.includes("flight")) return Plane;
+    if (normalized.includes("holiday") || type.includes("holiday")) return Sparkles;
+    return Building2;
+  };
+
+  const displayServices = apiServices.length > 0 
+    ? apiServices.slice(0, 4).map(s => ({
+        title: s.name || s.title || "",
+        description: s.short_description || s.description || "",
+        Icon: getIcon(s.slug, s.service_type),
+        link: `/services/${s.slug}`,
+        image: s.banner_image || s.image || cardImages[0]
+      }))
+    : cards.map((c, i) => ({
+        title: c[0],
+        description: c[1],
+        Icon: c[2],
+        link: c[3],
+        image: cardImages[i]
+      }));
+
+
+  const displayPartners = apiClients.length > 0 
+    ? apiClients.map(c => ({
+        id: String(c.id),
+        name: c.name,
+        role: "Partner", // Backend might not have role
+        logo: c.logo || null,
+        isStringLogo: true
+      }))
+    : fallbackPartners.map(p => ({ ...p, isStringLogo: false }));
+
+  return <div className="bg-[#f5f9fc] text-[#122b42]"><section className="relative isolate min-h-[760px] overflow-hidden bg-[#061f3b] text-white"><HeroBackground /><div className="mx-auto flex min-h-[680px] max-w-7xl items-center px-5 py-24 lg:px-8"><div className="max-w-3xl"><p className="mb-6 flex items-center gap-2 text-xs font-bold uppercase tracking-[.25em] text-[#7bd5f1]"><ShieldCheck className="size-4" />Trusted travel. Distinguished service.</p><h1 className="font-serif text-4xl font-semibold leading-[1.05] sm:text-5xl lg:text-7xl">Journeys planned with precision. <span className="text-[#4fc3ea]">Hospitality delivered with honour.</span></h1><p className="mt-7 max-w-2xl text-base leading-8 text-white/70 sm:text-lg">A one-stop travel management partner with access to 7,500+ hotels and service apartments, serving defence, government, corporate and leisure travellers.</p><div className="mt-9 flex flex-wrap gap-3"><Link href="/contact-us" className="inline-flex items-center gap-2 rounded-full bg-[#13a5d8] px-6 py-3.5 font-bold text-[#061f3b]">Plan your journey <ArrowRight className="size-4" /></Link><Link href="/services" className="rounded-full border border-white/25 px-6 py-3.5 font-semibold">Explore services</Link></div></div></div></section><section className="relative z-10 mx-auto -mt-16 w-full max-w-7xl px-5 lg:px-8"><BookingSearch /></section><section className="mx-auto max-w-7xl px-5 py-24 lg:px-8"><p className="text-xs font-bold uppercase tracking-[.22em] text-[#087fbe]">Everything in one place</p><div className="mt-3 flex flex-col justify-between gap-5 md:flex-row md:items-end"><h2 className="max-w-2xl font-serif text-3xl font-semibold md:text-5xl">Travel solutions built around you</h2><Link href="/services" className="flex items-center gap-2 font-bold">View all services <ArrowRight className="size-4" /></Link></div><div className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-4">{displayServices.map((service, index) => <Link href={String(service.link)} key={String(service.title)} aria-label={`Explore ${String(service.title)}`} className="travel-solution-card group relative overflow-hidden rounded-3xl border border-black/10 bg-white focus:outline-none focus:ring-4 focus:ring-[#13a5d8]/20"><div className="relative h-44 overflow-hidden"><img src={String(service.image)} alt={String(service.title)} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" /><div className="absolute inset-0 bg-gradient-to-t from-[#061f3b]/45 to-transparent" /><span className="absolute bottom-4 left-4 grid size-11 place-items-center rounded-xl bg-white/90 text-[#087fbe] shadow-lg backdrop-blur"><service.Icon className="size-6" /></span></div><div className="p-7"><div className="flex items-start justify-between"><h3 className="font-serif text-2xl font-semibold transition-colors group-hover:text-[#087fbe]">{String(service.title)}</h3><span className="grid size-9 shrink-0 place-items-center rounded-full bg-[#e7f6fc] text-[#087fbe] transition group-hover:bg-[#087fbe] group-hover:text-white"><ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" /></span></div><p className="mt-3 text-sm leading-7 text-black/55">{String(service.description)}</p><span className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-[#087fbe] opacity-70 transition group-hover:opacity-100">Explore service <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" /></span></div></Link>)}</div></section><section className="bg-[#07345d] text-white"><div className="mx-auto grid max-w-7xl items-center gap-12 px-5 py-20 lg:grid-cols-2 lg:px-8"><div><p className="text-xs font-bold uppercase tracking-[.22em] text-[#13a5d8]">Defence help desk</p><h2 className="mt-4 font-serif text-3xl md:text-5xl">Service that understands your service.</h2><p className="mt-6 max-w-xl leading-8 text-white/60">Specialised support for government and defence bookings, LTC travel, documentation, entitlements and reservation assistance.</p><ul className="mt-7 grid gap-3 text-sm">{["Dedicated reservation assistance", "Policy-aware travel planning", "Responsive support across India"].map(x => <li className="flex gap-2" key={x}><CheckCircle2 className="size-5 text-[#13a5d8]" />{x}</li>)}</ul><Link href="/defence-help-desk" className="mt-8 inline-flex items-center gap-2 rounded-full bg-[#13a5d8] px-6 py-3 font-bold text-[#061f3b]">Visit defence desk <ArrowRight className="size-4" /></Link></div><img src="https://images.pexels.com/photos/3225531/pexels-photo-3225531.jpeg?auto=compress&cs=tinysrgb&w=1200" alt="Indian mountain destination" className="h-[440px] w-full rounded-[2rem] object-cover" /></div></section><section className="mx-auto max-w-7xl px-5 py-24 lg:px-8"><div className="text-center"><p className="text-xs font-bold uppercase tracking-[.22em] text-[#087fbe]">Why BHLI</p><h2 className="mt-3 font-serif text-3xl md:text-4xl">Confidence at every step</h2></div><div className="mt-12 grid gap-8 md:grid-cols-3">{[["01", "One accountable partner", "From the first enquiry to your return, one team coordinates the details."], ["02", "Curated, not crowded", "Relevant options selected for your purpose, policy and preferences."], ["03", "Support that stays", "Real people and dedicated desks when plans change or help is needed."]].map(x => <div key={x[0]} className="border-t border-black/15 pt-6"><span className="text-sm text-[#087fbe]">{x[0]}</span><h3 className="mt-5 font-serif text-2xl">{x[1]}</h3><p className="mt-3 text-sm leading-7 text-black/55">{x[2]}</p></div>)}</div></section>
 
     <section className="py-16 overflow-hidden bg-white border-t border-b border-black/[0.03]">
       <div className="mx-auto max-w-7xl px-5 lg:px-8 mb-10 text-center">
@@ -118,12 +176,16 @@ export default function Home() {
 
         {/* Rolling Marquee Loop */}
         <div className="animate-marquee gap-6">
-          {partners.map(p => {
-            const Logo = p.logo;
+          {displayPartners.map(p => {
+            const Logo = p.logo as any;
             return (
               <Link key={p.id + "-h1"} href="/channel-partners" className="flex flex-col items-center justify-between bg-[#f8fafc] border border-black/[0.04] rounded-2xl w-52 h-40 p-4 hover:border-[#13a5d8]/40 hover:bg-white hover:shadow-lg hover:-translate-y-0.5 transition duration-300">
                 <div className="flex-1 flex items-center justify-center w-full">
-                  <Logo />
+                  {p.isStringLogo ? (
+                    <img src={p.logo as string} alt={p.name} className="max-h-16 max-w-full object-contain" />
+                  ) : (
+                    <Logo />
+                  )}
                 </div>
                 <div className="w-full text-center mt-2 border-t border-black/5 pt-2">
                   <h4 className="text-xs font-bold text-[#062b50] truncate">{p.name}</h4>
@@ -132,12 +194,16 @@ export default function Home() {
               </Link>
             );
           })}
-          {partners.map(p => {
-            const Logo = p.logo;
+          {displayPartners.map(p => {
+            const Logo = p.logo as any;
             return (
               <Link key={p.id + "-h2"} href="/channel-partners" className="flex flex-col items-center justify-between bg-[#f8fafc] border border-black/[0.04] rounded-2xl w-52 h-40 p-4 hover:border-[#13a5d8]/40 hover:bg-white hover:shadow-lg hover:-translate-y-0.5 transition duration-300">
                 <div className="flex-1 flex items-center justify-center w-full">
-                  <Logo />
+                  {p.isStringLogo ? (
+                    <img src={p.logo as string} alt={p.name} className="max-h-16 max-w-full object-contain" />
+                  ) : (
+                    <Logo />
+                  )}
                 </div>
                 <div className="w-full text-center mt-2 border-t border-black/5 pt-2">
                   <h4 className="text-xs font-bold text-[#062b50] truncate">{p.name}</h4>
