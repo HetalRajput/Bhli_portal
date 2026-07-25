@@ -283,7 +283,10 @@ export default function Contact() {
             <h2 className="mt-5 font-serif text-3xl">Office</h2>
             <p className="mt-4 flex gap-3 text-sm leading-7 text-black/55">
               <MapPin className="mt-1 size-5 shrink-0 text-[#087fbe]" />
-              The Mashaal Officers Institute-(TMOI) , Air Force Road, near Air Force Station, Jalahalli East, Bengaluru, Bengaluru Urban, Karnataka 560014
+              The Mashaal Officers Institute-(TMOI)
+              HMT Main Road
+              Jalahalli East
+              Bengaluru - 560014
             </p>
             <div className="mt-7 h-40 rounded-2xl bg-[radial-gradient(circle_at_center,#9ccde2,transparent_2px)] bg-[length:20px_20px] opacity-60" />
           </div>

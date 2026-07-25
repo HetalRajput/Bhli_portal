@@ -1,7 +1,7 @@
 import HeroBackground from "@/components/HeroBackground"; import BookingSearch from "@/components/BookingSearch"; import Link from "next/link"; import { ArrowRight, Building2, Bus, CalendarDays, Car, CheckCircle2, MapPin, Plane, Search, ShieldCheck, Sparkles, Star, Train } from "lucide-react";
 import { cmsService } from "@/lib/api/cms";
 const cardImages = ["https://images.pexels.com/photos/261102/pexels-photo-261102.jpeg?auto=compress&cs=tinysrgb&w=900", "https://images.pexels.com/photos/358319/pexels-photo-358319.jpeg?auto=compress&cs=tinysrgb&w=900", "https://images.pexels.com/photos/3225531/pexels-photo-3225531.jpeg?auto=compress&cs=tinysrgb&w=900", "https://images.pexels.com/photos/417074/pexels-photo-417074.jpeg?auto=compress&cs=tinysrgb&w=900"];
-const cards = [["Hotel reservations", "Handpicked stays aligned to comfort, policy and entitlement.", Building2, "/services/hotel-reservations"], ["Air & rail", "Domestic and international journeys, coordinated end to end.", Plane, "/services/flight-bookings"], ["Defence travel", "A dedicated desk for LTC, documentation and reservation support.", ShieldCheck, "/defence-help-desk"], ["Holidays", "Thoughtfully built escapes for families, groups and individuals.", Sparkles, "/services/holiday-packages"]];
+const cards = [["Hotel reservations", "Handpicked stays aligned to comfort, policy and entitlement.", Building2, "/services/hotel-reservations"], ["Air & rail", "Domestic and international journeys, coordinated end to end.", Plane, "/services/flight-booking"], ["Defence travel", "A dedicated desk for LTC, documentation and reservation support.", ShieldCheck, "/defence-help-desk"], ["Holidays", "Thoughtfully built escapes for families, groups and individuals.", Sparkles, "/services/holiday-packages"]];
 
 // Custom SVG brand logo components for the home page ticker
 const LogoGramin = () => (
@@ -110,7 +110,7 @@ export default async function Home() {
     ]);
     
     if (servicesRes && servicesRes.success) {
-      apiServices = servicesRes.data;
+      apiServices = [...servicesRes.data].sort((a, b) => Number(a.id) - Number(b.id));
     }
     if (clientsRes && clientsRes.success) {
       apiClients = clientsRes.data;

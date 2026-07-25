@@ -5,7 +5,7 @@ import { cmsService } from "@/lib/api/cms";
 // Fallback items in case API is empty or fails
 const fallbackItems = [
   ["Hotel reservations", "Verified stays for business, duty and leisure.", Hotel, "/services/hotel-reservations", "https://images.pexels.com/photos/261102/pexels-photo-261102.jpeg?auto=compress&cs=tinysrgb&w=900"],
-  ["Flight bookings", "Domestic and international ticketing support.", Plane, "/services/flight-bookings", "https://images.pexels.com/photos/358319/pexels-photo-358319.jpeg?auto=compress&cs=tinysrgb&w=900"],
+  ["Flight bookings", "Domestic and international ticketing support.", Plane, "/services/flight-booking", "https://images.pexels.com/photos/358319/pexels-photo-358319.jpeg?auto=compress&cs=tinysrgb&w=900"],
   ["Train tickets", "Rail reservations with itinerary coordination.", Train, "/services/train-ticket-booking", "https://images.pexels.com/photos/2031758/pexels-photo-2031758.jpeg?auto=compress&cs=tinysrgb&w=900"],
   ["Bus tickets", "Reliable intercity and group transport options.", Bus, "/services/bus-ticket-booking", "https://images.pexels.com/photos/1178448/pexels-photo-1178448.jpeg?auto=compress&cs=tinysrgb&w=900"],
   ["Taxi services", "Airport transfers, local travel and outstation cabs.", Car, "/services/taxi-services", "https://images.pexels.com/photos/116675/pexels-photo-116675.jpeg?auto=compress&cs=tinysrgb&w=900"],
@@ -33,7 +33,7 @@ export default async function Services() {
   try {
     const res = await cmsService.getServices();
     if (res && res.success) {
-      apiServices = res.data;
+      apiServices = [...res.data].sort((a, b) => Number(a.id) - Number(b.id));
     }
   } catch (error) {
     console.error("Failed to fetch services:", error);

@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { Mail, Phone, Users, ShieldAlert } from "lucide-react";
+import React, { useState, useEffect, useMemo } from "react";
+import { Mail, Phone, Users, Search, ShieldCheck, Award, Sparkles, UserCheck } from "lucide-react";
 import { cmsService } from "@/lib/api/cms";
+import TeamAvatar from "@/components/TeamAvatar";
 
 const Linkedin = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
@@ -33,54 +34,56 @@ interface TeamMember {
   linkedin_url?: string;
 }
 
+const PROFILE_ICON_PLACEHOLDER = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23edf6fc' stroke='%23087dbd' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='11' fill='%23edf6fc'/><path d='M18 20v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 6 18.5V20' fill='none'/><circle cx='12' cy='8.5' r='3.5' fill='%23087dbd' stroke='none'/></svg>";
+
 const fallbackTeam: TeamMember[] = [
   {
     id: 1,
-    name: "Asha Sharma",
-    slug: "asha-sharma",
-    designation: "Managing Director",
-    subtitle: "Leadership Team",
-    bio: "Driving the strategic direction and operations of BHLI with 15+ years of hospitality excellence.",
-    email: "asha@bookinghospitality.com",
-    phone_number: "+91 99163 56691",
-    linkedin_url: "https://linkedin.com",
+    name: "Mazher Ul Huq",
+    slug: "mazher-ul-huq",
+    designation: "CEO & Founder",
+    subtitle: "Leadership",
+    bio: "Driving the strategic direction and operations of BHLI with hospitality excellence.",
+    email: "mazher@bookinghospitality.com",
     photo: null
   },
   {
     id: 2,
-    name: "Col. Sanjeev Kumar (Retd.)",
-    slug: "col-sanjeev-kumar",
-    designation: "Head of Defence Desk Operations",
-    subtitle: "Operations Management",
-    bio: "Ex-IAF operations command leader, specializing in military travel protocols and official MoU compliances.",
-    email: "sanjeev@bookinghospitality.com",
-    phone_number: "+91 97407 56691",
-    linkedin_url: "https://linkedin.com",
+    name: "Waseem Ahmed",
+    slug: "waseem-ahmed",
+    designation: "Chief Finance Officer",
+    subtitle: "Leadership",
+    email: "waseem@bookinghospitality.com",
     photo: null
   },
   {
-    id: 3,
-    name: "Vikram Malhotra",
-    slug: "vikram-malhotra",
-    designation: "Director of Corporate Partnerships",
-    subtitle: "Partnerships Desk",
-    bio: "Liaison for Government departments and luxury corporate accounts, ensuring best-in-market rates.",
-    email: "vikram@bookinghospitality.com",
-    phone_number: "+91 72045 18641",
-    linkedin_url: "https://linkedin.com",
-    photo: null
+    id: 6,
+    name: "Javed Rashid",
+    slug: "javed-rashid",
+    designation: "Director of Technology",
+    subtitle: "Technology",
+    photo: "https://bhli-project-images.s3.eu-north-1.amazonaws.com/bhli-main-folder/team/javed-rashid-90d00aaff17641298cff87c4d1a94f5e.jpeg"
+  },
+  {
+    id: 16,
+    name: "Devender Singh",
+    slug: "devender-singh",
+    designation: "Advisor",
+    subtitle: "Advisory",
+    photo: "https://bhli-project-images.s3.eu-north-1.amazonaws.com/bhli-main-folder/team/devinder-singh-7f416d0937554466b679265ab002b53e.jpeg"
   }
 ];
 
 export default function OurTeamPage() {
   const [team, setTeam] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedFilter, setSelectedFilter] = useState("All");
 
   useEffect(() => {
     const fetchTeam = async () => {
       try {
         const res = await cmsService.getTeam();
-        console.log("Team Members API Response:", res);
         if (res && res.success && Array.isArray(res.data) && res.data.length > 0) {
           setTeam(res.data);
         } else if (res && Array.isArray(res) && res.length > 0) {
@@ -98,12 +101,43 @@ export default function OurTeamPage() {
     fetchTeam();
   }, []);
 
+  const categories = ["All", "Leadership", "Operations", "Technology", "Hospitality"];
+
+  const filteredTeam = useMemo(() => {
+    return team.filter((member) => {
+      const matchesSearch =
+        member.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        member.designation?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        member.subtitle?.toLowerCase().includes(searchQuery.toLowerCase());
+
+      if (selectedFilter === "All") return matchesSearch;
+
+      const filterLower = selectedFilter.toLowerCase();
+      const designationLower = (member.designation || "").toLowerCase();
+      const subtitleLower = (member.subtitle || "").toLowerCase();
+
+      if (selectedFilter === "Leadership") {
+        return matchesSearch && (designationLower.includes("ceo") || designationLower.includes("director") || designationLower.includes("head") || designationLower.includes("officer") || subtitleLower.includes("leadership"));
+      }
+      if (selectedFilter === "Operations") {
+        return matchesSearch && (designationLower.includes("operation") || designationLower.includes("reservation") || designationLower.includes("admin") || designationLower.includes("sales") || subtitleLower.includes("operation"));
+      }
+      if (selectedFilter === "Technology") {
+        return matchesSearch && (designationLower.includes("technology") || designationLower.includes("it") || designationLower.includes("developer") || designationLower.includes("ota"));
+      }
+      if (selectedFilter === "Hospitality") {
+        return matchesSearch && (designationLower.includes("chef") || designationLower.includes("f&b") || designationLower.includes("events") || designationLower.includes("mc"));
+      }
+      return matchesSearch;
+    });
+  }, [team, searchQuery, selectedFilter]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#f5f9fc]">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-4 border-[#0879b7] border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm font-semibold text-[#062b50]">Loading leadership team...</p>
+          <div className="w-12 h-12 border-4 border-[#0879b7] border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm font-semibold text-[#062b50]">Loading leadership & team members...</p>
         </div>
       </div>
     );
@@ -112,88 +146,162 @@ export default function OurTeamPage() {
   return (
     <div className="bg-[#f5f9fc] text-[#122b42] min-h-screen">
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-[#062b50] px-5 py-20 text-white lg:px-8">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(215,181,109,.15),transparent_40%)]" />
-        <div className="relative mx-auto max-w-7xl text-center md:text-left">
-          <p className="flex items-center justify-center md:justify-start gap-2 text-xs font-bold uppercase tracking-[.25em] text-[#13a5d8]">
-            <Users className="size-4 text-[#13a5d8]" /> Meet the Experts
-          </p>
-          <h1 className="mt-5 font-serif text-5xl md:text-6xl">
-            Our Leadership & Operations Team
-          </h1>
-          <p className="mt-6 max-w-2xl text-lg leading-8 text-white/60">
-            Dedicated professionals serving our Defence, Government and corporate accounts round the clock with unmatched hospitality and logistics expertise.
-          </p>
+      <section className="relative overflow-hidden bg-gradient-to-b from-[#051b33] via-[#062b50] to-[#07345d] px-5 py-12 text-white lg:px-8">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(19,165,216,0.18),transparent_50%)]" />
+        <div className="relative mx-auto max-w-7xl">
+          <div className="max-w-3xl">
+            <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[.25em] text-[#13a5d8]">
+              <Users className="size-4 text-[#13a5d8]" /> Leadership & Operations
+            </p>
+            <h1 className="mt-3 font-serif text-3xl font-semibold leading-tight md:text-5xl">
+              Meet the People Behind BHLI
+            </h1>
+            <p className="mt-3 text-base leading-7 text-white/70">
+              Dedicated professionals serving our Defence, Government, and corporate accounts round the clock with unmatched hospitality, logistics, and technology expertise.
+            </p>
+          </div>
+
+          {/* Quick Stats Counter Row */}
+          <div className="mt-8 grid grid-cols-2 gap-4 border-t border-white/10 pt-6 sm:grid-cols-4">
+            <div className="flex flex-col">
+              <span className="font-serif text-2xl font-bold text-[#13a5d8]">{team.length}+</span>
+              <span className="text-[11px] text-white/60 uppercase tracking-wider font-semibold mt-0.5">Team Experts</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="font-serif text-2xl font-bold text-[#13a5d8]">24/7</span>
+              <span className="text-[11px] text-white/60 uppercase tracking-wider font-semibold mt-0.5">Desk Support</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="font-serif text-2xl font-bold text-[#13a5d8]">7,500+</span>
+              <span className="text-[11px] text-white/60 uppercase tracking-wider font-semibold mt-0.5">Network Stays</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="font-serif text-2xl font-bold text-[#13a5d8]">100%</span>
+              <span className="text-[11px] text-white/60 uppercase tracking-wider font-semibold mt-0.5">Policy Compliant</span>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* Team Grid */}
-      <section className="mx-auto max-w-7xl px-5 py-20 lg:px-8">
-        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-          {team.map((member) => {
-            const initial = member.name ? member.name.charAt(0).toUpperCase() : "B";
-            return (
+      {/* Interactive Controls & Filtering Section */}
+      <section className="mx-auto max-w-7xl px-5 -mt-8 relative z-10 lg:px-8">
+        <div className="rounded-3xl border border-black/8 bg-white p-6 shadow-xl backdrop-blur-md">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            {/* Search Input */}
+            <div className="relative w-full md:w-80">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-black/40" />
+              <input
+                type="text"
+                placeholder="Search team member or role..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full rounded-full border border-black/10 bg-[#f8fafc] pl-10 pr-4 py-2.5 text-sm outline-none focus:border-[#087dbd] focus:bg-white focus:ring-2 focus:ring-[#087dbd]/15 transition-all"
+              />
+            </div>
+
+            {/* Category Filter Pills */}
+            <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedFilter(cat)}
+                  className={`rounded-full px-4 py-2 text-xs font-bold transition-all ${
+                    selectedFilter === cat
+                      ? "bg-[#062b50] text-white shadow-md"
+                      : "bg-[#f0f6fa] text-[#062b50] hover:bg-[#e1eff8]"
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Team Member Grid */}
+      <section className="mx-auto max-w-7xl px-5 py-16 lg:px-8">
+        {filteredTeam.length === 0 ? (
+          <div className="text-center py-20 bg-white rounded-3xl border border-black/5 p-8">
+            <Users className="mx-auto size-12 text-[#087dbd]/40 mb-3" />
+            <h3 className="font-serif text-2xl font-bold text-[#062b50]">No team members found</h3>
+            <p className="text-sm text-black/55 mt-2">Try adjusting your search criteria or category filter.</p>
+            <button
+              onClick={() => {
+                setSearchQuery("");
+                setSelectedFilter("All");
+              }}
+              className="mt-5 rounded-full bg-[#087dbd] px-6 py-2.5 text-xs font-bold text-white transition hover:bg-[#062b50]"
+            >
+              Reset Filters
+            </button>
+          </div>
+        ) : (
+          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+            {filteredTeam.map((member) => (
               <div
                 key={member.id}
-                className="group flex flex-col justify-between overflow-hidden rounded-3xl border border-black/8 bg-white p-8 transition-all duration-300 hover:shadow-xl hover:-translate-y-1.5"
+                className="group relative flex flex-col justify-between overflow-hidden rounded-3xl border border-black/10 bg-white p-8 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1.5 hover:border-[#087dbd]/30"
               >
+                {/* Decorative Top Accent Line */}
+                <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#062b50] via-[#087dbd] to-[#13a5d8] opacity-0 group-hover:opacity-100 transition-opacity" />
+
                 <div>
                   {/* Photo Container */}
                   <div className="relative mb-6 flex items-center justify-center">
-                    {member.photo ? (
-                      <img
-                        src={member.photo}
-                        alt={member.name}
-                        className="h-28 w-28 rounded-full object-cover border-4 border-[#087dbd]/10 group-hover:border-[#087dbd]/30 transition-colors"
+                    <div className="relative">
+                      <TeamAvatar
+                        photo={member.photo}
+                        name={member.name}
+                        className="h-28 w-28 rounded-full object-cover border-4 border-[#087dbd]/10 group-hover:border-[#087dbd]/30 transition-all duration-300 shadow-md group-hover:scale-105"
                       />
-                    ) : (
-                      <div className="h-28 w-28 rounded-full bg-gradient-to-tr from-[#062b50] to-[#087dbd] flex items-center justify-center text-3xl font-extrabold text-white shadow-md ring-4 ring-[#087dbd]/10 group-hover:ring-[#087dbd]/30 transition-all">
-                        {initial}
-                      </div>
-                    )}
+                      <span className="absolute bottom-0 right-0 bg-[#087dbd] text-white p-1.5 rounded-full shadow-md">
+                        <UserCheck className="size-3.5" />
+                      </span>
+                    </div>
                   </div>
 
                   {/* Header */}
                   <div className="text-center">
                     {member.subtitle && (
-                      <span className="text-[10px] uppercase font-bold tracking-widest text-[#087dbd] bg-[#087dbd]/8 px-2.5 py-1 rounded-full">
+                      <span className="inline-block text-[10px] uppercase font-bold tracking-widest text-[#087dbd] bg-[#087dbd]/8 px-3 py-1 rounded-full mb-2">
                         {member.subtitle}
                       </span>
                     )}
-                    <h3 className="mt-3 font-serif text-2xl font-bold text-[#062b50]">
+                    <h3 className="font-serif text-2xl font-bold text-[#062b50] group-hover:text-[#087dbd] transition-colors">
                       {member.name}
                     </h3>
-                    <p className="mt-1 text-sm font-semibold text-black/55">
+                    <p className="mt-1.5 text-xs font-semibold uppercase tracking-wider text-[#087dbd]">
                       {member.designation}
                     </p>
                   </div>
 
                   {/* Bio */}
                   {member.bio && (
-                    <p className="mt-5 text-sm leading-relaxed text-black/60 text-center font-medium">
+                    <p className="mt-5 text-sm leading-relaxed text-black/60 text-center font-medium line-clamp-3">
                       {member.bio}
                     </p>
                   )}
                 </div>
 
-                {/* Contact & Links */}
-                <div className="mt-8 border-t border-black/5 pt-5 flex items-center justify-center gap-6">
+                {/* Contact Links & Actions */}
+                <div className="mt-8 border-t border-black/5 pt-5 flex items-center justify-center gap-4">
                   {member.email && (
                     <a
                       href={`mailto:${member.email}`}
-                      className="p-2 rounded-full bg-[#f0f6fa] hover:bg-[#087dbd]/10 text-[#087dbd] transition-colors"
-                      title="Send Email"
+                      className="p-2.5 rounded-full bg-[#f0f6fa] hover:bg-[#087dbd] hover:text-white text-[#087dbd] transition-all shadow-sm"
+                      title={`Email ${member.name}`}
                     >
-                      <Mail className="size-5" />
+                      <Mail className="size-4" />
                     </a>
                   )}
                   {member.phone_number && (
                     <a
                       href={`tel:${member.phone_number.replace(/\s/g, "")}`}
-                      className="p-2 rounded-full bg-[#f0f6fa] hover:bg-[#087dbd]/10 text-[#087dbd] transition-colors"
-                      title="Call"
+                      className="p-2.5 rounded-full bg-[#f0f6fa] hover:bg-[#087dbd] hover:text-white text-[#087dbd] transition-all shadow-sm"
+                      title={`Call ${member.name}`}
                     >
-                      <Phone className="size-5" />
+                      <Phone className="size-4" />
                     </a>
                   )}
                   {member.linkedin_url && (
@@ -201,17 +309,17 @@ export default function OurTeamPage() {
                       href={member.linkedin_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="p-2 rounded-full bg-[#f0f6fa] hover:bg-[#087dbd]/10 text-[#087dbd] transition-colors"
+                      className="p-2.5 rounded-full bg-[#f0f6fa] hover:bg-[#087dbd] hover:text-white text-[#087dbd] transition-all shadow-sm"
                       title="LinkedIn Profile"
                     >
-                      <Linkedin className="size-5" />
+                      <Linkedin className="size-4" />
                     </a>
                   )}
                 </div>
               </div>
-            );
-          })}
-        </div>
+            ))}
+          </div>
+        )}
       </section>
     </div>
   );

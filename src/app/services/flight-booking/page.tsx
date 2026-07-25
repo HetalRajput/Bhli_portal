@@ -1,5 +1,5 @@
 import GenericServiceEnquiry from "@/components/GenericServiceEnquiry";
 
 export default function ServicePage() {
-  return <GenericServiceEnquiry serviceSlug="event-management" />;
+  return <GenericServiceEnquiry serviceSlug="flight-booking" />;
 }
