@@ -147,68 +147,60 @@ function HotelReservationsContent() {
     return () => clearTimeout(timer);
   }, [searchInput, searchTerm]);
 
+  // Load service metadata once on mount
+  useEffect(() => {
+    cmsService.getServiceDetail("hotel-reservations").then((detail) => {
+      if (detail?.success && detail?.data && !Array.isArray(detail.data)) {
+        setServiceData(detail.data);
+      }
+    }).catch(() => {});
+  }, []);
+
   useEffect(() => {
     let active = true;
-    const fetchServiceData = async () => {
+    const fetchHotels = async () => {
       setLoading(true);
       try {
-        let res;
-        try {
-          res = await cmsService.searchServiceItems("hotel-reservations", searchTerm, currentPage, pageSize);
-          console.log("Hotel search API Response:", res);
-        } catch {
-          // fallback to getServiceDetail if search endpoint errors out
-        }
+        let items: HotelItem[] = [];
+        let count = 0;
 
-        if (!res || res.success === false || (Array.isArray(res.data) && res.data.length === 0)) {
-          try {
-            const detailRes = await cmsService.getServiceDetail("hotel-reservations");
-            if (detailRes && detailRes.success && detailRes.data) {
-              if (active) setServiceData(detailRes.data);
-              if (!res || !res.data) res = detailRes;
+        if (searchTerm.trim()) {
+          // ── SEARCH PATH ─────────────────────────────────────────────────
+          // GET /api/base/services/hotel-reservations/search/?q=...&page=...&page_size=...
+          const res = await cmsService.searchServiceItems("hotel-reservations", searchTerm.trim(), currentPage, pageSize);
+
+          if (res && res.success !== false) {
+            // search endpoint returns: { success, count, total_pages, data: [ ...hotel items... ] }
+            if (Array.isArray(res.data)) {
+              items = res.data;
+            } else if (res.data?.items && Array.isArray(res.data.items)) {
+              items = res.data.items;
+            } else if (res.results && Array.isArray(res.results)) {
+              items = res.results;
             }
-          } catch {
-            // keep res as is
+            count = res.count || res.total || (res.total_pages ? res.total_pages * pageSize : items.length);
+          }
+        } else {
+          // ── DEFAULT LIST PATH ────────────────────────────────────────────
+          // GET /api/base/services/hotel-reservations/?page=...&page_size=...
+          const res = await cmsService.searchServiceItems("hotel-reservations", "", currentPage, pageSize);
+
+          if (res && res.success !== false) {
+            // default endpoint returns: { success, count, total_pages, data: { ...service info..., items: [...] } }
+            if (res.data && !Array.isArray(res.data) && res.data.items && Array.isArray(res.data.items)) {
+              items = res.data.items;
+            } else if (Array.isArray(res.data)) {
+              items = res.data;
+            } else if (res.items && Array.isArray(res.items)) {
+              items = res.items;
+            } else if (res.results && Array.isArray(res.results)) {
+              items = res.results;
+            }
+            count = res.count || res.total || (res.total_pages ? res.total_pages * pageSize : items.length);
           }
         }
 
         if (!active) return;
-
-        let items: HotelItem[] = [];
-        let count = 0;
-
-        if (res) {
-          if (res.data && typeof res.data === "object" && !Array.isArray(res.data)) {
-            setServiceData(res.data);
-          } else if (res.name || res.title || res.banner_image) {
-            setServiceData(res);
-          }
-
-          const topCount = res.count || res.total || res.total_items || (typeof res.total_pages === "number" ? res.total_pages * (res.page_size || pageSize) : 0);
-
-          if (res.items && Array.isArray(res.items)) {
-            items = res.items;
-            count = topCount || items.length;
-          } else if (res.results && Array.isArray(res.results)) {
-            items = res.results;
-            count = topCount || items.length;
-          } else if (res.data) {
-            const dataObj = res.data;
-            if (Array.isArray(dataObj)) {
-              items = dataObj;
-              count = topCount || items.length;
-            } else if (dataObj.items && Array.isArray(dataObj.items)) {
-              items = dataObj.items;
-              count = topCount || dataObj.count || dataObj.total || items.length;
-            } else if (dataObj.results && Array.isArray(dataObj.results)) {
-              items = dataObj.results;
-              count = topCount || dataObj.count || dataObj.total || items.length;
-            }
-          } else if (Array.isArray(res)) {
-            items = res;
-            count = items.length;
-          }
-        }
 
         if (items.length > 0) {
           setHotels(items);
@@ -218,7 +210,6 @@ function HotelReservationsContent() {
           setTotalCount(fallbackHotels.length);
         }
       } catch (err) {
-        console.warn("Failed to fetch hotel reservations details", err);
         if (active) {
           setHotels(fallbackHotels);
           setTotalCount(fallbackHotels.length);
@@ -228,7 +219,7 @@ function HotelReservationsContent() {
       }
     };
 
-    fetchServiceData();
+    fetchHotels();
     return () => {
       active = false;
     };
