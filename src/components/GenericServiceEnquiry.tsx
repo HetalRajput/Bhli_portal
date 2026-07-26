@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { ArrowLeft, ArrowRight, CalendarDays, CheckCircle2, Mail, MessageSquareText, Phone, Send, UserRound, UsersRound } from "lucide-react";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
@@ -20,7 +20,7 @@ type ServiceData = {
 
 const fallbackBanner = "https://images.pexels.com/photos/3769138/pexels-photo-3769138.jpeg?auto=compress&cs=tinysrgb&w=1600";
 
-export default function GenericServiceEnquiry({ serviceSlug }: { serviceSlug?: string }) {
+function GenericServiceEnquiryInner({ serviceSlug }: { serviceSlug?: string }) {
   const params = useParams<{ slug?: string }>();
   const searchParams = useSearchParams();
   const destinationParam = searchParams ? searchParams.get("destination") : null;
@@ -157,4 +157,12 @@ export default function GenericServiceEnquiry({ serviceSlug }: { serviceSlug?: s
 
 function FormField({ label, icon, children }: { label: string; icon: React.ReactNode; children: React.ReactNode }) {
   return <label className="block"><span className="mb-2 block text-xs font-bold text-[#456078]">{label}</span><span className="flex h-14 items-center gap-3 rounded-xl border border-black/10 px-4 text-black/30 transition focus-within:border-[#13a5d8] focus-within:ring-4 focus-within:ring-[#13a5d8]/10 [&_input]:h-full [&_input]:min-w-0 [&_input]:flex-1 [&_input]:bg-transparent [&_input]:text-sm [&_input]:text-[#122b42] [&_input]:outline-none [&_select]:h-full [&_select]:min-w-0 [&_select]:flex-1 [&_select]:bg-transparent [&_select]:text-sm [&_select]:text-[#122b42] [&_select]:outline-none">{icon}{children}</span></label>;
+}
+
+export default function GenericServiceEnquiry({ serviceSlug }: { serviceSlug?: string }) {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#f3f8fb]" />}>
+      <GenericServiceEnquiryInner serviceSlug={serviceSlug} />
+    </Suspense>
+  );
 }
