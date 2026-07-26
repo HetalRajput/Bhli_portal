@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight, CalendarDays, CheckCircle2, Mail, MessageSquareText, Phone, Send, UserRound, UsersRound } from "lucide-react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { cmsService } from "@/lib/api/cms";
 import { bookingService } from "@/lib/api/bookings";
 import { getErrorMessage } from "@/lib/api/client";
@@ -22,6 +22,8 @@ const fallbackBanner = "https://images.pexels.com/photos/3769138/pexels-photo-37
 
 export default function GenericServiceEnquiry({ serviceSlug }: { serviceSlug?: string }) {
   const params = useParams<{ slug?: string }>();
+  const searchParams = useSearchParams();
+  const destinationParam = searchParams ? searchParams.get("destination") : null;
   const slug = serviceSlug || params.slug || "";
   const [service, setService] = useState<ServiceData | null>(null);
   const [loadingService, setLoadingService] = useState(true);
@@ -29,6 +31,13 @@ export default function GenericServiceEnquiry({ serviceSlug }: { serviceSlug?: s
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [reference, setReference] = useState("");
+
+  useEffect(() => {
+    if (destinationParam) {
+      const serviceName = slug ? slug.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ") : "Booking";
+      setForm((prev) => (prev.message ? prev : { ...prev, message: `${serviceName} requirement for: ${destinationParam}` }));
+    }
+  }, [destinationParam, slug]);
 
   useEffect(() => {
     let active = true;

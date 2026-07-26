@@ -1,7 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, Suspense } from "react";
+
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import HotelCard from "@/components/HotelCard";
 import { 
   MapPin, 
@@ -12,7 +14,8 @@ import {
   Search, 
   ChevronLeft, 
   ChevronRight,
-  Sparkles
+  Sparkles,
+  X
 } from "lucide-react";
 import { cmsService } from "@/lib/api/cms";
 
@@ -66,7 +69,6 @@ const fallbackHotels: HotelItem[] = [
   }
 ];
 
-// Curated high-quality fallbacks for hotel card images based on hotel index
 const fallbackHotelImages = [
   "https://images.pexels.com/photos/271618/pexels-photo-271618.jpeg?auto=compress&cs=tinysrgb&w=600",
   "https://images.pexels.com/photos/271624/pexels-photo-271624.jpeg?auto=compress&cs=tinysrgb&w=600",
@@ -76,39 +78,165 @@ const fallbackHotelImages = [
   "https://images.pexels.com/photos/271619/pexels-photo-271619.jpeg?auto=compress&cs=tinysrgb&w=600"
 ];
 
-export default function HotelReservationsPage() {
+function HotelCardSkeleton() {
+  return (
+    <div className="flex flex-col justify-between overflow-hidden rounded-[2.5rem] border border-slate-100 bg-white p-2 shadow-sm animate-pulse">
+      <div>
+        <div className="h-56 rounded-[2.2rem] bg-slate-200/80" />
+        <div className="px-5 py-6 space-y-4">
+          <div className="h-6 w-3/4 bg-slate-200 rounded-lg" />
+          <div className="h-4 w-1/2 bg-slate-100 rounded-lg" />
+          <div className="space-y-2">
+            <div className="h-3 w-full bg-slate-100 rounded" />
+            <div className="h-3 w-5/6 bg-slate-100 rounded" />
+          </div>
+          <div className="flex gap-2 pt-2">
+            <div className="h-6 w-20 bg-slate-100 rounded-full" />
+            <div className="h-6 w-20 bg-slate-100 rounded-full" />
+          </div>
+        </div>
+      </div>
+      <div className="px-5 pb-5 pt-4 border-t border-slate-100 flex items-center justify-between bg-slate-50/50 rounded-b-[2.3rem]">
+        <div className="h-8 w-28 bg-slate-200 rounded-xl" />
+        <div className="h-10 w-24 bg-slate-200 rounded-2xl" />
+      </div>
+    </div>
+  );
+}
+
+function HotelReservationsContent() {
+  const searchParams = useSearchParams();
+  const initialDestination = searchParams ? (searchParams.get("destination") || searchParams.get("search") || "") : "";
+
+  const gridRef = useRef<HTMLDivElement>(null);
   const [serviceData, setServiceData] = useState<any>(null);
   const [hotels, setHotels] = useState<HotelItem[]>([]);
+  const [totalCount, setTotalCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   
   // Search & Pagination State
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchInput, setSearchInput] = useState(initialDestination);
+  const [searchTerm, setSearchTerm] = useState(initialDestination);
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 9;
 
+  const handlePageChange = (pageNum: number) => {
+    setCurrentPage(pageNum);
+    if (gridRef.current) {
+      gridRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
   useEffect(() => {
+    if (initialDestination) {
+      setSearchInput(initialDestination);
+      setSearchTerm(initialDestination);
+      setCurrentPage(1);
+    }
+  }, [initialDestination]);
+
+  // Debounce typing to trigger search automatically after 400ms pause
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const trimmed = searchInput.trim();
+      if (trimmed !== searchTerm) {
+        setSearchTerm(trimmed);
+        setCurrentPage(1);
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchInput, searchTerm]);
+
+  useEffect(() => {
+    let active = true;
     const fetchServiceData = async () => {
+      setLoading(true);
       try {
-        const res = await cmsService.getServiceDetail("hotel-reservations");
-        console.log("Hotel Reservations API Response:", res);
-        if (res && res.success && res.data) {
-          setServiceData(res.data);
-          setHotels(res.data.items || []);
+        let res;
+        try {
+          res = await cmsService.searchServiceItems("hotel-reservations", searchTerm, currentPage, pageSize);
+          console.log("Hotel search API Response:", res);
+        } catch {
+          // fallback to getServiceDetail if search endpoint errors out
+        }
+
+        if (!res || res.success === false || (Array.isArray(res.data) && res.data.length === 0)) {
+          try {
+            const detailRes = await cmsService.getServiceDetail("hotel-reservations");
+            if (detailRes && detailRes.success && detailRes.data) {
+              if (active) setServiceData(detailRes.data);
+              if (!res || !res.data) res = detailRes;
+            }
+          } catch {
+            // keep res as is
+          }
+        }
+
+        if (!active) return;
+
+        let items: HotelItem[] = [];
+        let count = 0;
+
+        if (res) {
+          if (res.data && typeof res.data === "object" && !Array.isArray(res.data)) {
+            setServiceData(res.data);
+          } else if (res.name || res.title || res.banner_image) {
+            setServiceData(res);
+          }
+
+          const topCount = res.count || res.total || res.total_items || (typeof res.total_pages === "number" ? res.total_pages * (res.page_size || pageSize) : 0);
+
+          if (res.items && Array.isArray(res.items)) {
+            items = res.items;
+            count = topCount || items.length;
+          } else if (res.results && Array.isArray(res.results)) {
+            items = res.results;
+            count = topCount || items.length;
+          } else if (res.data) {
+            const dataObj = res.data;
+            if (Array.isArray(dataObj)) {
+              items = dataObj;
+              count = topCount || items.length;
+            } else if (dataObj.items && Array.isArray(dataObj.items)) {
+              items = dataObj.items;
+              count = topCount || dataObj.count || dataObj.total || items.length;
+            } else if (dataObj.results && Array.isArray(dataObj.results)) {
+              items = dataObj.results;
+              count = topCount || dataObj.count || dataObj.total || items.length;
+            }
+          } else if (Array.isArray(res)) {
+            items = res;
+            count = items.length;
+          }
+        }
+
+        if (items.length > 0) {
+          setHotels(items);
+          setTotalCount(count);
         } else {
           setHotels(fallbackHotels);
+          setTotalCount(fallbackHotels.length);
         }
       } catch (err) {
         console.warn("Failed to fetch hotel reservations details", err);
-        setHotels(fallbackHotels);
+        if (active) {
+          setHotels(fallbackHotels);
+          setTotalCount(fallbackHotels.length);
+        }
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     };
-    fetchServiceData();
-  }, []);
 
-  // Filter hotels based on search term (checks title, city, location, and rating)
+    fetchServiceData();
+    return () => {
+      active = false;
+    };
+  }, [searchTerm, currentPage]);
+
+  // Client side fallback filtering if API returned unpaginated list
   const filteredHotels = hotels.filter((hotel) => {
+    if (!searchTerm) return true;
     const term = searchTerm.toLowerCase();
     return (
       (hotel.title || "").toLowerCase().includes(term) ||
@@ -118,19 +246,15 @@ export default function HotelReservationsPage() {
     );
   });
 
-  // Calculate pagination boundaries
-  const totalItems = filteredHotels.length;
+  const isApiData = totalCount > 0;
+  const totalItems = isApiData ? totalCount : filteredHotels.length;
   const totalPages = Math.ceil(totalItems / pageSize) || 1;
-  
-  // Adjust current page if out of bounds after filtering
-  useEffect(() => {
-    if (currentPage > totalPages) {
-      setCurrentPage(totalPages);
-    }
-  }, [searchTerm, totalPages]);
+
+  const paginatedHotels = isApiData
+    ? hotels
+    : filteredHotels.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const startIndex = (currentPage - 1) * pageSize;
-  const paginatedHotels = filteredHotels.slice(startIndex, startIndex + pageSize);
 
   const getPageNumbers = () => {
     const range: (number | string)[] = [];
@@ -150,20 +274,34 @@ export default function HotelReservationsPage() {
     return range;
   };
 
+  // Prefetch & Preload Next Page Data & Images in background
+  useEffect(() => {
+    if (loading || !totalPages || currentPage >= totalPages || (totalCount > 0 && totalItems <= currentPage * pageSize)) return;
+    const nextPage = currentPage + 1;
+    const prefetchNextPage = async () => {
+      try {
+        const res = await cmsService.searchServiceItems("hotel-reservations", searchTerm, nextPage, pageSize);
+        if (res && res.success !== false) {
+          const nextItems = res?.results || res?.data || res?.items || (Array.isArray(res) ? res : []);
+          if (Array.isArray(nextItems)) {
+            nextItems.forEach((item: any) => {
+              if (item?.image && typeof window !== "undefined") {
+                const img = new Image();
+                img.src = item.image;
+              }
+            });
+          }
+        }
+      } catch {
+        // silent prefetch error ignore
+      }
+    };
+    prefetchNextPage();
+  }, [searchTerm, currentPage, totalPages, totalCount, totalItems, pageSize, loading]);
+
   const displayName = serviceData?.name || "Hotel Reservations";
   const displayDesc = serviceData?.description || serviceData?.short_description || "Handpicked stays aligned to comfort, policy and official entitlement rates.";
   const displayBanner = serviceData?.banner_image || "https://images.pexels.com/photos/271624/pexels-photo-271624.jpeg?auto=compress&cs=tinysrgb&w=1600";
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f5f9fc]">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-4 border-[#0879b7] border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm font-semibold text-[#062b50]">Loading hotel listings...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="bg-[#f5f9fc] text-[#122b42] min-h-screen">
@@ -204,27 +342,82 @@ export default function HotelReservationsPage() {
 
       {/* Filter and Search Bar */}
       <section className="mx-auto max-w-7xl px-5 pt-12 lg:px-8">
-        <div className="bg-white border border-black/8 p-4 rounded-3xl shadow-sm flex flex-col sm:flex-row items-center gap-4 justify-between">
-          <div className="relative w-full sm:max-w-md">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-zinc-400 pointer-events-none" />
-            <input
-              type="text"
-              placeholder="Search by hotel name, city, location or category..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-11 pr-4 py-3 border border-black/10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[#087dbd]/10 focus:border-[#087dbd] bg-[#f8fafc] text-black font-semibold"
-            />
-          </div>
+        <div className="bg-white border border-black/8 p-5 rounded-3xl shadow-sm flex flex-col lg:flex-row items-center gap-4 justify-between">
+          <form 
+            onSubmit={(e) => {
+              e.preventDefault();
+              setSearchTerm(searchInput.trim());
+              setCurrentPage(1);
+            }}
+            className="flex w-full lg:max-w-xl items-center gap-2"
+          >
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-zinc-400 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Search by hotel name, city, location or rating..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                className="w-full pl-11 pr-10 py-3.5 border border-black/10 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-[#087dbd]/20 focus:border-[#087dbd] bg-[#f8fafc] text-black font-semibold placeholder:text-zinc-400 transition"
+              />
+              {searchInput && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchInput("");
+                    setSearchTerm("");
+                    setCurrentPage(1);
+                  }}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 rounded-full text-zinc-400 hover:text-zinc-700 hover:bg-zinc-200/60 transition cursor-pointer"
+                  title="Clear search"
+                >
+                  <X className="size-4" />
+                </button>
+              )}
+            </div>
+
+            <button
+              type="submit"
+              className="flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#0875b7] to-[#08a9da] hover:from-[#0983cc] hover:to-[#09b6e8] px-6 py-3.5 font-bold text-xs uppercase tracking-wider text-white shadow-md transition-all active:scale-95 shrink-0 cursor-pointer"
+            >
+              <Search className="size-4" />
+              <span>Search</span>
+            </button>
+          </form>
           
-          <div className="text-xs font-bold text-zinc-500 uppercase shrink-0">
-            Showing {startIndex + 1} - {Math.min(startIndex + pageSize, totalItems)} of {totalItems} properties
+          <div className="flex flex-wrap items-center gap-3 text-xs font-bold text-zinc-500 uppercase shrink-0">
+            {searchTerm && (
+              <span className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-sky-50 text-[#087dbd] border border-sky-100 font-extrabold shadow-sm">
+                Active filter: "{searchTerm}"
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchInput("");
+                    setSearchTerm("");
+                    setCurrentPage(1);
+                  }}
+                  className="hover:text-red-600 transition cursor-pointer"
+                >
+                  <X className="size-3.5" />
+                </button>
+              </span>
+            )}
+            <span>
+              Showing {startIndex + 1} - {Math.min(startIndex + pageSize, totalItems)} of {totalItems} properties
+            </span>
           </div>
         </div>
       </section>
 
       {/* Hotels Grid */}
-      <section className="mx-auto max-w-7xl px-5 py-8 lg:px-8">
-        {paginatedHotels.length > 0 ? (
+      <section ref={gridRef} className="mx-auto max-w-7xl px-5 py-8 lg:px-8">
+        {loading ? (
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, idx) => (
+              <HotelCardSkeleton key={idx} />
+            ))}
+          </div>
+        ) : paginatedHotels.length > 0 ? (
           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
             {paginatedHotels.map((hotel, index) => {
               const defaultImage = fallbackHotelImages[index % fallbackHotelImages.length];
@@ -266,11 +459,12 @@ export default function HotelReservationsPage() {
 
         {/* Pagination Controls */}
         {totalPages > 1 && (
-          <div className="mt-12 flex justify-center items-center gap-2">
+          <div className="mt-12 flex flex-wrap justify-center items-center gap-2">
             <button
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              onClick={() => handlePageChange(Math.max(currentPage - 1, 1))}
               disabled={currentPage === 1}
               className="p-2.5 rounded-xl border border-black/8 bg-white hover:bg-slate-50 transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              title="Previous Page"
             >
               <ChevronLeft className="size-5 text-[#062b50]" />
             </button>
@@ -287,7 +481,7 @@ export default function HotelReservationsPage() {
               return (
                 <button
                   key={`page-${pageNum}`}
-                  onClick={() => setCurrentPage(pageNum)}
+                  onClick={() => handlePageChange(pageNum)}
                   className={`px-4 py-2 text-sm font-bold rounded-xl transition cursor-pointer border ${
                     currentPage === pageNum
                       ? "bg-[#062b50] text-white border-[#062b50] shadow"
@@ -300,9 +494,10 @@ export default function HotelReservationsPage() {
             })}
 
             <button
-              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+              onClick={() => handlePageChange(Math.min(currentPage + 1, totalPages))}
               disabled={currentPage === totalPages}
               className="p-2.5 rounded-xl border border-black/8 bg-white hover:bg-slate-50 transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              title="Next Page"
             >
               <ChevronRight className="size-5 text-[#062b50]" />
             </button>
@@ -310,5 +505,13 @@ export default function HotelReservationsPage() {
         )}
       </section>
     </div>
+  );
+}
+
+export default function HotelReservationsPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#f5f9fc]" />}>
+      <HotelReservationsContent />
+    </Suspense>
   );
 }

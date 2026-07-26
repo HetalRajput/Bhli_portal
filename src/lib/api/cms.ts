@@ -5,15 +5,31 @@ export const cmsService = {
     const response = await apiClient.get('/api/base/services/', { params });
     return response.data;
   },
-  getServiceDetail: async (slug: string) => {
-    const response = await apiClient.get(`/api/base/services/${slug}/`);
+  getServiceDetail: async (slug: string, params?: any) => {
+    const response = await apiClient.get(`/api/base/services/${slug}/`, { params });
     return response.data;
   },
-  searchServiceItems: async (slug: string, query: string) => {
-    const response = await apiClient.get(`/api/base/services/${slug}/search/`, {
-      params: { q: query }
-    });
-    return response.data;
+  searchServiceItems: async (slug: string, query: string, page?: number, pageSize?: number) => {
+    const trimmed = (query || '').trim();
+    const params: Record<string, any> = {};
+    if (page) params.page = page;
+    if (pageSize) params.page_size = pageSize;
+
+    try {
+      if (trimmed) {
+        params.q = trimmed;
+        const response = await apiClient.get(`/api/base/services/${slug}/search/`, { params });
+        return response.data;
+      } else {
+        const response = await apiClient.get(`/api/base/services/${slug}/`, { params });
+        return response.data;
+      }
+    } catch (err: any) {
+      if (err.response?.status === 404) {
+        return { success: true, count: 0, results: [], data: [] };
+      }
+      return null;
+    }
   },
   getClients: async (params?: any) => {
     const response = await apiClient.get('/api/base/our-clients/', { params });
