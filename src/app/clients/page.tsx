@@ -14,6 +14,13 @@ interface ClientItem {
   description: string;
 }
 
+const defenceAndAlliedClients = [
+  "Indian Army", "Indian Air Force", "Indian Navy", "Indian Coast Guard", "DRDO", "NSG", "CRPF", "CISF", "BSF", "SSB", "ITBP", "RAF", "Assam Rifles", "SSF", "SSC", "SPG", "IRB", "NPA"
+];
+
+const publicSectorClients = [
+  "BHEL", "BEL", "BEML", "HAL", "MIL", "ISRO", "NAL", "ANTRIX", "AAI", "NHAI", "CIL", "Power Grid", "Income Tax", "Revenue", "GST", "Customs", "IOCL", "ONGC", "HPCL", "BPCL", "GAIL", "Indian Railways"
+];
 const clientsList: ClientItem[] = [
   // --- GOVERNMENT & DEFENCE ---
   {
@@ -307,6 +314,36 @@ export default function ClientsPage() {
         </div>
       </section>
 
+      {/* Institutional Client Groups */}
+      <section className="relative z-10 mx-auto -mt-10 max-w-7xl px-5 lg:px-8">
+        <div className="overflow-hidden rounded-[2rem] border border-black/[.06] bg-white shadow-[0_22px_65px_rgba(6,43,80,.13)]">
+          <div className="grid lg:grid-cols-2">
+            <article className="p-7 md:p-10 lg:border-r lg:border-black/[.07]">
+              <div className="flex items-start gap-4">
+                <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-[#062b50] text-[#13a5d8]"><Landmark className="size-6" /></span>
+                <div><p className="text-[10px] font-bold uppercase tracking-[.2em] text-[#087fbe]">Institutional clients</p><h2 className="mt-2 font-serif text-3xl font-semibold text-[#062b50]">Ministry of Defence &amp; Allied Forces</h2></div>
+              </div>
+              <p className="mt-5 text-sm leading-7 text-[#607789]">Trusted travel and hospitality support across defence commands, forces and allied institutions.</p>
+              <div className="mt-6 flex flex-wrap gap-2">
+                {defenceAndAlliedClients.map((client) => <span key={client} className="rounded-full border border-[#087fbe]/12 bg-[#edf7fc] px-3.5 py-2 text-xs font-semibold text-[#294a63]">{client}</span>)}
+                <span className="rounded-full border border-dashed border-[#087fbe]/30 px-3.5 py-2 text-xs font-semibold text-[#087fbe]">and others</span>
+              </div>
+            </article>
+
+            <article className="border-t border-black/[.07] p-7 md:p-10 lg:border-t-0">
+              <div className="flex items-start gap-4">
+                <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-[#13a5d8] text-[#062b50]"><Briefcase className="size-6" /></span>
+                <div><p className="text-[10px] font-bold uppercase tracking-[.2em] text-[#087fbe]">Government network</p><h2 className="mt-2 font-serif text-3xl font-semibold text-[#062b50]">Public Sector Undertakings &amp; Government Departments</h2></div>
+              </div>
+              <p className="mt-5 text-sm leading-7 text-[#607789]">Coordinated reservations and travel assistance for PSUs, departments and national institutions.</p>
+              <div className="mt-6 flex flex-wrap gap-2">
+                {publicSectorClients.map((client) => <span key={client} className="rounded-full border border-[#b47500]/12 bg-[#fff8e9] px-3.5 py-2 text-xs font-semibold text-[#5e522f]">{client}</span>)}
+                <span className="rounded-full border border-dashed border-[#b47500]/30 px-3.5 py-2 text-xs font-semibold text-[#9a6900]">and others</span>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
       {/* Main Content & Interactive Filter Section */}
       <section className="mx-auto max-w-7xl px-5 py-16 lg:px-8">
         {/* Category Tabs */}

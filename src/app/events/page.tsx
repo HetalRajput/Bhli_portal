@@ -1,498 +1,173 @@
 import Link from "next/link";
-import HotelCard from "@/components/HotelCard";
+import UpcomingEventCard from "@/components/UpcomingEventCard";
+import { cmsService } from "@/lib/api/cms";
 import {
   ArrowRight,
-  CalendarDays,
-  MapPin,
-  CheckCircle2,
   Award,
-  Users,
   Building2,
-  Globe,
+  CalendarDays,
+  CheckCircle2,
+  Footprints,
+  MapPin,
+  MessageCircle,
+  Plane,
+  ShieldCheck,
   Sparkles,
-  Shield,
-  Milestone,
-  Cpu,
-  Layers,
-  Wrench,
-  Car,
-  Hotel,
-  Building,
-  Home,
-  Coins,
-  Bed,
-  Star
+  Trophy,
+  Users,
 } from "lucide-react";
 
-const subdisciplines = [
+type EventData = {
+  id?: number | string;
+  title?: string;
+  subtitle?: string;
+  description?: string;
+  location?: string;
+  venue?: string;
+  event_date?: string;
+  start_date?: string;
+  banner_image?: string | null;
+};
+
+const completedEvents = [
   {
-    title: "Aerodynamics: Rotary Wing",
-    desc: "Multi-rotors or Compound vertical flight aeromechanics.",
-    icon: Compass
+    number: "01",
+    title: "Subroto Cup",
+    category: "Football tournament",
+    description: "Travel, accommodation and hospitality coordination for teams, officials and invited guests.",
+    icon: Trophy,
+    accent: "bg-[#13a5d8]",
   },
   {
-    title: "Structures and Materials",
-    desc: "Light-weight aerospace grade composite designs.",
-    icon: Layers
+    number: "02",
+    title: "Marshal Arjan Singh Hockey Cup",
+    category: "Hockey tournament",
+    description: "Coordinated stays, local movement and guest support throughout the sporting programme.",
+    icon: Award,
+    accent: "bg-[#e7ad38]",
   },
   {
-    title: "Propulsion",
-    desc: "Electric or Hybrid power plants driving zero-emission flight.",
-    icon: Cpu
+    number: "03",
+    title: "Run Samwad",
+    category: "Community sporting event",
+    description: "Participant-focused hospitality and responsive on-ground coordination for a smooth event experience.",
+    icon: Footprints,
+    accent: "bg-[#38b98b]",
   },
   {
-    title: "Systems",
-    desc: "Onboard and Offboard navigation, telemetry, and avionics.",
-    icon: Settings
+    number: "04",
+    title: "ICAAMS",
+    category: "International conference",
+    description: "Hospitality support for the First International Conference on Advanced Air Mobility Systems.",
+    icon: MessageCircle,
+    accent: "bg-[#8b7bd8]",
   },
-  {
-    title: "Design",
-    desc: "All configurations—Manned, Unmanned, or Optional takeoff designs.",
-    icon: Milestone
-  },
-  {
-    title: "Operations",
-    desc: "Flight and Ground vertiport operations and airspace integration.",
-    icon: Globe
-  },
-  {
-    title: "Airworthiness and Regulations",
-    desc: "Operational and Technical regulatory framework compliance.",
-    icon: Shield
-  },
-  {
-    title: "Airspace Management",
-    desc: "Urban and Semi-Urban airspace management systems.",
-    icon: MapPin
-  },
-  {
-    title: "Product Support",
-    desc: "MROs and Supply Chain establishment for air fleets.",
-    icon: Wrench
-  }
 ];
 
-const supporters = [
-  {
-    name: "Indian Institute of Science",
-    role: "Conference Supporter",
-    acronym: "IISc",
-    image: "/Asset/clients/event1.jpg",
-    bg: "from-[#087dbd]/10 to-[#087dbd]/5"
-  },
-  {
-    name: "Indian Air Force",
-    role: "Conference Supporter",
-    acronym: "IAF",
-    image: "/Asset/clients/event2.png",
-    bg: "from-[#051b33]/15 to-[#051b33]/5"
-  },
-  {
-    name: "University of Melbourne",
-    role: "Conference Supporter",
-    acronym: "UoM",
-    image: "/Asset/clients/event3.png",
-    bg: "from-[#13a5d8]/10 to-[#13a5d8]/5"
-  }
-];
+const capabilities = [
+  [Building2, "Accommodation desk", "Curated rooms, negotiated rates and rooming-list coordination."],
+  [Plane, "Travel & transfers", "Flight assistance, airport transfers and local movement planning."],
+  [Users, "Delegation support", "A single coordination point for teams, speakers, officials and VIP guests."],
+  [ShieldCheck, "On-ground assistance", "Responsive help throughout arrivals, the event programme and departures."],
+] as const;
 
-const chairs = [
-  {
-    name: "Dr. Arvind Sinha",
-    role: "Chair",
-    desc: "VP Asia-Australia Region, VFS"
-  },
-  {
-    name: "Mr. Vijaya Kumar Mudubagilu",
-    role: "Deputy Chair",
-    desc: "Rotary Wing Society of India, India"
-  },
-  {
-    name: "Mr. Robert Hood",
-    role: "Technical Chair (Aerospace)",
-    desc: "VP Australia Chapter, VFS"
-  },
-  {
-    name: "Wg Cdr BS Singh Deo",
-    role: "Technical Chair (Aviation)",
-    desc: "VP RWS"
-  }
-];
-
-const hotelTiers = [
-  {
-    title: "5 Star Luxury - Hotels",
-    price: "Above ₹ 11,000",
-    icon: Sparkles,
-    badge: "Ultra Luxury",
-    image: "https://w4u.in/api/r2-page-asset?k=3224%2Fpages%2Fimagesq-mgjlsu.jpg",
-    btnClass: "bg-[#13a5d8] text-[#061f3b] hover:bg-[#061f3b] hover:text-white",
-    starCount: 5
-  },
-  {
-    title: "5 Star - Hotels",
-    price: "Above ₹ 7,500",
-    icon: Hotel,
-    badge: "Premium Stay",
-    image: "https://w4u.in/api/r2-page-asset?k=3224%2Fpages%2Fimg-7f9c3e431b46.jpg",
-    btnClass: "bg-[#061f3b] text-white hover:bg-[#087dbd]",
-    starCount: 5
-  },
-  {
-    title: "4 Star - Hotels",
-    price: "Above ₹ 5,500",
-    icon: Building,
-    badge: "Upscale comfort",
-    image: "https://w4u.in/api/r2-page-asset?k=3224%2Fpages%2Fibibis-r35jhw.jpg",
-    btnClass: "bg-[#061f3b] text-white hover:bg-[#087dbd]",
-    starCount: 4
-  },
-  {
-    title: "3 Star - Hotels",
-    price: "Above ₹ 4,000 + Taxes",
-    icon: Home,
-    badge: "Business comfort",
-    image: "https://w4u.in/api/r2-page-asset?k=3224%2Fpages%2Funtitled-p7j7qt.jpg",
-    btnClass: "bg-[#061f3b] text-white hover:bg-[#087dbd]",
-    starCount: 3
-  },
-  {
-    title: "Service Apartment",
-    price: "Above ₹ 3,000 + Taxes",
-    icon: Building2,
-    badge: "Extended Stay",
-    image: "https://w4u.in/api/r2-page-asset?k=3224%2Fpages%2Fimg-b8d638e8d3fc.jpg",
-    btnClass: "bg-[#061f3b] text-white hover:bg-[#087dbd]",
-    starCount: 0
-  },
-  {
-    title: "Budget - Hotels",
-    price: "Above ₹ 2,500 + Taxes",
-    icon: Coins,
-    badge: "Value Stay",
-    image: "https://w4u.in/api/r2-page-asset?k=3224%2Fpages%2Frv-stay-x9pt75.jpg",
-    btnClass: "bg-[#061f3b] text-white hover:bg-[#087dbd]",
-    starCount: 0
-  },
-  {
-    title: "Artha Stays - PG House",
-    price: "Above ₹ 1,500 + Taxes",
-    icon: Bed,
-    badge: "Paying Guest",
-    image: "https://w4u.in/api/r2-page-asset?k=3224%2Fpages%2Fartha-mhurs8.jpg",
-    btnClass: "bg-[#061f3b] text-white hover:bg-[#087dbd]",
-    starCount: 0
-  }
-];
-
-// Reusing helper icons or aliases since Compass and Settings were used
-import { Compass, Settings } from "lucide-react";
-import { cmsService } from "@/lib/api/cms";
-
-export default async function Events() {
-  let apiEvents: any[] = [];
+export default async function EventsPage() {
+  let apiEvents: EventData[] = [];
   try {
-    const res = await cmsService.getEvents();
-    console.log("Events API Response:", res);
-    if (res && res.success && Array.isArray(res.data)) {
-      apiEvents = res.data;
-    } else if (res && Array.isArray(res)) {
-      apiEvents = res;
-    }
-  } catch (err) {
-    console.warn("Failed to fetch events from API", err);
+    const response = await cmsService.getEvents() as unknown as { success?: boolean; data?: EventData[] } | EventData[];
+    if (Array.isArray(response)) apiEvents = response;
+    else if (response.success && Array.isArray(response.data)) apiEvents = response.data;
+  } catch {
+    // The curated event portfolio remains available if the API is offline.
   }
+
   return (
-    <div className="bg-[#f5f9fc] text-[#122b42]">
-      {/* Hero Section */}
-      <section className="relative overflow-hidden bg-[#062b50] px-5 py-24 text-white lg:px-8">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(215,181,109,.15),transparent_40%)]" />
-        <div className="relative mx-auto max-w-7xl">
-          <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[.25em] text-[#13a5d8]">
-            <Sparkles className="size-4 animate-pulse" /> Events & Services
-          </p>
-          <h1 className="mt-5 max-w-4xl font-serif text-5xl leading-tight md:text-7xl">
-            We Make Events To Remember
-          </h1>
-          <p className="mt-6 max-w-2xl text-lg leading-8 text-white/60">
-            We are here to create memorable and successful events that exceed our client's expectations, nurture relationships, and delight the senses.
-          </p>
-        </div>
-      </section>
-
-      {/* Welcome & Philosophy Section */}
-      <section className="mx-auto max-w-7xl px-5 py-20 lg:px-8">
-        <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
-          <div>
-            <span className="text-xs font-bold uppercase tracking-[.25em] text-[#087fbe]">Explore our expert</span>
-            <h2 className="mt-4 font-serif text-4xl font-semibold leading-snug text-[#062b50] md:text-5xl">
-              Welcome To Booking Hospitality Events & Services!
-            </h2>
-            <p className="mt-6 text-lg font-medium text-[#087dbd]">
-              We take the responsibility of making your dream a reality!
-            </p>
-            <p className="mt-4 leading-7 text-black/60">
-              We are here to create memorable and successful events that exceed our client’s expectations, nurture relationships and delight the senses – one client, one event, one experience at a time.
-            </p>
-          </div>
-          <div className="relative overflow-hidden rounded-[2rem] border border-black/10 bg-white p-2 shadow-lg">
-            <img
-              src="https://w4u.in/api/r2-page-asset?k=3224%2Fpages%2Fimagessa-f6cabu.jpg"
-              alt="Welcome to Booking Hospitality Events"
-              className="w-full h-auto rounded-[1.7rem] block"
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* Conference Section: ICAAMS 2023 */}
-      <section className="mx-auto max-w-7xl px-5 py-12 lg:px-8">
-        <div className="border border-black/10 rounded-[2.5rem] bg-white p-6 md:p-12 shadow-sm overflow-hidden">
-          {/* Official ICAAMS Banner Image */}
-          <div className="w-full rounded-2xl overflow-hidden mb-10 border border-black/5">
-            <img
-              src="https://w4u.in/api/r2-page-asset?k=3224%2Fpages%2Ficaams20233-mzcdc4.jpg"
-              alt="ICAAMS 2023 Banner"
-              className="w-full h-auto block"
-            />
-          </div>
-
+    <div className="bg-[#f4f8fb] text-[#122b42]">
+      {/* Upcoming event first */}
+      <section className="relative isolate overflow-hidden bg-[#061f3b] px-5 py-16 text-white lg:px-8 lg:py-20">
+        <div className="absolute inset-0 -z-20 bg-[radial-gradient(circle_at_76%_30%,rgba(19,165,216,.24),transparent_32%),radial-gradient(circle_at_15%_80%,rgba(231,173,56,.12),transparent_30%)]" />
+        <div className="absolute inset-0 -z-10 opacity-20 [background-image:linear-gradient(rgba(255,255,255,.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.08)_1px,transparent_1px)] [background-size:54px_54px]" />
+        <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[minmax(0,1fr)_390px]">
           <div className="max-w-3xl">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#e5f5fc] px-4 py-1.5 text-xs font-semibold text-[#087dbd]">
-              <Award className="size-3.5" /> Conference Program Now Available!
-            </span>
-            <h2 className="mt-4 font-serif text-4xl font-semibold leading-tight text-[#062b50]">
-              The First International Conference on Advanced Air Mobility Systems (ICAAMS)
-            </h2>
-            <p className="mt-6 leading-8 text-black/60 text-justify">
-              Organized by the Vertical Flight Society's Asia-Australia Region and Rotary Wing Society of India (RWSI) with the support of the VFS Australia Chapter. The event brings together global aerospace leaders at the <strong>Yelahanka Air Force Station</strong> in Bengaluru, India.
-            </p>
-          </div>
-
-          {/* Schedule & Venue Metadata */}
-          <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3 border-t border-black/5 pt-8">
-            <div className="flex gap-4">
-              <CalendarDays className="size-6 text-[#087dbd] shrink-0" />
-              <div>
-                <h3 className="font-bold text-sm text-[#062b50]">Conference Schedule</h3>
-                <p className="text-sm text-black/55 mt-1">December 4-6, 2023</p>
-                <p className="text-xs text-[#087dbd] mt-1 font-semibold">Includes VTOL airspace workshop on Dec 6th</p>
-              </div>
-            </div>
-            <div className="flex gap-4">
-              <MapPin className="size-6 text-[#087dbd] shrink-0" />
-              <div>
-                <h3 className="font-bold text-sm text-[#062b50]">Event Location</h3>
-                <p className="text-sm text-black/55 mt-1">Yelahanka Air Force Station</p>
-                <p className="text-xs text-black/55">Bengaluru, India</p>
-              </div>
-            </div>
-            <div className="flex gap-4 md:col-span-2 lg:col-span-1">
-              <Building2 className="size-6 text-[#087dbd] shrink-0" />
-              <div>
-                <h3 className="font-bold text-sm text-[#062b50]">Hosted Capabilities</h3>
-                <p className="text-sm text-black/55 mt-1">Advanced Air Mobility Systems</p>
-                <p className="text-xs text-black/55">Delegations, technical panels & MROs</p>
-              </div>
+            <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[.25em] text-[#f0ba4f]"><Sparkles className="size-4" />Upcoming event</p>
+            <h1 className="mt-5 font-serif text-5xl font-semibold leading-[1.02] md:text-7xl">Plan ahead for <span className="text-[#5bc6ea]">Aero India 2027.</span></h1>
+            <p className="mt-6 max-w-2xl text-base leading-8 text-white/65">BHLI coordinates accommodation, airport transfers, delegation movement and complete hospitality support for visitors, exhibitors and officials in Bengaluru.</p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link href="/contact-us?enquiry=aero-india-2027" className="inline-flex items-center gap-2 rounded-full bg-[#13a5d8] px-6 py-3.5 font-bold text-[#061f3b]">Start planning <ArrowRight className="size-4" /></Link>
+              <a href="#completed-events" className="rounded-full border border-white/20 px-6 py-3.5 font-semibold text-white/85 transition hover:bg-white/10">View our work</a>
             </div>
           </div>
+          <div className="flex justify-center lg:justify-end"><UpcomingEventCard /></div>
+        </div>
+      </section>
 
-          {/* Subdisciplines Grid */}
-          <div className="mt-16">
-            <h3 className="font-serif text-2xl font-semibold mb-8 text-[#062b50]">
-              Subdisciplines of Aerospace & Aviation Covered:
-            </h3>
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {subdisciplines.map((item, idx) => {
-                const IconComponent = item.icon;
-                return (
-                  <div key={item.title + "-" + idx} className="p-6 rounded-2xl border border-black/[0.05] bg-[#edf6fc]/40 hover:border-[#087dbd]/30 transition duration-300">
-                    <span className="inline-grid size-10 place-items-center rounded-xl bg-[#edf6fc] text-[#087dbd] mb-4">
-                      <IconComponent className="size-5" />
-                    </span>
-                    <h4 className="font-serif font-bold text-base text-[#062b50]">{item.title}</h4>
-                    <p className="mt-2 text-xs text-black/55 leading-relaxed">{item.desc}</p>
-                  </div>
-                );
-              })}
-            </div>
+      {/* Completed portfolio */}
+      <section id="completed-events" className="mx-auto max-w-7xl px-5 py-20 lg:px-8 lg:py-24">
+        <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[.24em] text-[#087fbe]">Selected portfolio</p>
+            <h2 className="mt-3 font-serif text-4xl font-semibold text-[#062b50] md:text-5xl">Events we have delivered</h2>
+            <p className="mt-4 max-w-2xl text-sm leading-7 text-[#607789]">A track record spanning national sporting competitions, community experiences and specialist international conferences.</p>
           </div>
+          <span className="w-fit rounded-full border border-[#087fbe]/15 bg-[#e8f5fb] px-4 py-2 text-xs font-bold uppercase tracking-wider text-[#087fbe]">4 featured events</span>
+        </div>
 
-          {/* Supporters */}
-          <div className="mt-16 border-t border-black/5 pt-12">
-            <h3 className="font-serif text-2xl font-semibold text-center mb-8 text-[#062b50]">
-              Conference Supporters
-            </h3>
-            <div className="grid gap-6 sm:grid-cols-3">
-              {supporters.map((sup) => (
-                <div key={sup.name} className={`flex flex-col items-center justify-between text-center rounded-2xl bg-gradient-to-br ${sup.bg} border border-black/[0.02] p-6`}>
-                  <div className="w-full h-28 flex items-center justify-center bg-white rounded-xl shadow-sm overflow-hidden p-3">
-                    <img
-                      src={sup.image}
-                      alt={sup.name}
-                      className="max-h-full max-w-full object-contain"
-                    />
-                  </div>
-                  <h4 className="font-serif font-bold text-sm text-[#062b50] mt-4">{sup.name}</h4>
-                  <p className="text-[10px] text-black/50 mt-1 uppercase tracking-wide">{sup.role}</p>
+        <div className="mt-10 flex snap-x gap-5 overflow-x-auto pb-5 lg:grid lg:grid-cols-4 lg:overflow-visible">
+          {completedEvents.map((event) => {
+            const Icon = event.icon;
+            return (
+              <article key={event.title} className="group min-w-[280px] snap-start overflow-hidden rounded-3xl border border-black/[.07] bg-white p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl lg:min-w-0">
+                <div className="flex items-start justify-between">
+                  <span className={`grid size-12 place-items-center rounded-2xl ${event.accent} text-[#061f3b]`}><Icon className="size-6" /></span>
+                  <span className="font-serif text-4xl text-[#062b50]/10">{event.number}</span>
                 </div>
-              ))}
-            </div>
-          </div>
+                <p className="mt-7 text-[10px] font-bold uppercase tracking-[.18em] text-[#087fbe]">{event.category}</p>
+                <h3 className="mt-2 min-h-14 font-serif text-2xl font-semibold leading-tight text-[#062b50]">{event.title}</h3>
+                <p className="mt-4 text-sm leading-6 text-[#607789]">{event.description}</p>
+                <div className="mt-6 h-1 w-10 rounded-full bg-[#13a5d8] transition-all group-hover:w-20" />
+              </article>
+            );
+          })}
+        </div>
+      </section>
 
-          {/* Leadership Chairs */}
-          <div className="mt-16 border-t border-black/5 pt-12">
-            <h3 className="font-serif text-2xl font-semibold text-center mb-8 text-[#062b50]">
-              Conference Chairs
-            </h3>
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              {chairs.map((chair) => (
-                <div key={chair.name} className="bg-[#f8fafc] border border-black/[0.04] rounded-xl p-5 flex flex-col justify-between">
-                  <div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#087dbd] bg-[#e5f5fc] px-2 py-0.5 rounded-full">
-                      {chair.role}
-                    </span>
-                    <h4 className="font-serif font-bold text-base text-[#062b50] mt-3">{chair.name}</h4>
-                  </div>
-                  <p className="mt-2 text-xs text-black/50 leading-relaxed border-t border-black/5 pt-2">
-                    {chair.desc}
-                  </p>
-                </div>
-              ))}
+      {/* ICAAMS spotlight */}
+      <section className="bg-white px-5 py-20 lg:px-8 lg:py-24">
+        <div className="mx-auto grid max-w-7xl overflow-hidden rounded-[2.25rem] border border-black/[.06] bg-[#edf7fb] lg:grid-cols-[.9fr_1.1fr]">
+          <div className="relative flex min-h-[280px] items-center justify-center overflow-hidden bg-gradient-to-br from-[#1767ad] to-[#06345d] p-5 md:p-8 lg:min-h-[420px]">
+            <img src="https://w4u.in/api/r2-page-asset?k=3224%2Fpages%2Ficaams20233-mzcdc4.jpg" alt="ICAAMS conference banner" className="max-h-[340px] w-full rounded-2xl object-contain shadow-[0_18px_45px_rgba(0,20,50,.25)]" />
+            <span className="absolute bottom-4 left-4 rounded-full bg-[#13a5d8] px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-[#061f3b] md:bottom-6 md:left-6 md:text-xs">Conference spotlight</span>
+          </div>
+          <div className="flex flex-col justify-center p-7 md:p-12">
+            <p className="text-xs font-bold uppercase tracking-[.2em] text-[#087fbe]">ICAAMS · Bengaluru</p>
+            <h2 className="mt-4 font-serif text-4xl font-semibold leading-tight text-[#062b50]">The First International Conference on Advanced Air Mobility Systems</h2>
+            <p className="mt-6 text-sm leading-7 text-[#587083]">A specialist gathering connecting aerospace leaders, technical experts and industry stakeholders across advanced air mobility, aviation systems and future flight operations.</p>
+            <div className="mt-7 grid gap-3 sm:grid-cols-2">
+              {["Delegate accommodation", "Airport and venue transfers", "Speaker and VIP assistance", "Central coordination desk"].map((item) => <p key={item} className="flex items-center gap-2 text-sm font-semibold text-[#294a63]"><CheckCircle2 className="size-5 shrink-0 text-[#087fbe]" />{item}</p>)}
             </div>
+            <div className="mt-8 flex flex-wrap gap-4 text-sm text-[#587083]"><span className="flex items-center gap-2"><MapPin className="size-4 text-[#087fbe]" />Bengaluru, India</span><span className="flex items-center gap-2"><CalendarDays className="size-4 text-[#b47500]" />International conference</span></div>
           </div>
         </div>
       </section>
 
-      {/* Book Taxi Section */}
-      <section className="mx-auto max-w-7xl px-5 py-12 lg:px-8">
-        <div className="rounded-[2.5rem] bg-gradient-to-br from-[#061f3b] to-[#07345d] border border-black/10 overflow-hidden shadow-lg">
-          <div className="grid md:grid-cols-2 gap-8 items-center p-8 md:p-12">
-            <div className="text-white">
-              <span className="text-xs font-bold uppercase tracking-widest text-[#13a5d8] bg-white/10 px-3 py-1 rounded-full">Explore Taxi desk</span>
-              <h2 className="mt-4 font-serif text-4xl font-semibold">Book Taxi</h2>
-              <p className="mt-3 text-white/70 leading-relaxed">
-                Travel around the city at affordable prices with our professional, on-time taxi and cab services. Sourced for official visits and corporate travel.
-              </p>
-              <div className="mt-8">
-                <Link href="/search?type=taxis" className="inline-flex items-center justify-center gap-2 rounded-full bg-[#13a5d8] px-7 py-3.5 font-bold text-[#061f3b] shadow-lg transition hover:-translate-y-0.5 hover:brightness-110">
-                  Book Now <Car className="size-4" />
-                </Link>
-              </div>
-            </div>
-            <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-2">
-              <img
-                src="https://w4u.in/api/r2-page-asset?k=3224%2Fpages%2Ftaxi-rental-amritsar-v26g85.jpg"
-                alt="Book Taxi Amritsar"
-                className="w-full h-auto rounded-xl block"
-              />
-            </div>
-          </div>
+      {/* Capabilities */}
+      <section className="bg-[#062b50] px-5 py-20 text-white lg:px-8 lg:py-24">
+        <div className="mx-auto max-w-7xl">
+          <div className="max-w-3xl"><p className="text-xs font-bold uppercase tracking-[.24em] text-[#f0ba4f]">One accountable event desk</p><h2 className="mt-4 font-serif text-4xl font-semibold md:text-5xl">Hospitality support around the entire event</h2><p className="mt-5 text-sm leading-7 text-white/60">From the first arrival to the final departure, one team coordinates the practical details.</p></div>
+          <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">{capabilities.map(([Icon, title, description]) => <article key={title} className="rounded-3xl border border-white/10 bg-white/[.06] p-6"><span className="grid size-11 place-items-center rounded-xl bg-[#13a5d8] text-[#062b50]"><Icon className="size-5" /></span><h3 className="mt-6 font-serif text-2xl font-semibold">{title}</h3><p className="mt-3 text-sm leading-6 text-white/55">{description}</p></article>)}</div>
         </div>
       </section>
 
-      {/* Hotel Rooms Section */}
-      <section className="bg-white border-t border-b border-black/[0.03] py-24">
-        <div className="mx-auto max-w-7xl px-5 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-16">
-            <span className="text-xs font-bold uppercase tracking-[.25em] text-[#087fbe]">Accommodation Tariff Portal</span>
-            <h2 className="mt-3 font-serif text-4xl font-semibold text-[#062b50]">
-              BOOK YOUR HOTEL ROOMS NOW
-            </h2>
-            <p className="mt-3 text-sm text-black/55">
-              Select from our wide network of hotel categories, corporate lodging partners, and private guest houses.
-            </p>
-          </div>
+      {/* Additional events from CMS */}
+      {apiEvents.length > 0 && <section className="mx-auto max-w-7xl px-5 py-20 lg:px-8 lg:py-24"><p className="text-xs font-bold uppercase tracking-[.24em] text-[#087fbe]">More from our portfolio</p><h2 className="mt-3 font-serif text-4xl font-semibold text-[#062b50]">Other notable events</h2><div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">{apiEvents.map((event, index) => <article key={event.id ?? `${event.title}-${index}`} className="overflow-hidden rounded-3xl border border-black/[.07] bg-white shadow-sm">{event.banner_image && <img src={event.banner_image} alt={event.title || "Event"} className="h-48 w-full object-cover" />}<div className="p-6"><p className="text-[10px] font-bold uppercase tracking-[.18em] text-[#087fbe]">{event.location || "Coordinated event"}</p><h3 className="mt-2 font-serif text-2xl font-semibold text-[#062b50]">{event.title || "Event"}</h3>{event.description && <p className="mt-3 line-clamp-3 text-sm leading-6 text-[#607789]">{event.description}</p>}<div className="mt-5 flex flex-wrap gap-3 border-t border-black/[.06] pt-4 text-xs text-[#607789]">{(event.event_date || event.start_date) && <span className="flex items-center gap-1.5"><CalendarDays className="size-4 text-[#087fbe]" />{event.event_date || event.start_date}</span>}{event.venue && <span className="flex items-center gap-1.5"><MapPin className="size-4 text-[#087fbe]" />{event.venue}</span>}</div></div></article>)}</div></section>}
 
-          {/* Top 6 Hotels List */}
-          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-            {hotelTiers.slice(0, 6).map((tier) => {
-              return (
-                <HotelCard
-                  key={tier.title}
-                  id={tier.title}
-                  title={tier.title}
-                  description={tier.badge}
-                  image={tier.image}
-                  ratingText={tier.badge}
-                  features={["MoU Entitlement", "Free Wifi", "Official rates"]}
-                  priceLabel={tier.price}
-                  buttonHref={`/search?type=hotels&destination=${encodeURIComponent(tier.title)}`}
-                />
-              );
-            })}
-          </div>
-
-          <div className="mt-14 text-center">
-            <a
-              href="https://drive.google.com/file/d/1TdFpH6tO7_fgW2PqRBnmTBtn5Nubssu3/view?usp=sharing"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-full border border-[#087dbd] px-6 py-3 font-bold text-[#087dbd] transition hover:bg-[#edf6fc]"
-            >
-              <Award className="size-4" /> Download Hotel Tariff Card
-            </a>
-          </div>
-        </div>
-      </section>
-
-      {/* Dynamic Events Section */}
-      {apiEvents.length > 0 && (
-        <section className="bg-[#edf6fc] py-16 px-5 lg:px-8">
-          <div className="mx-auto max-w-7xl">
-            <div className="text-center md:text-left mb-10">
-              <span className="text-xs font-bold uppercase tracking-[.25em] text-[#087fbe]">Explore Our Portfolio</span>
-              <h2 className="mt-4 font-serif text-3xl md:text-4xl text-[#062b50]">
-                Other Notable Events & Conferences
-              </h2>
-            </div>
-
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {apiEvents.map((evt: any) => (
-                <div key={evt.id} className="bg-white border border-black/5 rounded-3xl p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition">
-                  <div>
-                    {evt.banner_image && (
-                      <div className="w-full h-40 rounded-2xl overflow-hidden mb-4 bg-slate-100">
-                        <img src={evt.banner_image} alt={evt.title} className="w-full h-full object-cover" />
-                      </div>
-                    )}
-                    <span className="text-[10px] uppercase font-bold tracking-widest text-[#087dbd] bg-[#087dbd]/8 px-2.5 py-1 rounded-full inline-block mb-3">
-                      {evt.location || "Coordinated Event"}
-                    </span>
-                    <h3 className="font-serif text-xl font-bold text-[#062b50] line-clamp-2">{evt.title}</h3>
-                    {evt.subtitle && <p className="text-xs font-semibold text-gray-500 mt-1">{evt.subtitle}</p>}
-                    {evt.description && <p className="text-xs text-gray-650 mt-3 line-clamp-3 leading-relaxed">{evt.description}</p>}
-                  </div>
-
-                  <div className="mt-6 pt-4 border-t border-black/5 flex items-center justify-between text-xs font-bold text-gray-500">
-                    <span className="flex items-center gap-1.5">
-                      <CalendarDays className="size-4 text-[#087dbd]" />
-                      {evt.time_label || "TBD"}
-                    </span>
-                    {evt.venue && <span className="line-clamp-1">{evt.venue}</span>}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Event Enquiry Call to Action */}
-      <section className="bg-[#061f3b] text-white py-20 text-center px-5">
-        <div className="mx-auto max-w-3xl">
-          <Users className="mx-auto size-10 text-[#13a5d8] mb-6" />
-          <h2 className="font-serif text-4xl leading-tight">
-            Plan your next event with BHLI
-          </h2>
-          <p className="mt-4 text-white/60 leading-7">
-            From conference logistics to flight bookings and hotel reservation support, we manage everything so you can focus on the experience.
-          </p>
-          <div className="mt-8">
-            <Link href="/contact-us?enquiry=event" className="inline-flex items-center gap-2 rounded-full bg-[#13a5d8] px-7 py-3.5 font-bold text-[#061f3b] transition hover:-translate-y-0.5 hover:brightness-110">
-              Start an Enquiry <ArrowRight className="size-4" />
-            </Link>
-          </div>
+      {/* CTA */}
+      <section className="bg-[#e8f5fb] px-5 py-20 lg:px-8">
+        <div className="mx-auto max-w-4xl rounded-[2rem] bg-white p-8 text-center shadow-[0_20px_60px_rgba(6,43,80,.1)] md:p-12">
+          <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-[#062b50] text-[#13a5d8]"><Users className="size-7" /></span>
+          <h2 className="mt-6 font-serif text-4xl font-semibold text-[#062b50] md:text-5xl">Planning your next event?</h2>
+          <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-[#607789]">Tell us the event, destination and expected scale. Our team will coordinate the next steps with you.</p>
+          <Link href="/contact-us?enquiry=event" className="mt-7 inline-flex items-center gap-2 rounded-full bg-[#13a5d8] px-7 py-3.5 font-bold text-[#062b50]">Start an enquiry <ArrowRight className="size-4" /></Link>
         </div>
       </section>
     </div>
