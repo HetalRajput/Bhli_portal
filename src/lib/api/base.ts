@@ -1,6 +1,14 @@
 import { apiClient } from './client';
 
 export const baseService = {
+  getOfficerRanks: async () => {
+    const response = await apiClient.get('/api/base/officer-ranks/');
+    return response.data;
+  },
+  getDepartments: async () => {
+    const response = await apiClient.get('/api/base/departments/');
+    return response.data;
+  },
   // Services
   getServices: async (params?: { is_featured?: boolean }) => {
     const response = await apiClient.get('/api/base/services/', { params });

@@ -74,6 +74,19 @@ apiClient.interceptors.response.use(
   }
 );
 
+function formatFieldErrors(errors: unknown): string | null {
+  if (!errors || typeof errors !== "object") return null;
+  const messages: string[] = [];
+  for (const value of Object.values(errors as Record<string, unknown>)) {
+    if (typeof value === "string") messages.push(value);
+    else if (Array.isArray(value)) messages.push(...value.filter((item): item is string => typeof item === "string"));
+    else {
+      const nested = formatFieldErrors(value);
+      if (nested) messages.push(nested);
+    }
+  }
+  return messages.length ? messages.join(" | ") : null;
+}
 /**
  * Helper function to extract user-friendly error messages from API calls
  */
@@ -82,11 +95,16 @@ export function getErrorMessage(error: any): string {
 
   if (typeof error === 'string') return error;
 
+  const directFieldError = formatFieldErrors(error.errors);
+  if (directFieldError) return directFieldError;
+
   // Handle Axios response data
   if (error.response?.data) {
     const data = error.response.data;
 
     if (typeof data === 'string') return data;
+    const responseFieldError = formatFieldErrors(data.errors);
+    if (responseFieldError) return responseFieldError;
     if (data.message) return data.message;
     if (data.detail) return data.detail;
     if (data.error) return data.error;
