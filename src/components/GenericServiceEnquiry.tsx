@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
-import { ArrowLeft, ArrowRight, CalendarDays, CheckCircle2, Mail, MessageSquareText, Phone, Send, UserRound, UsersRound } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, MessageSquareText, Send, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { cmsService } from "@/lib/api/cms";
@@ -27,17 +27,11 @@ function GenericServiceEnquiryInner({ serviceSlug }: { serviceSlug?: string }) {
   const slug = serviceSlug || params.slug || "";
   const [service, setService] = useState<ServiceData | null>(null);
   const [loadingService, setLoadingService] = useState(true);
-  const [form, setForm] = useState({ name: "", email: "", mobile: "", travelDate: "", travellers: "1", message: "" });
+  const initialServiceName = slug ? slug.split("-").map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(" ") : "Booking";
+  const [form, setForm] = useState({ message: destinationParam ? `${initialServiceName} requirement for: ${destinationParam}` : "" });
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [reference, setReference] = useState("");
-
-  useEffect(() => {
-    if (destinationParam) {
-      const serviceName = slug ? slug.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ") : "Booking";
-      setForm((prev) => (prev.message ? prev : { ...prev, message: `${serviceName} requirement for: ${destinationParam}` }));
-    }
-  }, [destinationParam, slug]);
 
   useEffect(() => {
     let active = true;
@@ -72,19 +66,19 @@ function GenericServiceEnquiryInner({ serviceSlug }: { serviceSlug?: string }) {
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     setError("");
-    if (form.name.trim().length < 2) return setError("Please enter your full name.");
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) return setError("Please enter a valid email address.");
-    if (!/^[6-9]\d{9}$/.test(form.mobile)) return setError("Please enter a valid 10-digit Indian mobile number.");
     if (form.message.trim().length < 10) return setError("Please provide a few details about your requirement.");
+    let profile: Record<string, string> = {};
+    let auth: Record<string, string> = {};
+    try { profile = JSON.parse(localStorage.getItem("bhli-profile-details") || "{}"); } catch {}
+    try { auth = JSON.parse(localStorage.getItem("bhli-auth") || "{}"); } catch {}
+    if (!(profile.email || auth.email || profile.mobile || profile.phone)) return setError("Please sign in so our team can contact you using your account details.");
     setSubmitting(true);
     const payload = {
       service_type: slug,
       service_name: title,
-      customer_name: form.name.trim(),
-      customer_email: form.email.trim(),
-      customer_mobile: form.mobile,
-      travel_date: form.travelDate || undefined,
-      number_of_travellers: Number(form.travellers),
+      customer_name: profile.name || undefined,
+      customer_email: profile.email || auth.email || undefined,
+      customer_mobile: profile.mobile || profile.phone || undefined,
       message: form.message.trim(),
     };
     try {
@@ -135,28 +129,32 @@ function GenericServiceEnquiryInner({ serviceSlug }: { serviceSlug?: string }) {
             </div>
           </aside>
 
-          <form onSubmit={submit} className="p-7 md:p-10">
+          <form onSubmit={submit} className="flex flex-col justify-center p-7 md:p-10 lg:p-12">
             <p className="text-xs font-bold uppercase tracking-[.18em] text-[#087fbe]">Service enquiry</p>
-            <h2 className="mt-2 font-serif text-3xl text-[#061f3b]">Contact details</h2>
-            <div className="mt-7 grid gap-5 sm:grid-cols-2">
-              <FormField label="Full name" icon={<UserRound />}><input required minLength={2} value={form.name} onChange={(event) => update("name", event.target.value)} placeholder="Your full name" /></FormField>
-              <FormField label="Mobile number" icon={<Phone />}><input required type="tel" inputMode="numeric" maxLength={10} pattern="[6-9][0-9]{9}" value={form.mobile} onChange={(event) => update("mobile", event.target.value.replace(/\D/g, ""))} placeholder="9876543210" /></FormField>
-              <FormField label="Email address" icon={<Mail />}><input required type="email" value={form.email} onChange={(event) => update("email", event.target.value)} placeholder="name@email.com" /></FormField>
-              <FormField label="Preferred date" icon={<CalendarDays />}><input type="date" min={new Date().toISOString().slice(0, 10)} value={form.travelDate} onChange={(event) => update("travelDate", event.target.value)} /></FormField>
-              <FormField label="Number of travellers" icon={<UsersRound />}><select value={form.travellers} onChange={(event) => update("travellers", event.target.value)}>{Array.from({ length: 20 }, (_, index) => index + 1).map((value) => <option key={value} value={value}>{value} traveller{value > 1 ? "s" : ""}</option>)}</select></FormField>
-              <div className="sm:col-span-2"><label className="block"><span className="mb-2 block text-xs font-bold text-[#456078]">Your requirement</span><span className="flex gap-3 rounded-xl border border-black/10 px-4 py-3 text-black/30 focus-within:border-[#13a5d8] focus-within:ring-4 focus-within:ring-[#13a5d8]/10"><MessageSquareText className="mt-0.5 size-5 shrink-0" /><textarea required minLength={10} rows={4} value={form.message} onChange={(event) => update("message", event.target.value)} placeholder={`Tell us what you need for ${title}...`} className="min-w-0 flex-1 resize-none bg-transparent text-sm text-[#122b42] outline-none" /></span></label></div>
+            <h2 className="mt-2 font-serif text-3xl text-[#061f3b] md:text-4xl">How can we help?</h2>
+            <p className="mt-3 max-w-xl text-sm leading-7 text-slate-500">Describe your requirement briefly. A Booking Hospitality employee will review it and contact you using the details linked to your account.</p>
+
+            <div className="mt-7 rounded-2xl border border-[#087fbe]/15 bg-[#f3f9fc] p-4">
+              <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[.14em] text-[#087fbe]"><ShieldCheck className="size-4" />Selected service</p>
+              <p className="mt-2 font-semibold text-[#061f3b]">{title}</p>
             </div>
+
+            <label className="mt-6 block">
+              <span className="mb-2 block text-xs font-bold text-[#456078]">Your requirement</span>
+              <span className="flex gap-3 rounded-2xl border border-black/10 bg-white px-4 py-4 text-black/30 transition focus-within:border-[#13a5d8] focus-within:ring-4 focus-within:ring-[#13a5d8]/10">
+                <MessageSquareText className="mt-0.5 size-5 shrink-0 text-[#087fbe]" />
+                <textarea required minLength={10} rows={5} value={form.message} onChange={(event) => update("message", event.target.value)} placeholder={`Briefly describe what you need for ${title}...`} className="min-w-0 flex-1 resize-none bg-transparent text-sm leading-6 text-[#122b42] outline-none" />
+              </span>
+            </label>
+
+            <p className="mt-4 text-xs leading-5 text-slate-400">No additional form details are needed. Our team will contact you to confirm dates, travellers, pricing and other requirements.</p>
             {error && <p className="mt-5 rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">{error}</p>}
-            <button disabled={submitting} className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#0875b7] to-[#13a5d8] px-6 py-4 font-bold text-white shadow-lg transition hover:-translate-y-0.5 disabled:opacity-60">{submitting ? "Submitting..." : "Submit request"}<ArrowRight className="size-4" /></button>
+            <button disabled={submitting} className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#0875b7] to-[#13a5d8] px-6 py-4 font-bold text-white shadow-lg transition hover:-translate-y-0.5 disabled:opacity-60">{submitting ? "Submitting..." : "Request a callback"}<ArrowRight className="size-4" /></button>
           </form>
         </div>
       </main>
     </div>
   );
-}
-
-function FormField({ label, icon, children }: { label: string; icon: React.ReactNode; children: React.ReactNode }) {
-  return <label className="block"><span className="mb-2 block text-xs font-bold text-[#456078]">{label}</span><span className="flex h-14 items-center gap-3 rounded-xl border border-black/10 px-4 text-black/30 transition focus-within:border-[#13a5d8] focus-within:ring-4 focus-within:ring-[#13a5d8]/10 [&_input]:h-full [&_input]:min-w-0 [&_input]:flex-1 [&_input]:bg-transparent [&_input]:text-sm [&_input]:text-[#122b42] [&_input]:outline-none [&_select]:h-full [&_select]:min-w-0 [&_select]:flex-1 [&_select]:bg-transparent [&_select]:text-sm [&_select]:text-[#122b42] [&_select]:outline-none">{icon}{children}</span></label>;
 }
 
 export default function GenericServiceEnquiry({ serviceSlug }: { serviceSlug?: string }) {
