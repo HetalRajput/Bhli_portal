@@ -32,6 +32,11 @@ import {
   Trash2,
 } from "lucide-react";
 import { bookingService } from "@/lib/api/bookings";
+import { authService } from "@/lib/api/auth";
+import { getErrorMessage } from "@/lib/api/client";
+import { baseService } from "@/lib/api/base";
+
+type LookupItem = { id: number; name: string };
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -39,10 +44,18 @@ export default function ProfilePage() {
   const [authenticatedAt, setAuthenticatedAt] = useState<string>("");
   const [name, setName] = useState<string>("");
   const [phone, setPhone] = useState<string>("");
-  const [location, setLocation] = useState<string>("");
+  const [serviceNumber, setServiceNumber] = useState<string>("");
+  const [officerRank, setOfficerRank] = useState<string>("");
+  const [officerRankId, setOfficerRankId] = useState<string>("");
+  const [employeeId, setEmployeeId] = useState<string>("");
+  const [department, setDepartment] = useState<string>("");
+  const [departmentId, setDepartmentId] = useState<string>("");
+  const [ranks, setRanks] = useState<LookupItem[]>([]);
+  const [departments, setDepartments] = useState<LookupItem[]>([]);
   const [profileImage, setProfileImage] = useState<string>("");
   const [isSaved, setIsSaved] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [profileError, setProfileError] = useState<string>("");
   const [bookings, setBookings] = useState<any[]>([]);
   const [loadingBookings, setLoadingBookings] = useState<boolean>(true);
 
@@ -77,13 +90,47 @@ export default function ProfilePage() {
         try {
           const parsed = JSON.parse(savedProfile);
           if (parsed.name) setName(parsed.name);
-          if (parsed.phone) setPhone(parsed.phone);
-          if (parsed.location) setLocation(parsed.location);
+          if (parsed.phone || parsed.mobile) setPhone(parsed.phone || parsed.mobile);
           if (parsed.profileImage) setProfileImage(parsed.profileImage);
         } catch (e) {
           console.error("Error parsing profile details", e);
         }
       }
+
+      const fetchProfile = async () => {
+        try {
+          const profile = await authService.getProfile();
+          const fullName = [profile.first_name, profile.last_name].filter(Boolean).join(String.fromCharCode(32)).trim();
+          if (fullName) setName(fullName);
+          if (profile.email) setEmail(profile.email);
+          if (profile.mobile_number) setPhone(profile.mobile_number);
+          if (profile.image) setProfileImage(profile.image);
+          setServiceNumber(profile.service_number || "");
+          setOfficerRank(profile.officer_rank_name || "");
+          setOfficerRankId(profile.officer_rank ? String(profile.officer_rank) : "");
+          setEmployeeId(profile.employee_id || "");
+          setDepartment(profile.department_name || "");
+          setDepartmentId(profile.department ? String(profile.department) : "");
+          if (profile.created_at) setAuthenticatedAt(new Date(profile.created_at).toLocaleString());
+        } catch (error) {
+          setProfileError(getErrorMessage(error));
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      const fetchLookups = async () => {
+        try {
+          const [rankResponse, departmentResponse] = await Promise.all([
+            baseService.getOfficerRanks(),
+            baseService.getDepartments(),
+          ]);
+          setRanks(Array.isArray(rankResponse?.data) ? rankResponse.data : rankResponse || []);
+          setDepartments(Array.isArray(departmentResponse?.data) ? departmentResponse.data : departmentResponse || []);
+        } catch (error) {
+          console.warn("Failed to load profile lookup options", error);
+        }
+      };
 
       const fetchBookingsList = async () => {
         try {
@@ -101,36 +148,66 @@ export default function ProfilePage() {
         }
       };
       if (token) {
+        fetchProfile();
+        fetchLookups();
         fetchBookingsList();
       } else {
         setLoadingBookings(false);
+        setIsLoading(false);
       }
-      setIsLoading(false);
     }
   }, [router]);
 
-  const handleSaveProfile = (e: React.FormEvent) => {
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (typeof window !== "undefined") {
+    setProfileError("");
+    try {
+      const nameParts = name.trim().split(/\s+/);
+      const updated = await authService.updateProfile({
+        first_name: nameParts.shift() || "",
+        last_name: nameParts.join(" "),
+        email: email.trim().toLowerCase(),
+        mobile_number: phone.trim(),
+        service_number: serviceNumber.trim(),
+        employee_id: employeeId.trim(),
+        ...(officerRankId && { officer_rank: Number(officerRankId) }),
+        ...(departmentId && { department: Number(departmentId) }),
+      });
+      setName([updated.first_name, updated.last_name].filter(Boolean).join(" "));
+      setPhone(updated.mobile_number || phone);
+      setEmail(updated.email || email);
+      setOfficerRank(updated.officer_rank_name || officerRank);
+      setDepartment(updated.department_name || department);
       localStorage.setItem(
         "bhli-profile-details",
-        JSON.stringify({ name, phone, location, profileImage })
+        JSON.stringify({ name, phone, serviceNumber, employeeId, profileImage })
       );
       setIsSaved(true);
       setTimeout(() => setIsSaved(false), 3000);
+    } catch (error) {
+      setProfileError(getErrorMessage(error));
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (typeof window !== "undefined") {
+      const refresh = localStorage.getItem("refresh_token");
+      if (refresh) {
+        try {
+          await authService.logout(refresh);
+        } catch (error) {
+          console.warn("Server logout failed; clearing the local session.", error);
+        }
+      }
       localStorage.removeItem("access_token");
+      localStorage.removeItem("refresh_token");
       localStorage.removeItem("bhli-auth");
       window.dispatchEvent(new Event("storage"));
       router.push("/login");
     }
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 1500000) {
@@ -144,15 +221,74 @@ export default function ProfilePage() {
         }
       };
       reader.readAsDataURL(file);
+      try {
+        setProfileError("");
+        const updated = await authService.updateProfileImage(file);
+        if (updated.image) {
+          setProfileImage(updated.image);
+          const cached = JSON.parse(localStorage.getItem("bhli-profile-details") || "{}");
+          localStorage.setItem("bhli-profile-details", JSON.stringify({ ...cached, profileImage: updated.image }));
+          window.dispatchEvent(new Event("storage"));
+        }
+        setIsSaved(true);
+        setTimeout(() => setIsSaved(false), 3000);
+      } catch (error) {
+        setProfileError(getErrorMessage(error));
+      }
+    }
+  };
+
+  const handleImageRemove = async () => {
+    try {
+      setProfileError("");
+      await authService.updateProfileImage(null);
+      setProfileImage("");
+      const cached = JSON.parse(localStorage.getItem("bhli-profile-details") || "{}");
+      localStorage.setItem("bhli-profile-details", JSON.stringify({ ...cached, profileImage: "" }));
+      window.dispatchEvent(new Event("storage"));
+      setIsSaved(true);
+      setTimeout(() => setIsSaved(false), 3000);
+    } catch (error) {
+      setProfileError(getErrorMessage(error));
     }
   };
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f4f9fd]">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-4 border-[#0879b7] border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm font-medium text-[#07152d]">Loading profile...</p>
+      <div className="min-h-screen bg-gradient-to-b from-[#f3f9fc] via-white to-[#edf7fc] px-4 py-12 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-5xl animate-pulse space-y-8" aria-label="Loading profile">
+          <div className="flex justify-between">
+            <div className="h-5 w-28 rounded bg-slate-200" />
+            <div className="h-6 w-36 rounded-full bg-slate-200" />
+          </div>
+          <div className="flex flex-col items-center gap-6 rounded-3xl bg-slate-800 p-8 md:flex-row">
+            <div className="h-24 w-24 shrink-0 rounded-full bg-slate-600" />
+            <div className="flex-1 space-y-3">
+              <div className="h-8 w-52 rounded bg-slate-600" />
+              <div className="h-4 w-64 max-w-full rounded bg-slate-600" />
+              <div className="h-3 w-44 rounded bg-slate-700" />
+            </div>
+            <div className="h-11 w-28 rounded-xl bg-slate-700" />
+          </div>
+          <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-3">
+            <div className="space-y-8 lg:col-span-2">
+              <div className="rounded-3xl border border-slate-100 bg-white p-8 shadow-sm">
+                <div className="mb-8 h-6 w-44 rounded bg-slate-200" />
+                <div className="space-y-5">
+                  <div className="h-20 rounded-2xl bg-slate-100" />
+                  <div className="h-12 rounded-xl bg-slate-100" />
+                  <div className="grid grid-cols-2 gap-4"><div className="h-12 rounded-xl bg-slate-100" /><div className="h-12 rounded-xl bg-slate-100" /></div>
+                  <div className="grid grid-cols-2 gap-4"><div className="h-12 rounded-xl bg-slate-100" /><div className="h-12 rounded-xl bg-slate-100" /></div>
+                  <div className="h-11 w-36 rounded-xl bg-sky-200" />
+                </div>
+              </div>
+              <div className="h-52 rounded-3xl border border-slate-100 bg-white shadow-sm" />
+            </div>
+            <div className="space-y-6">
+              <div className="h-72 rounded-3xl border border-slate-100 bg-white shadow-sm" />
+              <div className="h-44 rounded-3xl border border-slate-100 bg-white shadow-sm" />
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -230,7 +366,7 @@ export default function ProfilePage() {
               {authenticatedAt && (
                 <p className="text-xs text-white/60 flex items-center justify-center md:justify-start gap-2">
                   <Clock className="w-3.5 h-3.5 text-[#8dcfe9]" />
-                  Signed in: {authenticatedAt}
+                  Account created: {authenticatedAt}
                 </p>
               )}
             </div>
@@ -244,6 +380,12 @@ export default function ProfilePage() {
             </button>
           </div>
         </div>
+
+        {profileError && (
+          <div role="alert" className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-3 text-sm font-medium text-amber-800">
+            We could not refresh your profile details. Showing the last saved information. {profileError}
+          </div>
+        )}
 
         {/* Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
@@ -288,7 +430,7 @@ export default function ProfilePage() {
                       {profileImage && (
                         <button
                           type="button"
-                          onClick={() => setProfileImage("")}
+                          onClick={handleImageRemove}
                           className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 font-bold text-xs transition-colors border border-red-200"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -334,33 +476,50 @@ export default function ProfilePage() {
 
                   <div>
                     <label className="block text-xs font-semibold text-[#344a5c] mb-1.5">
-                      Preferred City / Location
+                      Department
                     </label>
                     <div className="relative">
-                      <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <Building className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                       <input
-                        type="text"
-                        value={location}
-                        onChange={(e) => setLocation(e.target.value)}
-                        placeholder="e.g. New Delhi"
-                        className="w-full bg-[#f8fafc] border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm text-[#07152d] font-semibold outline-none focus:border-[#0879b7] focus:ring-4 focus:ring-[#0879b7]/10 focus:bg-white transition-all"
+                        type="hidden"
+                        value={departmentId}
+                        readOnly
                       />
+                      <select value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} className="w-full bg-[#f8fafc] border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm text-[#07152d] font-semibold outline-none focus:border-[#0879b7]">
+                        <option value="">{department || "Select department"}</option>
+                        {departments.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+                      </select>
                     </div>
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-[#344a5c] mb-1.5">
-                    Email Address (Verified)
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <label className="block text-xs font-semibold text-[#344a5c]">
+                    Service Number
+                    <input type="text" value={serviceNumber} onChange={(e) => setServiceNumber(e.target.value)} placeholder="Enter service number" className="mt-1.5 w-full bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-3 text-sm text-[#07152d] font-semibold outline-none focus:border-[#0879b7]" />
                   </label>
-                  <div className="relative">
-                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input
-                      type="email"
-                      value={email}
-                      disabled
-                      className="w-full bg-slate-50 border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm text-gray-400 font-semibold cursor-not-allowed"
-                    />
+                  <label className="block text-xs font-semibold text-[#344a5c]">
+                    Employee ID
+                    <input type="text" value={employeeId} onChange={(e) => setEmployeeId(e.target.value)} placeholder="Enter employee ID" className="mt-1.5 w-full bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-3 text-sm text-[#07152d] font-semibold outline-none focus:border-[#0879b7]" />
+                  </label>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <label className="block text-xs font-semibold text-[#344a5c]">
+                    Officer Rank
+                    <select value={officerRankId} onChange={(e) => setOfficerRankId(e.target.value)} className="mt-1.5 w-full bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-3 text-sm text-[#07152d] font-semibold outline-none focus:border-[#0879b7]">
+                      <option value="">{officerRank || "Select rank"}</option>
+                      {ranks.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+                    </select>
+                  </label>
+                  <div>
+                    <label className="block text-xs font-semibold text-[#344a5c] mb-1.5">
+                      Email Address
+                    </label>
+                    <div className="relative">
+                      <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full bg-[#f8fafc] border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm text-[#07152d] font-semibold outline-none focus:border-[#0879b7]" />
+                    </div>
                   </div>
                 </div>
 

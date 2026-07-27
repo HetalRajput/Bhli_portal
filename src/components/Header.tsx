@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X, User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { authService } from "@/lib/api/auth";
 
 const links = [
   ["Home", "/"],
@@ -22,10 +23,11 @@ export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [userImage, setUserImage] = useState<string | null>(null);
   const lastY = useRef(0);
 
   useEffect(() => {
-    const checkAuth = () => {
+    const checkAuth = async () => {
       if (typeof window !== "undefined") {
         const token = window.localStorage.getItem("access_token");
         const authData = window.localStorage.getItem("bhli-auth");
@@ -39,9 +41,25 @@ export default function Header() {
               // Ignore JSON parse error
             }
           }
+          try {
+            const cached = JSON.parse(window.localStorage.getItem("bhli-profile-details") || "{}");
+            if (cached.profileImage) setUserImage(cached.profileImage);
+          } catch {
+            setUserImage(null);
+          }
+          if (token) {
+            try {
+              const profile = await authService.getProfile();
+              setUserEmail(profile.email || null);
+              setUserImage(profile.image || null);
+            } catch {
+              // The API interceptor handles invalid sessions.
+            }
+          }
         } else {
           setIsAuthenticated(false);
           setUserEmail(null);
+          setUserImage(null);
         }
       }
     };
@@ -115,7 +133,11 @@ export default function Header() {
               title={userEmail ? `Profile (${userEmail})` : "Profile"}
               className="flex items-center gap-2 rounded-full border border-[#0a86c8]/30 bg-[#edf8fd] px-3.5 py-1.5 text-sm font-semibold text-[#0879b7] backdrop-blur transition hover:bg-[#087dbd] hover:text-white group"
             >
-              <User className="h-4 w-4 text-[#0879b7] group-hover:text-white transition-colors" />
+              {userImage ? (
+                <img src={userImage} alt="Profile" className="h-7 w-7 rounded-full object-cover ring-1 ring-[#0a86c8]/30" />
+              ) : (
+                <User className="h-4 w-4 text-[#0879b7] group-hover:text-white transition-colors" />
+              )}
               <span className="max-w-[110px] truncate text-xs font-semibold">
                 {userEmail ? userEmail.split("@")[0] : "Profile"}
               </span>
@@ -171,7 +193,11 @@ export default function Header() {
                 onClick={() => setOpen(false)}
                 className="flex items-center gap-2.5 rounded-xl px-4 py-3 bg-[#e5f5fc] text-[#0879b7] font-semibold"
               >
-                <User className="h-5 w-5" />
+                {userImage ? (
+                  <img src={userImage} alt="Profile" className="h-8 w-8 rounded-full object-cover ring-1 ring-[#0a86c8]/30" />
+                ) : (
+                  <User className="h-5 w-5" />
+                )}
                 Profile ({userEmail || "User"})
               </Link>
             ) : (

@@ -33,7 +33,7 @@ apiClient.interceptors.request.use(
     return config;
   },
   (error) => {
-    console.error('❌ [API Request Error]', error);
+    console.warn('[API Request Error]', error);
     return Promise.reject(error);
   }
 );
@@ -48,18 +48,36 @@ apiClient.interceptors.response.use(
     );
     return response;
   },
-  (error) => {
+  async (error) => {
     const fullUrl = error.config ? `${error.config.baseURL || ''}${error.config.url || ''}` : 'Unknown URL';
     const status = error.response?.status ? `[Status: ${error.response.status}]` : '[Network Error]';
-    console.error(
+    console.warn(
       `❌ [API Response Error] ${error.config?.method?.toUpperCase()} ${fullUrl} ${status}`,
       error.response?.data || error.message
     );
     
-    // Handle expired/invalid tokens globally to prevent infinite redirect loops
-    if (error.response?.status === 401) {
+    // Refresh an expired access token once, then replay the original request.
+    if (error.response?.status === 401 && typeof window !== 'undefined') {
+      const originalRequest = error.config as typeof error.config & { _retry?: boolean };
+      const refresh = window.localStorage.getItem('refresh_token');
+      if (refresh && !originalRequest?._retry && !originalRequest?.url?.includes('/auth/token/refresh/')) {
+        originalRequest._retry = true;
+        try {
+          const refreshResponse = await apiClient.post('/api/accounts/auth/token/refresh/', { refresh });
+          const access = refreshResponse.data?.access;
+          if (access) {
+            window.localStorage.setItem('access_token', access);
+            originalRequest.headers.Authorization = `Bearer ${access}`;
+            return apiClient(originalRequest);
+          }
+        } catch {
+          // Fall through and clear the invalid session.
+        }
+      }
+
       if (typeof window !== "undefined") {
         window.localStorage.removeItem("access_token");
+        window.localStorage.removeItem("refresh_token");
         window.localStorage.removeItem("bhli-auth");
         window.dispatchEvent(new Event("storage"));
         
