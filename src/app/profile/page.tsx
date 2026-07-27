@@ -100,7 +100,11 @@ export default function ProfilePage() {
           setLoadingBookings(false);
         }
       };
-      fetchBookingsList();
+      if (token) {
+        fetchBookingsList();
+      } else {
+        setLoadingBookings(false);
+      }
       setIsLoading(false);
     }
   }, [router]);

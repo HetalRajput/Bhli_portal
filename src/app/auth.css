@@ -13,7 +13,7 @@
 .auth-register-screen{overflow:hidden}
 .auth-register-screen .auth-frame{height:calc(100vh - 28px);min-height:0}
 .auth-register-screen .auth-form-panel{min-height:0;overflow:hidden}
-.auth-register-screen .auth-content{flex:1;min-height:0;overflow-y:auto;margin:24px auto;padding-right:8px;scrollbar-width:thin;scrollbar-color:#b7dcea transparent}
+.auth-register-screen .auth-content{box-sizing:border-box;flex:1;min-height:0;overflow-x:hidden;overflow-y:auto;margin:24px auto;padding-right:8px;scrollbar-width:thin;scrollbar-color:#b7dcea transparent}
 .auth-register-screen .auth-register-submit{width:100%;max-width:470px;margin:12px auto 18px;flex:none}.auth-register-screen .auth-content::-webkit-scrollbar{width:5px}
 .auth-register-screen .auth-content::-webkit-scrollbar-thumb{border-radius:5px;background:#b7dcea}
 @media(max-width:899px){.auth-register-screen .auth-frame{height:100vh;min-height:0}.auth-register-screen .auth-form-panel{min-height:0}.auth-register-screen .auth-content{padding-top:30px;padding-bottom:30px}.auth-register-screen .auth-footer{margin-top:0}}
