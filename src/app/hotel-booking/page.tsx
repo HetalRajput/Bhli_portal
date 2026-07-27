@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useMemo, useState } from "react";
-import { ArrowLeft, CalendarDays, Check, CheckCircle2, ChevronRight, MapPin, UserRound } from "lucide-react";
+import { ArrowLeft, CalendarDays, Check, CheckCircle2, ChevronRight, IndianRupee, MapPin, UserRound } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { bookingService } from "@/lib/api/bookings";
@@ -21,6 +21,7 @@ function BookingFlow() {
     price: Number(params.get("price")) || 0,
   };
   const [stay, setStay] = useState({ checkIn: "", checkOut: "", rooms: 1 });
+  const [tariffDetails, setTariffDetails] = useState({ tdTariffAmount: "", personalVisitBudget: "" });
   const [includeGuestDetails, setIncludeGuestDetails] = useState(false);
   const [guestDetails, setGuestDetails] = useState({ name: "", adults: 1, children: 0 });
   const [error, setError] = useState("");
@@ -36,7 +37,7 @@ function BookingFlow() {
     setError("");
     if (!stay.checkIn || !stay.checkOut || nights < 1) return setError("Select a valid check-in and check-out date.");
     setLoading(true);
-    const payload = { hotel_id: hotel.id || undefined, hotel_name: hotel.name, location: hotel.location, check_in_date: stay.checkIn, check_out_date: stay.checkOut, number_of_rooms: stay.rooms, guest_details: includeGuestDetails ? { name: guestDetails.name.trim(), adults: guestDetails.adults, children: guestDetails.children } : undefined, estimated_total: total || undefined };
+    const payload = { hotel_id: hotel.id || undefined, hotel_name: hotel.name, location: hotel.location, check_in_date: stay.checkIn, check_out_date: stay.checkOut, number_of_rooms: stay.rooms, td_tariff_amount: tariffDetails.tdTariffAmount ? Number(tariffDetails.tdTariffAmount) : undefined, personal_visit_budget: tariffDetails.personalVisitBudget ? Number(tariffDetails.personalVisitBudget) : undefined, guest_details: includeGuestDetails ? { name: guestDetails.name.trim(), adults: guestDetails.adults, children: guestDetails.children } : undefined, estimated_total: total || undefined };
     try {
       const result = await bookingService.createHotelBooking(payload);
       const code = result?.booking_reference || result?.reference || `BH${Date.now().toString().slice(-8)}`;
@@ -67,20 +68,25 @@ function BookingFlow() {
             <h2 className="mt-2 font-serif text-3xl text-[#061f3b]">Booking details</h2>
             <p className="mt-3 text-sm text-black/45">Select your dates and number of rooms.</p>
 
-            <div className="mt-9 grid gap-4 sm:grid-cols-2">
+            <div className="mt-7 grid gap-3 sm:grid-cols-2">
               <Field label="Check-in" icon={<CalendarDays />}><input required type="date" min={minDate} value={stay.checkIn} onChange={(e) => { setStayValue("checkIn", e.target.value); if (stay.checkOut && e.target.value >= stay.checkOut) setStayValue("checkOut", ""); }} /></Field>
               <Field label="Check-out" icon={<CalendarDays />}><input required type="date" min={stay.checkIn || minDate} value={stay.checkOut} onChange={(e) => setStayValue("checkOut", e.target.value)} /></Field>
             </div>
 
             <label className="mt-5 block">
               <span className="mb-2 block text-xs font-bold text-[#456078]">Rooms</span>
-              <select value={stay.rooms} onChange={(e) => setStayValue("rooms", Number(e.target.value))} className="h-14 w-full rounded-xl border border-black/10 bg-white px-4 text-sm font-semibold text-[#102a42] outline-none transition focus:border-[#13a5d8] focus:ring-4 focus:ring-[#13a5d8]/10">
+              <select value={stay.rooms} onChange={(e) => setStayValue("rooms", Number(e.target.value))} className="h-12 w-full rounded-xl border border-black/10 bg-white px-4 text-sm font-semibold text-[#102a42] outline-none transition focus:border-[#13a5d8] focus:ring-4 focus:ring-[#13a5d8]/10">
                 <option value={1}>1 room</option>
                 <option value={2}>2 rooms</option>
                 <option value={3}>3 rooms</option>
               </select>
             </label>
-            <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <Field label="TD tariff amount" icon={<IndianRupee />}><input type="number" min="0" step="1" inputMode="numeric" value={tariffDetails.tdTariffAmount} onChange={(e) => setTariffDetails((current) => ({ ...current, tdTariffAmount: e.target.value }))} placeholder="Amount as per TD tariff" /></Field>
+              <Field label="Personal visit budget" icon={<IndianRupee />}><input type="number" min="0" step="1" inputMode="numeric" value={tariffDetails.personalVisitBudget} onChange={(e) => setTariffDetails((current) => ({ ...current, personalVisitBudget: e.target.value }))} placeholder="Enter personal budget" /></Field>
+            </div>
+
+            <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
               <div className="flex items-center justify-between gap-4">
                 <div><p className="text-sm font-bold text-[#061f3b]">Guest details</p><p className="mt-1 text-xs text-slate-500">Add guest information only if required.</p></div>
                 <button type="button" role="switch" aria-checked={includeGuestDetails} onClick={() => { setIncludeGuestDetails((value) => !value); setError(""); }} className={`relative h-7 w-12 shrink-0 rounded-full transition ${includeGuestDetails ? "bg-[#087fbe]" : "bg-slate-300"}`}><span className={`absolute top-1 size-5 rounded-full bg-white shadow-sm transition-all ${includeGuestDetails ? "left-6" : "left-1"}`} /></button>
@@ -107,7 +113,7 @@ function BookingFlow() {
 }
 
 function Field({ label, icon, children }: { label: string; icon: React.ReactNode; children: React.ReactNode }) {
-  return <label className="block"><span className="mb-2 block text-xs font-bold text-[#456078]">{label}</span><span className="flex h-14 items-center gap-3 rounded-xl border border-black/10 bg-white px-4 text-black/30 transition focus-within:border-[#13a5d8] focus-within:ring-4 focus-within:ring-[#13a5d8]/10 [&_input]:h-full [&_input]:min-w-0 [&_input]:flex-1 [&_input]:bg-transparent [&_input]:text-sm [&_input]:text-[#102a42] [&_input]:outline-none">{icon}{children}</span></label>;
+  return <label className="block"><span className="mb-2 block text-xs font-bold text-[#456078]">{label}</span><span className="flex h-12 items-center gap-3 rounded-xl border border-black/10 bg-white px-4 text-black/30 transition focus-within:border-[#13a5d8] focus-within:ring-4 focus-within:ring-[#13a5d8]/10 [&_input]:h-full [&_input]:min-w-0 [&_input]:flex-1 [&_input]:bg-transparent [&_input]:text-sm [&_input]:text-[#102a42] [&_input]:outline-none">{icon}{children}</span></label>;
 }
 
 function Success({ hotel, reference }: { hotel: string; reference: string }) {
