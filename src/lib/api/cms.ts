@@ -31,9 +31,14 @@ export const cmsService = {
       return null;
     }
   },
-  getClients: async (params?: any) => {
-    const response = await apiClient.get('/api/base/our-clients/', { params });
-    return response.data;
+  getClients: async (params?: Record<string, string | number | boolean>) => {
+    try {
+      const response = await apiClient.get('/api/base/our-clients/', { params });
+      return response.data;
+    } catch (error) {
+      console.warn('[Clients API] Using the homepage fallback partners.', error);
+      return { success: true, count: 0, data: [] };
+    }
   },
   getTeam: async () => {
     const response = await apiClient.get('/api/base/team-members/');
@@ -76,4 +81,3 @@ export const cmsService = {
     return response.data;
   }
 };
-

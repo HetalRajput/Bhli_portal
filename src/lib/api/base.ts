@@ -1,5 +1,24 @@
 import { apiClient } from './client';
 
+export type ContactLeadPayload = {
+  enquiry_type?: number;
+  name: string;
+  email?: string;
+  mobile_number?: string;
+  subject: string;
+  message: string;
+};
+
+export type ContactLead = ContactLeadPayload & {
+  id?: number;
+  enquiry_type_name?: string;
+  enquiry_type_slug?: string;
+  status?: 'new' | string;
+  admin_notes?: string;
+  created?: string;
+  updated?: string;
+};
+
 export const baseService = {
   getOfficerRanks: async () => {
     const response = await apiClient.get('/api/base/officer-ranks/');
@@ -35,15 +54,8 @@ export const baseService = {
   },
 
   // Contact Leads
-  createContactLead: async (data: {
-    enquiry_type?: number;
-    name: string;
-    email?: string;
-    mobile_number?: string;
-    subject: string;
-    message: string;
-  }) => {
+  createContactLead: async (data: ContactLeadPayload): Promise<ContactLead> => {
     const response = await apiClient.post('/api/base/contacts/', data);
-    return response.data;
+    return response.data?.data ?? response.data;
   }
 };

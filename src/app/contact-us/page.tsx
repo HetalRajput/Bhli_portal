@@ -13,7 +13,7 @@ import {
   AlertCircle
 } from "lucide-react";
 import { FormEvent, useState, useEffect } from "react";
-import { baseService } from "@/lib/api/base";
+import { baseService, type ContactLeadPayload } from "@/lib/api/base";
 import { getErrorMessage } from "@/lib/api/client";
 
 interface EnquiryTypeItem {
@@ -66,8 +66,15 @@ export default function Contact() {
     const trimmedEmail = email.trim();
     const trimmedMessage = message.trim();
 
-    if (!trimmedName || !trimmedPhone || !trimmedEmail || !trimmedMessage) {
-      setError("Please fill in all fields before submitting.");
+    const missingFields = [
+      !trimmedName && "full name",
+      !trimmedPhone && "phone number",
+      !trimmedEmail && "email address",
+      !trimmedMessage && "requirement details",
+    ].filter(Boolean);
+
+    if (missingFields.length > 0) {
+      setError(`Please enter: ${missingFields.join(String.fromCharCode(44, 32))}.`);
       return;
     }
 
@@ -84,7 +91,7 @@ export default function Contact() {
     setIsSubmitting(true);
 
     try {
-      const payload: any = {
+      const payload: ContactLeadPayload = {
         name: trimmedName,
         email: trimmedEmail,
         mobile_number: trimmedPhone,

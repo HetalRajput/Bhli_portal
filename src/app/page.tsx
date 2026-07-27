@@ -116,7 +116,7 @@ export default async function Home() {
       apiClients = clientsRes.data;
     }
   } catch (err) {
-    console.error("Failed to fetch home page data", err);
+    console.warn("Failed to fetch home page data; using fallback content.", err);
   }
 
   const iconMap: Record<string, any> = { hotel: Building2, flight: Plane, holiday: Sparkles };
