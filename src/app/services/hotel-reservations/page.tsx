@@ -297,7 +297,7 @@ function HotelReservationsContent() {
   return (
     <div className="bg-[#f5f9fc] text-[#122b42] min-h-screen">
       {/* Hero Header */}
-      <section className="relative h-[380px] flex items-center overflow-hidden bg-[#061f3b] text-white px-5 lg:px-8">
+      <section className="relative h-[280px] md:h-[300px] flex items-center overflow-hidden bg-[#061f3b] text-white px-5 lg:px-8">
         <div className="absolute inset-0 z-0">
           <img 
             src={displayBanner} 
