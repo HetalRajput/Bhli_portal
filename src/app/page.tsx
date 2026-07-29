@@ -104,20 +104,20 @@ const fallbackPartners = [
 
 export default async function Home() {
   let apiServices: any[] = [];
-  let apiClients: any[] = [];
+  let apiPartners: any[] = [];
   let apiBanners: Banner[] = [];
   
   try {
-    const [servicesRes, clientsRes, bannersRes] = await Promise.all([
+    const [servicesRes, partnersRes, bannersRes] = await Promise.all([
       cmsService.getServices({ is_featured: true }),
-      cmsService.getClients(),
+      cmsService.getChannelPartners(),
       cmsService.getBanners()
     ]);
     
     if (servicesRes && servicesRes.success) {
       apiServices = [...servicesRes.data].sort((a, b) => Number(a.id) - Number(b.id));
     }
-    apiClients = clientsRes;
+    apiPartners = partnersRes;
     apiBanners = bannersRes
       .filter((banner: Banner) => banner.is_active !== false && Boolean(banner.image))
       .sort((a: Banner, b: Banner) => (a.display_order ?? 0) - (b.display_order ?? 0));
@@ -153,11 +153,11 @@ export default async function Home() {
       }));
 
 
-  const displayPartners = apiClients.map(c => ({
+  const displayPartners = apiPartners.map(c => ({
         id: String(c.id),
-        name: c.title || c.name,
+        name: c.title,
         role: c.subtitle || "Partner",
-        logo: c.image || c.logo || null,
+        logo: c.image || null,
         isStringLogo: true
       }));
 

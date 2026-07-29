@@ -18,6 +18,9 @@ interface ClientItem {
   badge: string;
   image: string;
   description: string;
+  websiteUrl?: string;
+  accountStatus?: string;
+  hasActiveAccount?: boolean;
 }
 
 const institutionalLogoPaths: Record<string, string> = {
@@ -327,16 +330,19 @@ export default function ClientsPage() {
       if (cancelled) return;
 
       const mappedClients = clients
-        .filter((client) => client.is_active !== false && Boolean(client.image))
+        .filter((client) => client.is_active !== false && Boolean(client.logo))
         .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0))
         .map((client: OurClient): ClientItem => ({
           id: String(client.id),
-          name: client.title,
-          category: "corporate",
-          categoryName: client.subtitle || "Our Clients",
-          badge: client.subtitle || "Trusted Client",
-          image: client.image,
-          description: client.description || `Travel and hospitality services for ${client.title}.`,
+          name: client.name,
+          category: client.category_slug.includes("defence") || client.category_slug.includes("protocol") ? "defence" : "corporate",
+          categoryName: client.category_name || "Our Clients",
+          badge: client.label || client.account_status_label || "Trusted Client",
+          image: client.logo,
+          description: client.description || `Travel and hospitality services for ${client.name}.`,
+          websiteUrl: client.website_url,
+          accountStatus: client.account_status_label || "Client account",
+          hasActiveAccount: client.has_active_account,
         }));
 
       setDisplayClients(mappedClients);
@@ -376,7 +382,7 @@ export default function ClientsPage() {
       </section>
 
       {/* Institutional Client Groups */}
-      <section className="hidden">
+      {false && <section className="hidden">
         <div className="overflow-hidden rounded-[2rem] border border-[#dce8ef] bg-white shadow-[0_24px_70px_rgba(6,43,80,.14)]">
           <div className="flex flex-col justify-between gap-6 border-b border-[#e4edf2] bg-gradient-to-r from-[#f6fbfe] to-white p-7 md:flex-row md:items-end md:p-10">
             <div><p className="text-[10px] font-bold uppercase tracking-[.22em] text-[#087fbe]">Institutional clients</p><h2 className="mt-2 max-w-2xl font-serif text-3xl font-semibold text-[#062b50] md:text-4xl">Trusted by institutions that serve the nation</h2></div>
@@ -405,7 +411,7 @@ export default function ClientsPage() {
             </article>
           </div>
         </div>
-      </section>
+      </section>}
       {/* Main Content & Interactive Filter Section */}
       <section className="mx-auto max-w-7xl px-5 py-16 lg:px-8">
         {/* Category Tabs */}
@@ -440,45 +446,32 @@ export default function ClientsPage() {
           )}
           {filteredClients.map(client => {
             return (
-              <div
+              <article
                 key={client.id}
-                className={`group flex flex-col justify-between overflow-hidden rounded-3xl border border-black/10 bg-white p-6 transition duration-500 hover:shadow-xl hover:-translate-y-1.5`}
+                className="group relative flex min-h-[360px] flex-col overflow-hidden rounded-[2rem] border border-[#dce8ef] bg-white shadow-[0_10px_35px_rgba(6,43,80,.06)] transition duration-500 hover:-translate-y-1.5 hover:border-[#13a5d8]/40 hover:shadow-[0_24px_55px_rgba(6,43,80,.14)]"
               >
-                <div>
-                  {/* Logo Image Container */}
-                  <div className="flex h-24 items-center justify-center rounded-2xl bg-[#f8fafc] border border-black/[0.04] p-4 mb-5 overflow-hidden">
-                    <img
-                      src={client.image}
-                      alt={client.name}
-                      className="max-h-full max-w-full object-contain transition-transform duration-500 group-hover:scale-105"
-                      loading="lazy"
-                    />
+                <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#087fbe] via-[#13a5d8] to-[#6dd5f5] opacity-70 transition group-hover:opacity-100" />
+                <div className="relative flex h-36 items-center justify-center bg-gradient-to-br from-[#f8fbfd] via-white to-[#edf7fc] p-7">
+                  <div className="absolute left-5 top-5 rounded-full border border-[#087fbe]/15 bg-white/85 px-3 py-1 text-[9px] font-bold uppercase tracking-[.16em] text-[#087fbe] shadow-sm backdrop-blur">
+                    {client.categoryName}
                   </div>
-
-                  {/* Client Category Badge */}
-                  <span className="inline-block rounded-full bg-[#edf6fc] px-3 py-0.5 text-[9px] font-bold text-[#087fbe] uppercase tracking-wider mb-2.5">
-                    {client.badge}
-                  </span>
-
-                  {/* Title */}
-                  <h3 className="font-serif text-lg font-semibold text-[#062b50] group-hover:text-[#087fbe] transition-colors mb-2">
-                    {client.name}
-                  </h3>
-
-                  {/* Description */}
-                  <p className="text-xs leading-5 text-black/55 mb-4">
-                    {client.description}
-                  </p>
+                  <img src={client.image} alt={`${client.name} logo`} className="mt-5 max-h-20 max-w-[75%] object-contain drop-shadow-sm transition duration-500 group-hover:scale-105" loading="lazy" />
                 </div>
 
-                {/* Footer/Service indicator */}
-                <div className="border-t border-black/5 pt-3.5">
-                  <div className="flex items-center justify-between text-[10px] font-bold text-[#087fbe] opacity-70 group-hover:opacity-100 transition-opacity">
-                    <span>Active Account Desk</span>
-                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
+                <div className="flex flex-1 flex-col p-6">
+                  <span className="w-fit rounded-full bg-[#edf6fc] px-3 py-1 text-[9px] font-bold uppercase tracking-[.14em] text-[#087fbe]">{client.badge}</span>
+                  <h3 className="mt-4 font-serif text-xl font-semibold leading-tight text-[#062b50] transition-colors group-hover:text-[#087fbe]">{client.name}</h3>
+                  <p className="mt-3 line-clamp-3 text-xs leading-5 text-[#607789]">{client.description}</p>
+
+                  <div className="mt-auto flex items-center justify-between border-t border-[#e4edf2] pt-4">
+                    <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[.1em] text-[#4d6b7f]">
+                      <span className={`size-2 rounded-full ${client.hasActiveAccount ? "bg-emerald-500 shadow-[0_0_0_4px_rgba(16,185,129,.12)]" : "bg-slate-300"}`} />
+                      {client.accountStatus}
+                    </div>
+                    {client.websiteUrl && <a href={client.websiteUrl} target="_blank" rel="noreferrer" aria-label={`Visit ${client.name} website`} className="grid size-9 place-items-center rounded-full bg-[#062b50] text-white transition hover:bg-[#087fbe]"><ArrowRight className="size-4 -rotate-45" /></a>}
                   </div>
                 </div>
-              </div>
+              </article>
             );
           })}
         </div>

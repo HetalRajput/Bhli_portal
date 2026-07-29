@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowRight, Building2, Bus, ShieldCheck, HeartHandshake, Stethoscope, Landmark, Phone, ExternalLink } from "lucide-react";
-import { cmsService } from "@/lib/api/cms";
+import { cmsService, type ChannelPartner } from "@/lib/api/cms";
 
 // Custom SVG brand logo components to match the brands recognized from the image
 const LogoGramin = () => (
@@ -210,18 +210,14 @@ const partnersList: Partner[] = [
 
 export default function ChannelPartnersPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
-  const [apiPartners, setApiPartners] = useState<any[]>([]);
+  const [apiPartners, setApiPartners] = useState<ChannelPartner[]>([]);
 
   useEffect(() => {
     const fetchPartners = async () => {
       try {
         const res = await cmsService.getChannelPartners();
         console.log("Channel Partners API Response:", res);
-        if (res && res.success && Array.isArray(res.data)) {
-          setApiPartners(res.data);
-        } else if (res && Array.isArray(res)) {
-          setApiPartners(res);
-        }
+        setApiPartners(res.filter((partner) => partner.is_active !== false).sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0)));
       } catch (err) {
         console.warn("Failed to fetch channel partners", err);
       }
@@ -282,7 +278,7 @@ export default function ChannelPartnersPage() {
     };
   });
 
-  const allPartners = [...partnersList, ...mappedApiPartners];
+  const allPartners = mappedApiPartners;
 
   const filteredPartners = selectedCategory === "all"
     ? allPartners

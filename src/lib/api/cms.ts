@@ -26,6 +26,31 @@ type BannerListResponse = {
 
 export type OurClient = {
   id: number;
+  category: number;
+  category_name: string;
+  category_slug: string;
+  name: string;
+  slug: string;
+  label: string;
+  description: string;
+  logo: string;
+  website_url: string;
+  account_status_label: string;
+  has_active_account: boolean;
+  is_active: boolean;
+  display_order: number;
+  created_at: string;
+  updated_at: string;
+};
+
+type ClientListResponse = {
+  success: boolean;
+  count: number;
+  data: OurClient[];
+};
+
+export type ChannelPartner = {
+  id: number;
   title: string;
   slug: string;
   subtitle: string;
@@ -38,10 +63,10 @@ export type OurClient = {
   updated_at: string;
 };
 
-type ClientListResponse = {
+type ChannelPartnerListResponse = {
   success: boolean;
   count: number;
-  data: OurClient[];
+  data: ChannelPartner[];
 };
 
 export const cmsService = {
@@ -114,8 +139,8 @@ export const cmsService = {
     return response.data;
   },
   getChannelPartners: async () => {
-    const response = await apiClient.get('/api/base/channel-partners/');
-    return response.data;
+    const response = await apiClient.get<ChannelPartner[] | ChannelPartnerListResponse>('/api/base/channel-partners/');
+    return Array.isArray(response.data) ? response.data : response.data.data ?? [];
   },
   getClientCategories: async () => {
     const response = await apiClient.get('/api/base/client-categories/');
