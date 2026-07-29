@@ -24,6 +24,17 @@ body {
 }
 
 html { scroll-behavior: smooth; }
+
+img,
+picture {
+  -webkit-touch-callout: none;
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+img {
+  pointer-events: none;
+}
 button, a { -webkit-tap-highlight-color: transparent; }
 ::selection { background: #13a5d8; color: #061f3b; }
 
