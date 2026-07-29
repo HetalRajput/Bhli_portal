@@ -190,6 +190,18 @@ main div.rounded-3xl svg {
 }
 
 /* Dedicated animation for Travel solutions cards */
+@media (max-width: 767px) {
+  .travel-solution-card,
+  .service-list-card {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    transform: none !important;
+    width: 100%;
+    min-height: 1px;
+  }
+}
+
 main a.travel-solution-card {
   transform: translate3d(0, 0, 0) scale(1);
   transform-origin: center bottom;

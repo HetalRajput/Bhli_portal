@@ -90,7 +90,7 @@ export default async function Services() {
       <section className="mx-auto max-w-7xl px-5 py-10 sm:py-16 lg:px-8 lg:py-20">
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {displayServices.map((service, i) => (
-            <Link href={String(service.link)} key={i} className="group overflow-hidden rounded-3xl border border-black/10 bg-white">
+            <Link href={String(service.link)} key={i} className="service-list-card group block min-w-0 overflow-hidden rounded-3xl border border-black/10 bg-white">
               <div className="relative h-44 overflow-hidden sm:h-48">
                 <img src={String(service.image)} alt={String(service.title)} className="h-full w-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#061f3b]/50 to-transparent" />

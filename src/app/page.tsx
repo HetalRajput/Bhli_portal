@@ -114,8 +114,9 @@ export default async function Home() {
       cmsService.getBanners()
     ]);
     
-    if (servicesRes && servicesRes.success) {
-      apiServices = [...servicesRes.data].sort((a, b) => Number(a.id) - Number(b.id));
+    const serviceData = Array.isArray(servicesRes) ? servicesRes : servicesRes?.data;
+    if (Array.isArray(serviceData)) {
+      apiServices = [...serviceData].sort((a, b) => Number(a.id) - Number(b.id));
     }
     apiPartners = partnersRes;
     apiBanners = bannersRes
