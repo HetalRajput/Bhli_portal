@@ -32,8 +32,9 @@ export default async function Services() {
   let apiServices: any[] = [];
   try {
     const res = await cmsService.getServices();
-    if (res && res.success) {
-      apiServices = [...res.data].sort((a, b) => Number(a.id) - Number(b.id));
+    const serviceData = Array.isArray(res) ? res : res?.data;
+    if (Array.isArray(serviceData)) {
+      apiServices = [...serviceData].sort((a, b) => Number(a.id) - Number(b.id));
     }
   } catch (error) {
     console.error("Failed to fetch services:", error);
@@ -78,26 +79,26 @@ export default async function Services() {
 
   return (
     <div className="bg-[#f5f9fc] text-[#122b42]">
-      <section className="relative overflow-hidden bg-[#062b50] px-5 py-24 text-white lg:px-8">
+      <section className="relative overflow-hidden bg-[#062b50] px-5 py-14 text-white sm:py-20 lg:px-8 lg:py-24">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(215,181,109,.18),transparent_35%)]" />
         <div className="relative mx-auto max-w-7xl">
           <p className="text-xs font-bold uppercase tracking-[.25em] text-[#13a5d8]">Our services</p>
-          <h1 className="mt-5 max-w-4xl font-serif text-4xl leading-tight md:text-5xl lg:text-7xl">One partner for every part of the journey.</h1>
-          <p className="mt-6 max-w-2xl text-lg leading-8 text-white/60">Travel, hospitality, mobility and event solutions delivered with clarity, care and dependable support.</p>
+          <h1 className="mt-4 max-w-4xl font-serif text-3xl leading-tight sm:text-4xl md:text-5xl lg:text-7xl">One partner for every part of the journey.</h1>
+          <p className="mt-4 max-w-2xl text-sm leading-7 text-white/60 sm:mt-6 sm:text-lg sm:leading-8">Travel, hospitality, mobility and event solutions delivered with clarity, care and dependable support.</p>
         </div>
       </section>
-      <section className="mx-auto max-w-7xl px-5 py-20 lg:px-8">
-        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+      <section className="mx-auto max-w-7xl px-5 py-10 sm:py-16 lg:px-8 lg:py-20">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {displayServices.map((service, i) => (
             <Link href={String(service.link)} key={i} className="group overflow-hidden rounded-3xl border border-black/10 bg-white">
-              <div className="relative h-48 overflow-hidden">
+              <div className="relative h-44 overflow-hidden sm:h-48">
                 <img src={String(service.image)} alt={String(service.title)} className="h-full w-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#061f3b]/50 to-transparent" />
                 <span className="absolute bottom-4 left-5 grid size-12 place-items-center rounded-2xl bg-white/92 text-[#087fbe] shadow-lg backdrop-blur">
                   <service.Icon className="size-6" />
                 </span>
               </div>
-              <div className="p-7">
+              <div className="p-5 sm:p-7">
                 <div className="flex items-start justify-between gap-4">
                   <h2 className="font-serif text-2xl transition-colors group-hover:text-[#087fbe]">{String(service.title)}</h2>
                   <ArrowRight className="size-5 shrink-0 text-black/25 transition group-hover:translate-x-1 group-hover:text-[#087fbe]" />

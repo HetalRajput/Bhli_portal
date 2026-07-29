@@ -38,6 +38,24 @@ import { baseService } from "@/lib/api/base";
 
 type LookupItem = { id: number; name: string };
 
+const formatBookingLabel = (value: string) =>
+  value.replace(/_/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+
+const formatBookingValue = (value: unknown) => {
+  if (value === true || value === "check") return "Yes";
+  if (value === false || value === "notcheck") return "No";
+  return value === null || value === undefined || value === "" ? "Not provided" : String(value);
+};
+
+const formatBookingDate = (value: unknown, includeTime = false) => {
+  if (!value) return "Not provided";
+  const date = new Date(String(value));
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toLocaleString("en-IN", includeTime
+    ? { dateStyle: "medium", timeStyle: "short" }
+    : { dateStyle: "medium" });
+};
+
 export default function ProfilePage() {
   const router = useRouter();
   const [email, setEmail] = useState<string>("");
@@ -58,6 +76,10 @@ export default function ProfilePage() {
   const [profileError, setProfileError] = useState<string>("");
   const [bookings, setBookings] = useState<any[]>([]);
   const [loadingBookings, setLoadingBookings] = useState<boolean>(true);
+  const [selectedBooking, setSelectedBooking] = useState<any | null>(null);
+  const [loadingBookingDetail, setLoadingBookingDetail] = useState<number | null>(null);
+  const [bookingDetailError, setBookingDetailError] = useState<string>("");
+  const [activeProfileSection, setActiveProfileSection] = useState<"profile" | "bookings" | "membership" | "support">("profile");
 
   // New Interactive states
   const [showQrModal, setShowQrModal] = useState<boolean>(false);
@@ -207,6 +229,19 @@ export default function ProfilePage() {
     }
   };
 
+  const handleViewBooking = async (id: number) => {
+    setLoadingBookingDetail(id);
+    setBookingDetailError("");
+    try {
+      const response = await bookingService.getBookingById(id);
+      setSelectedBooking(response?.data || response);
+    } catch (error) {
+      setBookingDetailError(getErrorMessage(error));
+    } finally {
+      setLoadingBookingDetail(null);
+    }
+  };
+
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -301,7 +336,7 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#f3f9fc] via-white to-[#edf7fc] py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-5xl mx-auto space-y-8">
+      <div className="mx-auto max-w-7xl space-y-8">
         
         {/* Back Link & Header */}
         <div className="flex items-center justify-between">
@@ -388,13 +423,39 @@ export default function ProfilePage() {
         )}
 
         {/* Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+        <div className="grid items-start gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
+          <aside className="sticky top-6 overflow-hidden rounded-3xl border border-[#0a79bf]/10 bg-white p-3 shadow-sm">
+            <div className="border-b border-slate-100 px-3 pb-4 pt-2">
+              <p className="text-[10px] font-extrabold uppercase tracking-[.2em] text-[#0879b7]">Account centre</p>
+              <h2 className="mt-1 text-lg font-bold text-[#07152d]">Manage your journey</h2>
+            </div>
+            <nav aria-label="Profile sections" className="mt-3 space-y-1.5">
+              {[
+                ["profile", "Personal details", "Contact and service profile", User],
+                ["bookings", "Booking requests", `${bookings.length} active request${bookings.length === 1 ? "" : "s"}`, Ticket],
+                ["membership", "Membership pass", "Benefits and digital card", Award],
+                ["support", "Travel support", "Quick links and assistance", ShieldCheck],
+              ].map(([section, label, description, Icon]) => {
+                const isActive = activeProfileSection === section;
+                const NavIcon = Icon as React.ComponentType<{ className?: string }>;
+                return <button key={String(section)} type="button" onClick={() => setActiveProfileSection(section as typeof activeProfileSection)} className={`group flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition ${isActive ? "bg-gradient-to-r from-[#0879b7] to-[#13a5d8] text-white shadow-md shadow-[#0879b7]/20" : "text-[#344a5c] hover:bg-[#edf8fd]"}`}>
+                  <span className={`grid size-10 shrink-0 place-items-center rounded-xl ${isActive ? "bg-white/15" : "bg-[#edf8fd] text-[#0879b7] group-hover:bg-white"}`}><NavIcon className="size-4.5" /></span>
+                  <span className="min-w-0"><span className="block text-sm font-bold">{String(label)}</span><span className={`mt-0.5 block truncate text-[10px] font-semibold ${isActive ? "text-white/70" : "text-slate-400"}`}>{String(description)}</span></span>
+                </button>;
+              })}
+            </nav>
+            <div className="mt-3 border-t border-slate-100 p-2 pt-4">
+              <Link href="/services" className="flex items-center justify-center gap-2 rounded-xl bg-[#07152d] px-4 py-3 text-xs font-bold text-white transition hover:bg-[#0b2b4d]"><Building className="size-4" />Explore services</Link>
+            </div>
+          </aside>
+
+          <div className="min-w-0 space-y-8">
           
           {/* Left Column: Personal Information Form & Booking Requests */}
-          <div className="lg:col-span-2 space-y-8">
+          <div className="min-w-0 space-y-8">
             
             {/* Personal Details Form */}
-            <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-[#0a79bf]/10 space-y-6">
+            <div className={`${activeProfileSection === "profile" ? "block" : "hidden"} bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-[#0a79bf]/10 space-y-6`}>
               <div>
                 <h2 className="text-xl font-bold text-[#07152d] flex items-center gap-2.5">
                   <User className="w-5 h-5 text-[#0879b7]" />
@@ -542,7 +603,7 @@ export default function ProfilePage() {
             </div>
 
             {/* My Bookings Section (Boarding Pass Restyle) */}
-            <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-[#0a79bf]/10 space-y-6">
+            <div className={`${activeProfileSection === "bookings" ? "block" : "hidden"} bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-[#0a79bf]/10 space-y-6`}>
               <div>
                 <h2 className="text-xl font-bold text-[#07152d] flex items-center gap-2.5">
                   <Ticket className="w-5 h-5 text-[#0879b7]" />
@@ -633,7 +694,7 @@ export default function ProfilePage() {
                         </div>
 
                         {/* Ticket Stub Status */}
-                        <div className="p-5 flex items-center justify-center bg-slate-50/40 md:w-44 shrink-0">
+                        <div className="p-5 flex flex-col items-center justify-center gap-3 bg-slate-50/40 md:w-44 shrink-0">
                           <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-extrabold tracking-wide border uppercase ${statusBg}`}>
                             {booking.status === "new" || booking.status === "confirmed" ? (
                               <span className="relative flex h-2 w-2">
@@ -645,12 +706,16 @@ export default function ProfilePage() {
                             )}
                             {booking.status || "new"}
                           </span>
+                          <button type="button" onClick={() => handleViewBooking(Number(booking.id))} disabled={loadingBookingDetail === Number(booking.id)} className="rounded-lg border border-[#0879b7]/20 bg-white px-3 py-2 text-[11px] font-bold text-[#0879b7] transition hover:border-[#0879b7]/40 hover:bg-[#edf8fd] disabled:opacity-60">
+                            {loadingBookingDetail === Number(booking.id) ? "Loading..." : "View details"}
+                          </button>
                         </div>
                       </div>
                     );
                   })}
                 </div>
               )}
+              {bookingDetailError && <p className="rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">{bookingDetailError}</p>}
             </div>
 
           </div>
@@ -659,14 +724,14 @@ export default function ProfilePage() {
           <div className="space-y-6">
             
             {/* Membership section */}
-            <div className="bg-white rounded-3xl p-6 shadow-sm border border-[#0a79bf]/10 space-y-5">
+            <div className={`${activeProfileSection === "membership" ? "block" : "hidden"} bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-[#0a79bf]/10 space-y-5`}>
               <h3 className="text-base font-bold text-[#07152d] flex items-center gap-2">
                 <Award className="w-5 h-5 text-amber-500" />
                 Digital Membership Pass
               </h3>
 
               {/* 3D-effect Membership Card */}
-              <div className="relative group perspective-1000">
+              <div className="group relative mx-auto w-full max-w-[360px] perspective-1000">
                 {/* Outer Glow Backing */}
                 <div className="absolute -inset-1 bg-gradient-to-tr from-amber-500/20 via-sky-500/10 to-emerald-500/10 rounded-2xl blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
 
@@ -711,6 +776,11 @@ export default function ProfilePage() {
                     <Wifi className="w-4 h-4 text-white/35 rotate-90" />
                   </div>
 
+                  <div className="z-10 flex items-center gap-2 text-[7px] font-extrabold uppercase tracking-[.14em] text-sky-100/75">
+                    <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1">15% member rates</span>
+                    <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1">24/7 travel desk</span>
+                  </div>
+
                   {/* Bottom Row: Details */}
                   <div className="space-y-2.5 z-10">
                     {/* Card Number */}
@@ -725,6 +795,10 @@ export default function ProfilePage() {
                         <div className="text-[11px] font-bold tracking-wide uppercase truncate max-w-[130px]">
                           {name || "VALUED GUEST"}
                         </div>
+                      </div>
+                      <div className="space-y-0.5 text-center">
+                        <div className="text-[8px] font-bold uppercase tracking-wider text-white/40">Member since</div>
+                        <div className="text-[10px] font-bold tracking-wide">JUL 2026</div>
                       </div>
                       <div className="text-right space-y-0.5">
                         <div className="text-[8px] uppercase tracking-wider text-white/40 font-bold">VALID THRU</div>
@@ -790,7 +864,7 @@ export default function ProfilePage() {
             </div>
 
             {/* Quick Dashboard */}
-            <div className="bg-white rounded-3xl p-6 shadow-sm border border-[#0a79bf]/10 space-y-4">
+            <div className={`${activeProfileSection === "support" ? "block" : "hidden"} bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-[#0a79bf]/10 space-y-4`}>
               <h3 className="text-base font-bold text-[#07152d] flex items-center gap-2">
                 <Bookmark className="w-4 h-4 text-[#0879b7]" />
                 Quick Dashboard
@@ -833,7 +907,7 @@ export default function ProfilePage() {
             </div>
 
             {/* Assistance Card */}
-            <div className="bg-gradient-to-br from-[#e0f2fe] to-[#f0f9ff] rounded-3xl p-6 border border-[#bae6fd] space-y-3">
+            <div className={`${activeProfileSection === "support" ? "block" : "hidden"} bg-gradient-to-br from-[#e0f2fe] to-[#f0f9ff] rounded-3xl p-6 border border-[#bae6fd] space-y-3`}>
               <h4 className="text-sm font-bold text-[#0369a1] flex items-center gap-1.5">
                 <ShieldCheck className="w-4 h-4" />
                 Need Assistance?
@@ -853,9 +927,40 @@ export default function ProfilePage() {
 
         </div>
 
+        </div>
+
       </div>
 
       {/* QR DIGITAL PASS MODAL */}
+      {selectedBooking && (
+        <div className="fixed inset-0 z-[100] grid place-items-center bg-[#061f3b]/70 p-4 backdrop-blur-sm" onClick={() => setSelectedBooking(null)}>
+          <section role="dialog" aria-modal="true" aria-label="Booking request details" onClick={(event) => event.stopPropagation()} className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[2rem] bg-white p-6 shadow-2xl sm:p-8">
+            <div className="flex items-start justify-between gap-4 border-b border-slate-100 pb-5">
+              <div><p className="text-[10px] font-extrabold uppercase tracking-[.2em] text-[#0879b7]">Booking request #{selectedBooking.id}</p><h2 className="mt-2 font-serif text-3xl font-semibold text-[#07152d]">{selectedBooking.service_item_title || selectedBooking.service_type || "Request details"}</h2></div>
+              <button type="button" onClick={() => setSelectedBooking(null)} aria-label="Close booking details" className="grid size-10 place-items-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200"><X className="size-5" /></button>
+            </div>
+            <div className="mt-5 flex flex-wrap items-center gap-2">
+              <span className="rounded-full bg-[#e7f7fd] px-3 py-1 text-xs font-extrabold uppercase tracking-wider text-[#0879b7]">{formatBookingLabel(selectedBooking.service_type || "service")}</span>
+              <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wider text-amber-700">{formatBookingLabel(selectedBooking.status || "new")}</span>
+              <span className="text-xs font-semibold text-slate-400">Submitted {formatBookingDate(selectedBooking.created, true)}</span>
+            </div>
+            {[
+              { title: "Stay details", fields: [["Hotel", selectedBooking.service_item_title], ["Hotel ID", selectedBooking.service_item], ["City", selectedBooking.service_item_city], ["Location", selectedBooking.service_item_location], ["Destination", selectedBooking.destination_city], ["Check-in", formatBookingDate(selectedBooking.check_in_date)], ["Check-out", formatBookingDate(selectedBooking.check_out_date)], ["Rooms", selectedBooking.number_of_rooms], ["Number of guests", selectedBooking.number_of_guests]] },
+              { title: "Traveller information", fields: [["Guest name", selectedBooking.guest_name], ["Traveller category", selectedBooking.traveller_category], ["Designation / rank", selectedBooking.designation_or_rank], ["Pay level", selectedBooking.pay_level], ["Employee ID", selectedBooking.employee_id], ["Department", selectedBooking.department], ["Mobile number", selectedBooking.mobile_number], ["Email", selectedBooking.email], ["Spouse included", formatBookingValue(selectedBooking.spouse_included)], ["Children ages", selectedBooking.children_ages]] },
+              { title: "Travel & pickup information", fields: [["From city", selectedBooking.from_city], ["To city", selectedBooking.to_city], ["Preferred location", selectedBooking.preferred_location], ["Landmark", selectedBooking.landmark], ["Travel date", selectedBooking.travel_date ? formatBookingDate(selectedBooking.travel_date) : ""], ["Return date", selectedBooking.return_date ? formatBookingDate(selectedBooking.return_date) : ""], ["Arrival time", selectedBooking.arrival_time], ["Departure time", selectedBooking.departure_time], ["Flight / train number", selectedBooking.flight_or_train_number], ["Pickup address", selectedBooking.pickup_address], ["Drop address", selectedBooking.drop_address]] },
+            ].map((section) => {
+              const fields = section.fields.filter(([, value]) => value !== undefined && value !== null && value !== "");
+              if (!fields.length) return null;
+              return <div key={section.title} className="mt-7"><h3 className="text-sm font-extrabold text-[#07152d]">{section.title}</h3><div className="mt-3 grid gap-3 sm:grid-cols-2">{fields.map(([label, value]) => <div key={String(label)} className="rounded-2xl border border-slate-100 bg-slate-50 p-4"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{String(label)}</p><p className="mt-1 break-words text-sm font-bold text-[#07152d]">{formatBookingValue(value)}</p></div>)}</div></div>;
+            })}
+            {selectedBooking.details && Object.keys(selectedBooking.details).length > 0 && <div className="mt-7"><h3 className="text-sm font-extrabold text-[#07152d]">Preferences & budget</h3><div className="mt-3 grid gap-3 sm:grid-cols-2">{Object.entries(selectedBooking.details).map(([key, value]) => <div key={key} className="rounded-2xl border border-[#0879b7]/10 bg-[#f5fbfe] p-4"><p className="text-[10px] font-bold uppercase tracking-wider text-[#0879b7]/70">{formatBookingLabel(key)}</p><p className="mt-1 text-sm font-bold text-[#07152d]">{formatBookingValue(value)}</p></div>)}</div></div>}
+            {Array.isArray(selectedBooking.guests) && selectedBooking.guests.length > 0 && <div className="mt-6"><h3 className="text-sm font-bold text-[#07152d]">Guests</h3><div className="mt-3 space-y-2">{selectedBooking.guests.map((guest: any, index: number) => <div key={guest.id || index} className="flex flex-wrap justify-between gap-2 rounded-xl border border-slate-100 px-4 py-3 text-sm"><b>{guest.name}</b><span className="capitalize text-slate-500">Age {guest.age} · {guest.gender}</span></div>)}</div></div>}
+            {selectedBooking.special_request && <div className="mt-6 rounded-2xl bg-[#edf8fd] p-4"><p className="text-[10px] font-bold uppercase tracking-wider text-[#0879b7]">Special request</p><p className="mt-2 text-sm leading-6 text-[#344a5c]">{selectedBooking.special_request}</p></div>}
+            <div className="mt-7 grid gap-3 border-t border-slate-100 pt-5 text-xs text-slate-500 sm:grid-cols-2"><p><b className="text-slate-700">Consent to contact:</b> {formatBookingValue(selectedBooking.consent_to_contact)}</p><p><b className="text-slate-700">Last updated:</b> {formatBookingDate(selectedBooking.updated, true)}</p></div>
+          </section>
+        </div>
+      )}
+
       {showQrModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-fadeIn">
           {/* Modal clickaway backdrop */}

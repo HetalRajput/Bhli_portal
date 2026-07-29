@@ -16,14 +16,17 @@ function BookingFlow() {
     id: params.get("id") || "",
     name: params.get("name") || "Selected Hotel",
     location: params.get("location") || "India",
+    city: params.get("city") || params.get("location") || "",
     image: params.get("image") || "https://images.pexels.com/photos/261102/pexels-photo-261102.jpeg?auto=compress&cs=tinysrgb&w=1400",
     description: params.get("description") || "A thoughtfully selected stay with comfort, service and effortless booking.",
     price: Number(params.get("price")) || 0,
   };
   const [stay, setStay] = useState({ checkIn: "", checkOut: "", rooms: 1 });
   const [tariffDetails, setTariffDetails] = useState({ tdTariffAmount: "", personalVisitBudget: "" });
-  const [includeGuestDetails, setIncludeGuestDetails] = useState(false);
-  const [guestDetails, setGuestDetails] = useState({ name: "", adults: 1, children: 0 });
+  const [guestDetails, setGuestDetails] = useState({ name: "", age: 18, gender: "male" });
+  const [preferences, setPreferences] = useState({ laundry: false, breakfast: false });
+  const [specialRequest, setSpecialRequest] = useState("");
+  const [consentToContact, setConsentToContact] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [reference, setReference] = useState("");
@@ -36,11 +39,32 @@ function BookingFlow() {
     event.preventDefault();
     setError("");
     if (!stay.checkIn || !stay.checkOut || nights < 1) return setError("Select a valid check-in and check-out date.");
+    if (!hotel.id || !Number.isInteger(Number(hotel.id))) return setError("This hotel is missing a valid service item ID. Please select it again.");
+    if (!hotel.city.trim()) return setError("The selected hotel is missing its destination city.");
+    if (guestDetails.name.trim().length < 2) return setError("At least one guest name is required.");
+    if (!consentToContact) return setError("Please consent to contact before submitting the request.");
+    if (!localStorage.getItem("access_token")) return setError("Please sign in before submitting a booking request.");
     setLoading(true);
-    const payload = { hotel_id: hotel.id || undefined, hotel_name: hotel.name, location: hotel.location, check_in_date: stay.checkIn, check_out_date: stay.checkOut, number_of_rooms: stay.rooms, td_tariff_amount: tariffDetails.tdTariffAmount ? Number(tariffDetails.tdTariffAmount) : undefined, personal_visit_budget: tariffDetails.personalVisitBudget ? Number(tariffDetails.personalVisitBudget) : undefined, guest_details: includeGuestDetails ? { name: guestDetails.name.trim(), adults: guestDetails.adults, children: guestDetails.children } : undefined, estimated_total: total || undefined };
+    const payload = {
+      service_type: "hotel" as const,
+      service_item: Number(hotel.id),
+      destination_city: hotel.city.trim(),
+      check_in_date: stay.checkIn,
+      check_out_date: stay.checkOut,
+      number_of_rooms: stay.rooms,
+      details: {
+        Laundry: preferences.laundry ? "check" : "notcheck",
+        breakfast: preferences.breakfast ? "check" : "notcheck",
+        td_tariff_amount: tariffDetails.tdTariffAmount || undefined,
+        personal_visit_budget: tariffDetails.personalVisitBudget || undefined,
+      },
+      guests: [{ name: guestDetails.name.trim(), age: guestDetails.age, gender: guestDetails.gender }],
+      special_request: specialRequest.trim(),
+      consent_to_contact: consentToContact,
+    };
     try {
-      const result = await bookingService.createHotelBooking(payload);
-      const code = result?.booking_reference || result?.reference || `BH${Date.now().toString().slice(-8)}`;
+      const result = await bookingService.createGenericBooking(payload);
+      const code = result?.data?.id ? `BH${String(result.data.id).padStart(6, "0")}` : result?.booking_reference || result?.reference || `BH${Date.now().toString().slice(-8)}`;
       localStorage.setItem("bhli-last-hotel-booking", JSON.stringify({ ...payload, bookingReference: code }));
       setReference(code);
     } catch (err) { setError(getErrorMessage(err)); } finally { setLoading(false); }
@@ -87,18 +111,22 @@ function BookingFlow() {
             </div>
 
             <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-              <div className="flex items-center justify-between gap-4">
-                <div><p className="text-sm font-bold text-[#061f3b]">Guest details</p><p className="mt-1 text-xs text-slate-500">Add guest information only if required.</p></div>
-                <button type="button" role="switch" aria-checked={includeGuestDetails} onClick={() => { setIncludeGuestDetails((value) => !value); setError(""); }} className={`relative h-7 w-12 shrink-0 rounded-full transition ${includeGuestDetails ? "bg-[#087fbe]" : "bg-slate-300"}`}><span className={`absolute top-1 size-5 rounded-full bg-white shadow-sm transition-all ${includeGuestDetails ? "left-6" : "left-1"}`} /></button>
-              </div>
-              {includeGuestDetails && <div className="mt-5 space-y-4 border-t border-slate-200 pt-5">
+              <div><p className="text-sm font-bold text-[#061f3b]">Primary guest</p><p className="mt-1 text-xs text-slate-500">At least one guest is required for every booking request.</p></div>
+              <div className="mt-5 space-y-4 border-t border-slate-200 pt-5">
                 <Field label="Guest name" icon={<UserRound />}><input required minLength={2} value={guestDetails.name} onChange={(e) => setGuestDetails((current) => ({ ...current, name: e.target.value }))} placeholder="Full name" /></Field>
                 <div className="grid grid-cols-2 gap-4">
-                  <label><span className="mb-2 block text-xs font-bold text-[#456078]">Adults</span><select value={guestDetails.adults} onChange={(e) => setGuestDetails((current) => ({ ...current, adults: Number(e.target.value) }))} className="h-12 w-full rounded-xl border border-black/10 bg-white px-3 text-sm font-semibold outline-none focus:border-[#13a5d8]">{[1,2,3,4,5,6].map((value) => <option key={value} value={value}>{value}</option>)}</select></label>
-                  <label><span className="mb-2 block text-xs font-bold text-[#456078]">Children</span><select value={guestDetails.children} onChange={(e) => setGuestDetails((current) => ({ ...current, children: Number(e.target.value) }))} className="h-12 w-full rounded-xl border border-black/10 bg-white px-3 text-sm font-semibold outline-none focus:border-[#13a5d8]">{[0,1,2,3,4].map((value) => <option key={value} value={value}>{value}</option>)}</select></label>
+                  <label><span className="mb-2 block text-xs font-bold text-[#456078]">Age</span><input required type="number" min={1} max={120} value={guestDetails.age} onChange={(e) => setGuestDetails((current) => ({ ...current, age: Number(e.target.value) }))} className="h-12 w-full rounded-xl border border-black/10 bg-white px-3 text-sm font-semibold outline-none focus:border-[#13a5d8]" /></label>
+                  <label><span className="mb-2 block text-xs font-bold text-[#456078]">Gender</span><select value={guestDetails.gender} onChange={(e) => setGuestDetails((current) => ({ ...current, gender: e.target.value }))} className="h-12 w-full rounded-xl border border-black/10 bg-white px-3 text-sm font-semibold outline-none focus:border-[#13a5d8]"><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option></select></label>
                 </div>
-              </div>}
-            </div>            {error && <p className="mt-5 rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-600">{error}</p>}
+              </div>
+            </div>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <label className="flex items-center gap-3 rounded-xl border border-slate-200 p-3 text-sm font-semibold"><input type="checkbox" checked={preferences.laundry} onChange={(e) => setPreferences((current) => ({ ...current, laundry: e.target.checked }))} className="size-4 accent-[#087fbe]" />Laundry</label>
+              <label className="flex items-center gap-3 rounded-xl border border-slate-200 p-3 text-sm font-semibold"><input type="checkbox" checked={preferences.breakfast} onChange={(e) => setPreferences((current) => ({ ...current, breakfast: e.target.checked }))} className="size-4 accent-[#087fbe]" />Breakfast</label>
+            </div>
+            <label className="mt-4 block"><span className="mb-2 block text-xs font-bold text-[#456078]">Special request</span><textarea value={specialRequest} onChange={(e) => setSpecialRequest(e.target.value)} rows={3} placeholder="For example: Near airport" className="w-full resize-none rounded-xl border border-black/10 p-3 text-sm outline-none focus:border-[#13a5d8] focus:ring-4 focus:ring-[#13a5d8]/10" /></label>
+            <label className="mt-4 flex items-start gap-3 text-xs leading-5 text-slate-600"><input required type="checkbox" checked={consentToContact} onChange={(e) => setConsentToContact(e.target.checked)} className="mt-0.5 size-4 accent-[#087fbe]" /><span>I consent to being contacted about this booking request.</span></label>
+            {error && <p className="mt-5 rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-600">{error}</p>}
             <div className="mt-7 flex items-end justify-between gap-5 rounded-2xl bg-[#eaf6fb] p-5">
               <div><p className="text-xs text-black/40">{nights} night(s) · {stay.rooms} room(s)</p><p className="mt-1 text-2xl font-extrabold text-[#061f3b]">{hotel.price && total ? money(total) : "Price on confirmation"}</p></div>
               <Check className="size-6 text-[#13a5d8]" />

@@ -29,7 +29,6 @@ apiClient.interceptors.request.use(
       {
         params: config.params,
         data: config.data,
-        headers: config.headers,
       }
     );
 

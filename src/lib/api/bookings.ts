@@ -6,7 +6,11 @@ export const bookingService = {
     return response.data;
   },
   listBookings: async (params?: { service_type?: string; status?: string }) => {
-    const response = await apiClient.get('/api/bookings/requests/list/', { params });
+    const response = await apiClient.get('/api/bookings/requests/history/', { params });
+    return response.data;
+  },
+  getBookingById: async (id: number) => {
+    const response = await apiClient.get(`/api/bookings/requests/${id}/`);
     return response.data;
   },
   createHotelBooking: async (data: any) => {

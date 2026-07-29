@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
-import { ArrowLeft, ArrowRight, CheckCircle2, MessageSquareText, Send, ShieldCheck } from "lucide-react";
+import { ArrowLeft, ArrowRight, CalendarDays, CheckCircle2, MapPin, MessageSquareText, Send, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { cmsService } from "@/lib/api/cms";
@@ -13,6 +13,7 @@ type ServiceData = {
   name?: string;
   title?: string;
   slug?: string;
+  service_type?: string;
   short_description?: string;
   description?: string;
   banner_image?: string | null;
@@ -28,7 +29,12 @@ function GenericServiceEnquiryInner({ serviceSlug }: { serviceSlug?: string }) {
   const [service, setService] = useState<ServiceData | null>(null);
   const [loadingService, setLoadingService] = useState(true);
   const initialServiceName = slug ? slug.split("-").map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(" ") : "Booking";
-  const [form, setForm] = useState({ message: destinationParam ? `${initialServiceName} requirement for: ${destinationParam}` : "" });
+  const [form, setForm] = useState({
+    message: destinationParam ? `${initialServiceName} requirement for: ${destinationParam}` : "",
+    fromCity: "",
+    toCity: destinationParam || "",
+    travelDate: "",
+  });
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [reference, setReference] = useState("");
@@ -62,11 +68,26 @@ function GenericServiceEnquiryInner({ serviceSlug }: { serviceSlug?: string }) {
   const title = service?.name || service?.title || slug.split("-").map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
   const description = service?.description || service?.short_description || `Tell us what you need for ${title}. Our team will contact you with the best available options.`;
   const update = (key: keyof typeof form, value: string) => setForm((current) => ({ ...current, [key]: value }));
+  const serviceTypeMap: Record<string, string> = {
+    "self-drive-car-rentals": "taxi",
+    "taxi-services": "taxi",
+    "flight-booking": "flight",
+    "flight-bookings": "flight",
+    "bus-ticket-booking": "bus",
+    "train-ticket-booking": "train",
+    "cruise-booking": "cruise",
+    "cruise-holidays": "cruise",
+    "holiday-packages": "holiday_package",
+    "visa-assistance": "visa",
+  };
+  const bookingType = service?.service_type || serviceTypeMap[slug] || "taxi";
+  const requiresJourney = ["flight", "bus", "train", "taxi"].includes(bookingType);
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     setError("");
     if (form.message.trim().length < 10) return setError("Please provide a few details about your requirement.");
+    if (requiresJourney && (!form.fromCity.trim() || !form.toCity.trim() || !form.travelDate)) return setError("Please enter the pickup city, destination and travel date.");
     let profile: Record<string, string> = {};
     let auth: Record<string, string> = {};
     try { profile = JSON.parse(localStorage.getItem("bhli-profile-details") || "{}"); } catch {}
@@ -74,12 +95,13 @@ function GenericServiceEnquiryInner({ serviceSlug }: { serviceSlug?: string }) {
     if (!(profile.email || auth.email || profile.mobile || profile.phone)) return setError("Please sign in so our team can contact you using your account details.");
     setSubmitting(true);
     const payload = {
-      service_type: slug,
-      service_name: title,
-      customer_name: profile.name || undefined,
-      customer_email: profile.email || auth.email || undefined,
-      customer_mobile: profile.mobile || profile.phone || undefined,
-      message: form.message.trim(),
+      service_type: bookingType,
+      from_city: requiresJourney ? form.fromCity.trim() : undefined,
+      to_city: requiresJourney ? form.toCity.trim() : undefined,
+      travel_date: requiresJourney ? form.travelDate : undefined,
+      details: { requested_service: title, website_slug: slug },
+      special_request: form.message.trim(),
+      consent_to_contact: true,
     };
     try {
       const result = await bookingService.createGenericBooking(payload);
@@ -139,6 +161,12 @@ function GenericServiceEnquiryInner({ serviceSlug }: { serviceSlug?: string }) {
               <p className="mt-2 font-semibold text-[#061f3b]">{title}</p>
             </div>
 
+            {requiresJourney && <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <label className="block"><span className="mb-2 block text-xs font-bold text-[#456078]">Pickup city</span><span className="flex items-center gap-3 rounded-2xl border border-black/10 px-4 py-3.5 focus-within:border-[#13a5d8] focus-within:ring-4 focus-within:ring-[#13a5d8]/10"><MapPin className="size-4 text-[#087fbe]" /><input required value={form.fromCity} onChange={(event) => update("fromCity", event.target.value)} placeholder="From city" className="min-w-0 flex-1 bg-transparent text-sm font-semibold outline-none" /></span></label>
+              <label className="block"><span className="mb-2 block text-xs font-bold text-[#456078]">Destination</span><span className="flex items-center gap-3 rounded-2xl border border-black/10 px-4 py-3.5 focus-within:border-[#13a5d8] focus-within:ring-4 focus-within:ring-[#13a5d8]/10"><MapPin className="size-4 text-[#087fbe]" /><input required value={form.toCity} onChange={(event) => update("toCity", event.target.value)} placeholder="To city" className="min-w-0 flex-1 bg-transparent text-sm font-semibold outline-none" /></span></label>
+              <label className="block sm:col-span-2"><span className="mb-2 block text-xs font-bold text-[#456078]">Travel date</span><span className="flex items-center gap-3 rounded-2xl border border-black/10 px-4 py-3.5 focus-within:border-[#13a5d8] focus-within:ring-4 focus-within:ring-[#13a5d8]/10"><CalendarDays className="size-4 text-[#087fbe]" /><input required type="date" min={new Date().toISOString().split("T")[0]} value={form.travelDate} onChange={(event) => update("travelDate", event.target.value)} className="min-w-0 flex-1 bg-transparent text-sm font-semibold outline-none" /></span></label>
+            </div>}
+
             <label className="mt-6 block">
               <span className="mb-2 block text-xs font-bold text-[#456078]">Your requirement</span>
               <span className="flex gap-3 rounded-2xl border border-black/10 bg-white px-4 py-4 text-black/30 transition focus-within:border-[#13a5d8] focus-within:ring-4 focus-within:ring-[#13a5d8]/10">
@@ -147,7 +175,7 @@ function GenericServiceEnquiryInner({ serviceSlug }: { serviceSlug?: string }) {
               </span>
             </label>
 
-            <p className="mt-4 text-xs leading-5 text-slate-400">No additional form details are needed. Our team will contact you to confirm dates, travellers, pricing and other requirements.</p>
+            <p className="mt-4 text-xs leading-5 text-slate-400">Our team will use these details to review availability and contact you with pricing and the next steps.</p>
             {error && <p className="mt-5 rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">{error}</p>}
             <button disabled={submitting} className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#0875b7] to-[#13a5d8] px-6 py-4 font-bold text-white shadow-lg transition hover:-translate-y-0.5 disabled:opacity-60">{submitting ? "Submitting..." : "Request a callback"}<ArrowRight className="size-4" /></button>
           </form>

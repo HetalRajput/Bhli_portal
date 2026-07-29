@@ -147,7 +147,7 @@ export default function Contact() {
         {[
           [Phone, "Call us", "+91 99163 56691"],
           [Mail, "Email", "reservations@bookinghospitality.com"],
-          [MessageCircle, "WhatsApp", "+91 99163 56691"],
+          [MessageCircle, "WhatsApp", "+91 99451 23211"],
           [Clock, "Availability", "Reservation support: 24x7"]
         ].map(([Icon, title, text]) => (
           <div key={String(title)} className="rounded-3xl bg-white p-7 shadow-sm">
@@ -281,9 +281,9 @@ export default function Contact() {
             <p className="mt-4 leading-7 text-white/55">
               For Government and Defence MoU reservations, LTC, entitlements, official travel and documentation assistance. Helplines: +91 97407 56691, +91 72045 18641, +91 99451 23176, +91 72040 56691, +91 99451 23169 and +91 99451 23211.
             </p>
-            <button className="mt-6 rounded-full border border-[#13a5d8]/50 px-5 py-2.5 text-sm text-[#13a5d8]">
-              WhatsApp: +91 99163 56691
-            </button>
+            <a href="https://wa.me/919945123211" target="_blank" rel="noreferrer" className="mt-6 inline-block rounded-full border border-[#13a5d8]/50 px-5 py-2.5 text-sm text-[#13a5d8]">
+              WhatsApp: +91 99451 23211
+            </a>
           </div>
           <div className="rounded-[2rem] border border-black/10 bg-[#e5f3fa] p-8">
             <Building2 className="size-7 text-[#087fbe]" />
