@@ -1,4 +1,33 @@
-"use client";
-import{useEffect,useState}from"react";
-const slides=[{src:"https://images.pexels.com/photos/189296/pexels-photo-189296.jpeg?auto=compress&cs=tinysrgb&w=1800",alt:"Luxury resort hospitality"},{src:"https://images.pexels.com/photos/258154/pexels-photo-258154.jpeg?auto=compress&cs=tinysrgb&w=1800",alt:"Premium hotel destination"},{src:"https://images.pexels.com/photos/3225531/pexels-photo-3225531.jpeg?auto=compress&cs=tinysrgb&w=1800",alt:"Scenic Indian travel destination"},{src:"https://images.pexels.com/photos/358319/pexels-photo-358319.jpeg?auto=compress&cs=tinysrgb&w=1800",alt:"Air travel journey"}];
-export default function HeroBackground(){const[active,setActive]=useState(0);useEffect(()=>{if(window.matchMedia("(prefers-reduced-motion: reduce)").matches)return;const timer=window.setInterval(()=>setActive(current=>(current+1)%slides.length),5000);return()=>window.clearInterval(timer)},[]);return <div className="absolute inset-0 -z-20 overflow-hidden bg-[#061f3b]">{slides.map((slide,index)=><img key={slide.src} src={slide.src} alt={slide.alt} aria-hidden={index!==active} className={`absolute inset-0 h-full w-full object-cover transition-[opacity,transform] duration-[1400ms] ease-out ${index===active?"scale-105 opacity-45":"scale-100 opacity-0"}`}/>) }<div className="absolute inset-0 bg-gradient-to-r from-[#041b33] via-[#041b33]/85 to-[#041b33]/15"/><div className="absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-[#061f3b]/45 to-transparent"/><div className="absolute bottom-8 right-8 hidden gap-2 md:flex">{slides.map((_,index)=><span key={index} className={`h-1 rounded-full transition-all duration-500 ${index===active?"w-8 bg-[#13a5d8]":"w-3 bg-white/35"}`}/>)}</div></div>}
+'use client';
+
+import { useEffect, useState } from 'react';
+import type { Banner } from '@/lib/api/cms';
+
+const fallbackSlides = [
+  { src: 'https://images.pexels.com/photos/189296/pexels-photo-189296.jpeg?auto=compress&cs=tinysrgb&w=1800', alt: 'Luxury resort hospitality' },
+  { src: 'https://images.pexels.com/photos/258154/pexels-photo-258154.jpeg?auto=compress&cs=tinysrgb&w=1800', alt: 'Premium hotel destination' },
+  { src: 'https://images.pexels.com/photos/3225531/pexels-photo-3225531.jpeg?auto=compress&cs=tinysrgb&w=1800', alt: 'Scenic Indian travel destination' },
+  { src: 'https://images.pexels.com/photos/358319/pexels-photo-358319.jpeg?auto=compress&cs=tinysrgb&w=1800', alt: 'Air travel journey' },
+];
+
+export default function HeroBackground({ banners = [] }: { banners?: Banner[] }) {
+  const slides = banners.length
+    ? banners.map((banner) => ({ src: banner.image, alt: banner.title || 'BHLI travel banner' }))
+    : fallbackSlides;
+  const [active, setActive] = useState(0);
+
+  useEffect(() => {
+    if (slides.length < 2 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const timer = window.setInterval(() => setActive((current) => (current + 1) % slides.length), 5000);
+    return () => window.clearInterval(timer);
+  }, [slides.length]);
+
+  return <div className='absolute inset-0 -z-20 overflow-hidden bg-[#061f3b]'>
+    {slides.map((slide, index) => <img key={`${slide.src}-${index}`} src={slide.src} alt={slide.alt} aria-hidden={index !== active} className={`absolute inset-0 h-full w-full object-cover transition-[opacity,transform] duration-[1400ms] ease-out ${index === active ? 'scale-105 opacity-45' : 'scale-100 opacity-0'}`} />)}
+    <div className='absolute inset-0 bg-gradient-to-r from-[#041b33] via-[#041b33]/85 to-[#041b33]/15' />
+    <div className='absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-[#061f3b]/45 to-transparent' />
+    {slides.length > 1 && <div className='absolute bottom-8 right-8 hidden gap-2 md:flex'>
+      {slides.map((_, index) => <button type='button' key={index} onClick={() => setActive(index)} aria-label={`Show banner ${index + 1}`} aria-current={index === active ? 'true' : undefined} className={`h-1 rounded-full transition-all duration-500 ${index === active ? 'w-8 bg-[#13a5d8]' : 'w-3 bg-white/35'}`} />)}
+    </div>}
+  </div>;
+}

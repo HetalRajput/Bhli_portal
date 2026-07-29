@@ -1,6 +1,7 @@
 import axios from 'axios';
 
 const BASE_URL = 'https://bhli-backend.onrender.com';
+let apiRequestSequence = 0;
 
 export const apiClient = axios.create({
   baseURL: BASE_URL,
@@ -21,6 +22,8 @@ apiClient.interceptors.request.use(
     }
 
     const fullUrl = `${config.baseURL || ''}${config.url || ''}`;
+    const requestNumber = ++apiRequestSequence;
+    console.log(`[API ${requestNumber}] ${config.method?.toUpperCase()} ${fullUrl}`);
     console.log(
       `🚀 [API Request] ${config.method?.toUpperCase()} ${fullUrl}`,
       {
@@ -51,10 +54,17 @@ apiClient.interceptors.response.use(
   async (error) => {
     const fullUrl = error.config ? `${error.config.baseURL || ''}${error.config.url || ''}` : 'Unknown URL';
     const status = error.response?.status ? `[Status: ${error.response.status}]` : '[Network Error]';
-    console.warn(
+    const responseData = error.response?.data;
+    const responseDetail = responseData?.errors?.detail || responseData?.detail;
+    const isEmptySearchPage =
+      error.response?.status === 404 && responseDetail === 'Invalid page.';
+
+    if (!isEmptySearchPage) {
+      console.warn(
       `❌ [API Response Error] ${error.config?.method?.toUpperCase()} ${fullUrl} ${status}`,
       error.response?.data || error.message
     );
+    }
     
     // Refresh an expired access token once, then replay the original request.
     if (error.response?.status === 401 && typeof window !== 'undefined') {

@@ -1,9 +1,15 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, ShieldAlert, Award, Plane, Trophy, Briefcase, Phone, Mail, Landmark } from "lucide-react";
+import { cmsService, type OurClient } from "@/lib/api/cms";
 
+interface InstitutionalClient {
+  name: string;
+  mark: string;
+  image?: string;
+}
 interface ClientItem {
   id: string;
   name: string;
@@ -14,14 +20,41 @@ interface ClientItem {
   description: string;
 }
 
-const defenceAndAlliedClients = [
-  "Indian Army", "Indian Air Force", "Indian Navy", "Indian Coast Guard", "DRDO", "NSG", "CRPF", "CISF", "BSF", "SSB", "ITBP", "RAF", "Assam Rifles", "SSF", "SSC", "SPG", "IRB", "NPA"
+const institutionalLogoPaths: Record<string, string> = {
+  "NSG": "/Asset/clients/institutional/nsg.png",
+  "CRPF": "/Asset/clients/institutional/crpf.png",
+  "CISF": "/Asset/clients/institutional/cisf.png",
+  "BSF": "/Asset/clients/institutional/bsf.png",
+  "SSB": "/Asset/clients/institutional/ssb.png",
+  "ITBP": "/Asset/clients/institutional/itbp.png",
+  "Assam Rifles": "/Asset/clients/institutional/assam-rifles.png",
+  "SPG": "/Asset/clients/institutional/spg.png",
+  "BEML": "/Asset/clients/institutional/beml.png",
+  "NAL": "/Asset/clients/institutional/nal.png",
+  "NHAI": "/Asset/clients/institutional/nhai.png",
+  "GST": "/Asset/clients/institutional/gst.png",
+  "Customs": "/Asset/clients/institutional/customs.png",
+  "IOCL": "/Asset/clients/institutional/iocl.png",
+  "ONGC": "/Asset/clients/institutional/ongc.png",
+  "HPCL": "/Asset/clients/institutional/hpcl.png",
+  "BPCL": "/Asset/clients/institutional/bpcl.png"
+};
+const defenceAndAlliedClients: InstitutionalClient[] = [
+  { name: "Indian Army", mark: "IA", image: "/Asset/clients/001-xt9sc6.png" },
+  { name: "Indian Air Force", mark: "IAF", image: "/Asset/clients/badge_of_the_indian_air_force.svg-qqwm2n.png" },
+  { name: "Indian Navy", mark: "IN", image: "/Asset/clients/institutional/indian-navy.png" },
+  { name: "Indian Coast Guard", mark: "ICG", image: "/Asset/clients/institutional/indian-coast-guard.png" },
+  { name: "DRDO", mark: "DRDO", image: "/Asset/clients/drdo-logo-dvxed4-91dtld.png" },
+  ...["NSG", "CRPF", "CISF", "BSF", "SSB", "ITBP", "RAF", "Assam Rifles", "SSF", "SSC", "SPG", "IRB", "NPA"].map(name => ({ name, mark: name.split(" ").map(word => word[0]).join("").slice(0, 4), image: institutionalLogoPaths[name] }))
 ];
 
-const publicSectorClients = [
-  "BHEL", "BEL", "BEML", "HAL", "MIL", "ISRO", "NAL", "ANTRIX", "AAI", "NHAI", "CIL", "Power Grid", "Income Tax", "Revenue", "GST", "Customs", "IOCL", "ONGC", "HPCL", "BPCL", "GAIL", "Indian Railways"
-];
-const clientsList: ClientItem[] = [
+const publicSectorClients: InstitutionalClient[] = [
+  { name: "BEL", mark: "BEL", image: "/Asset/clients/1-cre4co.png" },
+  { name: "ISRO", mark: "ISRO", image: "/Asset/clients/003-89g2gd.png" },
+  { name: "Income Tax", mark: "IT", image: "/Asset/clients/02-gy2630.png" },
+  { name: "Indian Railways", mark: "IR", image: "/Asset/clients/005-7myd83.jpg" },
+  ...["BHEL", "BEML", "HAL", "MIL", "NAL", "ANTRIX", "AAI", "NHAI", "CIL", "Power Grid", "Revenue", "GST", "Customs", "IOCL", "ONGC", "HPCL", "BPCL", "GAIL"].map(name => ({ name, mark: name.split(" ").map(word => word[0]).join("").slice(0, 4), image: institutionalLogoPaths[name] }))
+];const clientsList: ClientItem[] = [
   // --- GOVERNMENT & DEFENCE ---
   {
     id: "mod",
@@ -285,6 +318,34 @@ const clientsList: ClientItem[] = [
 
 export default function ClientsPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [displayClients, setDisplayClients] = useState<ClientItem[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    cmsService.getClients().then((clients) => {
+      if (cancelled) return;
+
+      const mappedClients = clients
+        .filter((client) => client.is_active !== false && Boolean(client.image))
+        .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0))
+        .map((client: OurClient): ClientItem => ({
+          id: String(client.id),
+          name: client.title,
+          category: "corporate",
+          categoryName: client.subtitle || "Our Clients",
+          badge: client.subtitle || "Trusted Client",
+          image: client.image,
+          description: client.description || `Travel and hospitality services for ${client.title}.`,
+        }));
+
+      setDisplayClients(mappedClients);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const categories = [
     { id: "all", label: "All Clients", icon: Award },
@@ -295,8 +356,8 @@ export default function ClientsPage() {
   ];
 
   const filteredClients = selectedCategory === "all"
-    ? clientsList
-    : clientsList.filter(c => c.category === selectedCategory);
+    ? displayClients
+    : displayClients.filter(c => c.category === selectedCategory);
 
   return (
     <div className="bg-[#f5f9fc] text-[#122b42] min-h-screen">
@@ -315,30 +376,31 @@ export default function ClientsPage() {
       </section>
 
       {/* Institutional Client Groups */}
-      <section className="relative z-10 mx-auto -mt-10 max-w-7xl px-5 lg:px-8">
-        <div className="overflow-hidden rounded-[2rem] border border-black/[.06] bg-white shadow-[0_22px_65px_rgba(6,43,80,.13)]">
-          <div className="grid lg:grid-cols-2">
-            <article className="p-7 md:p-10 lg:border-r lg:border-black/[.07]">
-              <div className="flex items-start gap-4">
-                <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-[#062b50] text-[#13a5d8]"><Landmark className="size-6" /></span>
-                <div><p className="text-[10px] font-bold uppercase tracking-[.2em] text-[#087fbe]">Institutional clients</p><h2 className="mt-2 font-serif text-3xl font-semibold text-[#062b50]">Ministry of Defence &amp; Allied Forces</h2></div>
+      <section className="hidden">
+        <div className="overflow-hidden rounded-[2rem] border border-[#dce8ef] bg-white shadow-[0_24px_70px_rgba(6,43,80,.14)]">
+          <div className="flex flex-col justify-between gap-6 border-b border-[#e4edf2] bg-gradient-to-r from-[#f6fbfe] to-white p-7 md:flex-row md:items-end md:p-10">
+            <div><p className="text-[10px] font-bold uppercase tracking-[.22em] text-[#087fbe]">Institutional clients</p><h2 className="mt-2 max-w-2xl font-serif text-3xl font-semibold text-[#062b50] md:text-4xl">Trusted by institutions that serve the nation</h2></div>
+            <div className="flex gap-6 text-sm text-[#607789]"><span><b className="block font-serif text-2xl text-[#087fbe]">40+</b>Institutions</span><span><b className="block font-serif text-2xl text-[#087fbe]">24×7</b>Account desks</span></div>
+          </div>
+          <div className="grid gap-8 p-6 md:p-8 lg:p-10">
+            <article className="overflow-hidden rounded-[1.75rem] border border-[#dbe8ef] bg-[#f8fbfd]">
+              <div className="flex flex-col gap-5 bg-[#062b50] p-6 text-white md:flex-row md:items-center md:justify-between md:p-8">
+                <div className="flex items-center gap-4"><span className="grid size-16 shrink-0 place-items-center rounded-2xl bg-white p-2 shadow-lg"><img src="/Asset/clients/ministry_of_defence-3v7qxr-h5a75u.png" alt="Ministry of Defence" className="size-full object-contain" /></span><div><p className="text-[10px] font-bold uppercase tracking-[.2em] text-[#4fc3ea]">Defence network</p><h3 className="mt-1 font-serif text-2xl font-semibold md:text-3xl">Ministry of Defence &amp; Allied Forces</h3></div></div>
+                <p className="max-w-md text-sm leading-6 text-white/60">Trusted travel and hospitality support across defence commands, forces and allied institutions.</p>
               </div>
-              <p className="mt-5 text-sm leading-7 text-[#607789]">Trusted travel and hospitality support across defence commands, forces and allied institutions.</p>
-              <div className="mt-6 flex flex-wrap gap-2">
-                {defenceAndAlliedClients.map((client) => <span key={client} className="rounded-full border border-[#087fbe]/12 bg-[#edf7fc] px-3.5 py-2 text-xs font-semibold text-[#294a63]">{client}</span>)}
-                <span className="rounded-full border border-dashed border-[#087fbe]/30 px-3.5 py-2 text-xs font-semibold text-[#087fbe]">and others</span>
+              <div className="grid gap-3 p-5 sm:grid-cols-2 md:p-6 lg:grid-cols-4">
+                {defenceAndAlliedClients.map((client) => <div key={client.name} className="group flex min-h-24 items-center gap-3 rounded-2xl border border-[#dce8ef] bg-white p-3.5 transition duration-300 hover:-translate-y-0.5 hover:border-[#13a5d8]/45 hover:shadow-[0_12px_30px_rgba(6,43,80,.09)]"><span className="grid size-12 shrink-0 place-items-center overflow-hidden rounded-xl bg-[#edf7fc] p-1.5 text-[11px] font-black tracking-tight text-[#087fbe]">{client.image ? <img src={client.image} alt="" className="size-full object-contain" /> : client.mark}</span><span className="text-sm font-bold leading-5 text-[#294a63]">{client.name}</span></div>)}
+                <div className="flex min-h-24 items-center justify-center rounded-2xl border border-dashed border-[#087fbe]/30 bg-[#edf7fc]/50 p-3 text-xs font-bold uppercase tracking-[.14em] text-[#087fbe]">And others</div>
               </div>
             </article>
-
-            <article className="border-t border-black/[.07] p-7 md:p-10 lg:border-t-0">
-              <div className="flex items-start gap-4">
-                <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-[#13a5d8] text-[#062b50]"><Briefcase className="size-6" /></span>
-                <div><p className="text-[10px] font-bold uppercase tracking-[.2em] text-[#087fbe]">Government network</p><h2 className="mt-2 font-serif text-3xl font-semibold text-[#062b50]">Public Sector Undertakings &amp; Government Departments</h2></div>
+            <article className="overflow-hidden rounded-[1.75rem] border border-[#eadfca] bg-[#fffdf8]">
+              <div className="flex flex-col gap-5 bg-gradient-to-r from-[#81601d] to-[#a77d28] p-6 text-white md:flex-row md:items-center md:justify-between md:p-8">
+                <div className="flex items-center gap-4"><span className="grid size-14 shrink-0 place-items-center rounded-2xl bg-white/15 text-[#ffe5a9]"><Briefcase className="size-7" /></span><div><p className="text-[10px] font-bold uppercase tracking-[.2em] text-[#ffe5a9]">Government network</p><h3 className="mt-1 font-serif text-2xl font-semibold md:text-3xl">PSUs &amp; Government Departments</h3></div></div>
+                <p className="max-w-md text-sm leading-6 text-white/70">Coordinated reservations and travel assistance for PSUs, departments and national institutions.</p>
               </div>
-              <p className="mt-5 text-sm leading-7 text-[#607789]">Coordinated reservations and travel assistance for PSUs, departments and national institutions.</p>
-              <div className="mt-6 flex flex-wrap gap-2">
-                {publicSectorClients.map((client) => <span key={client} className="rounded-full border border-[#b47500]/12 bg-[#fff8e9] px-3.5 py-2 text-xs font-semibold text-[#5e522f]">{client}</span>)}
-                <span className="rounded-full border border-dashed border-[#b47500]/30 px-3.5 py-2 text-xs font-semibold text-[#9a6900]">and others</span>
+              <div className="grid gap-3 p-5 sm:grid-cols-2 md:p-6 lg:grid-cols-4">
+                {publicSectorClients.map((client) => <div key={client.name} className="group flex min-h-24 items-center gap-3 rounded-2xl border border-[#eadfca] bg-white p-3.5 transition duration-300 hover:-translate-y-0.5 hover:border-[#bd8b2b]/45 hover:shadow-[0_12px_30px_rgba(91,67,20,.09)]"><span className="grid size-12 shrink-0 place-items-center overflow-hidden rounded-xl bg-[#fff6df] p-1.5 text-[11px] font-black tracking-tight text-[#936817]">{client.image ? <img src={client.image} alt="" className="size-full object-contain" /> : client.mark}</span><span className="text-sm font-bold leading-5 text-[#53492f]">{client.name}</span></div>)}
+                <div className="flex min-h-24 items-center justify-center rounded-2xl border border-dashed border-[#bd8b2b]/30 bg-[#fff8e9] p-3 text-xs font-bold uppercase tracking-[.14em] text-[#936817]">And others</div>
               </div>
             </article>
           </div>
@@ -370,6 +432,12 @@ export default function ClientsPage() {
 
         {/* Clients Grid */}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {filteredClients.length === 0 && (
+            <div className="col-span-full rounded-3xl border border-dashed border-[#087fbe]/25 bg-white px-6 py-16 text-center">
+              <h2 className="font-serif text-2xl font-semibold text-[#062b50]">No clients available</h2>
+              <p className="mt-2 text-sm text-[#607789]">Client information will appear here when it is added.</p>
+            </div>
+          )}
           {filteredClients.map(client => {
             return (
               <div

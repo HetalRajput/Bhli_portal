@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { Mail, Phone, Users, Search, ShieldCheck, Award, Sparkles, UserCheck } from "lucide-react";
+import { Mail, Phone, Users, Search, UserCheck } from "lucide-react";
 import { cmsService } from "@/lib/api/cms";
 import TeamAvatar from "@/components/TeamAvatar";
 
@@ -33,8 +33,6 @@ interface TeamMember {
   phone_number?: string;
   linkedin_url?: string;
 }
-
-const PROFILE_ICON_PLACEHOLDER = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23edf6fc' stroke='%23087dbd' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='11' fill='%23edf6fc'/><path d='M18 20v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 6 18.5V20' fill='none'/><circle cx='12' cy='8.5' r='3.5' fill='%23087dbd' stroke='none'/></svg>";
 
 const fallbackTeam: TeamMember[] = [
   {
@@ -111,8 +109,6 @@ export default function OurTeamPage() {
         member.subtitle?.toLowerCase().includes(searchQuery.toLowerCase());
 
       if (selectedFilter === "All") return matchesSearch;
-
-      const filterLower = selectedFilter.toLowerCase();
       const designationLower = (member.designation || "").toLowerCase();
       const subtitleLower = (member.subtitle || "").toLowerCase();
 
@@ -146,15 +142,15 @@ export default function OurTeamPage() {
   return (
     <div className="bg-[#f5f9fc] text-[#122b42] min-h-screen">
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-[#051b33] via-[#062b50] to-[#07345d] px-5 py-12 text-white lg:px-8">
+      <section className="relative overflow-hidden bg-[#061f3b] px-5 pb-24 pt-20 text-white lg:px-8 lg:pb-28 lg:pt-24">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(19,165,216,0.18),transparent_50%)]" />
         <div className="relative mx-auto max-w-7xl">
           <div className="max-w-3xl">
             <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[.25em] text-[#13a5d8]">
               <Users className="size-4 text-[#13a5d8]" /> Leadership & Operations
             </p>
-            <h1 className="mt-3 font-serif text-3xl font-semibold leading-tight md:text-5xl">
-              Meet the People Behind BHLI
+            <h1 className="mt-5 font-serif text-4xl font-semibold leading-[1.08] md:text-6xl">
+              The people behind every seamless journey.
             </h1>
             <p className="mt-3 text-base leading-7 text-white/70">
               Dedicated professionals serving our Defence, Government, and corporate accounts round the clock with unmatched hospitality, logistics, and technology expertise.
@@ -184,8 +180,8 @@ export default function OurTeamPage() {
       </section>
 
       {/* Interactive Controls & Filtering Section */}
-      <section className="mx-auto max-w-7xl px-5 -mt-8 relative z-10 lg:px-8">
-        <div className="rounded-3xl border border-black/8 bg-white p-6 shadow-xl backdrop-blur-md">
+      <section className="relative z-10 mx-auto -mt-8 max-w-7xl px-5 lg:px-8">
+        <div className="rounded-2xl border border-[#dce8ef] bg-white p-4 shadow-[0_16px_50px_rgba(6,31,59,.10)]">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             {/* Search Input */}
             <div className="relative w-full md:w-80">
@@ -195,7 +191,7 @@ export default function OurTeamPage() {
                 placeholder="Search team member or role..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full rounded-full border border-black/10 bg-[#f8fafc] pl-10 pr-4 py-2.5 text-sm outline-none focus:border-[#087dbd] focus:bg-white focus:ring-2 focus:ring-[#087dbd]/15 transition-all"
+                className="w-full rounded-xl border border-transparent bg-[#f3f7fa] py-3 pl-10 pr-4 text-sm outline-none transition-all focus:border-[#13a5d8]/40 focus:bg-white focus:ring-4 focus:ring-[#13a5d8]/10"
               />
             </div>
 
@@ -205,7 +201,7 @@ export default function OurTeamPage() {
                 <button
                   key={cat}
                   onClick={() => setSelectedFilter(cat)}
-                  className={`rounded-full px-4 py-2 text-xs font-bold transition-all ${
+                  className={`rounded-lg px-4 py-2.5 text-xs font-bold transition-all ${
                     selectedFilter === cat
                       ? "bg-[#062b50] text-white shadow-md"
                       : "bg-[#f0f6fa] text-[#062b50] hover:bg-[#e1eff8]"
@@ -220,7 +216,14 @@ export default function OurTeamPage() {
       </section>
 
       {/* Team Member Grid */}
-      <section className="mx-auto max-w-7xl px-5 py-16 lg:px-8">
+      <section className="mx-auto max-w-7xl px-5 py-16 lg:px-8 lg:py-20">
+        <div className="mb-8 flex items-end justify-between gap-5">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[.22em] text-[#087fbe]">Our specialists</p>
+            <h2 className="mt-2 font-serif text-3xl font-semibold text-[#062b50]">Meet the team</h2>
+          </div>
+          <p className="hidden text-sm text-[#607789] sm:block">{filteredTeam.length} {filteredTeam.length === 1 ? "profile" : "profiles"}</p>
+        </div>
         {filteredTeam.length === 0 ? (
           <div className="text-center py-20 bg-white rounded-3xl border border-black/5 p-8">
             <Users className="mx-auto size-12 text-[#087dbd]/40 mb-3" />
@@ -237,23 +240,23 @@ export default function OurTeamPage() {
             </button>
           </div>
         ) : (
-          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {filteredTeam.map((member) => (
               <div
                 key={member.id}
-                className="group relative flex flex-col justify-between overflow-hidden rounded-3xl border border-black/10 bg-white p-8 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1.5 hover:border-[#087dbd]/30"
+                className="group relative flex flex-col justify-between overflow-hidden rounded-[1.75rem] border border-[#dce8ef] bg-white p-7 shadow-[0_8px_30px_rgba(6,31,59,.05)] transition duration-300 hover:-translate-y-1 hover:border-[#13a5d8]/40 hover:shadow-[0_22px_55px_rgba(6,31,59,.12)]"
               >
                 {/* Decorative Top Accent Line */}
                 <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#062b50] via-[#087dbd] to-[#13a5d8] opacity-0 group-hover:opacity-100 transition-opacity" />
 
                 <div>
                   {/* Photo Container */}
-                  <div className="relative mb-6 flex items-center justify-center">
+                  <div className="relative mb-6 flex items-center justify-center rounded-2xl bg-gradient-to-br from-[#edf7fb] to-[#e1eef5] py-6">
                     <div className="relative">
                       <TeamAvatar
                         photo={member.photo}
                         name={member.name}
-                        className="h-28 w-28 rounded-full object-cover border-4 border-[#087dbd]/10 group-hover:border-[#087dbd]/30 transition-all duration-300 shadow-md group-hover:scale-105"
+                        className="h-32 w-32 rounded-full border-4 border-white object-cover object-top shadow-[0_10px_25px_rgba(6,31,59,.15)] transition duration-500 group-hover:scale-105"
                       />
                       <span className="absolute bottom-0 right-0 bg-[#087dbd] text-white p-1.5 rounded-full shadow-md">
                         <UserCheck className="size-3.5" />
