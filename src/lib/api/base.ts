@@ -25,7 +25,7 @@ export const baseService = {
     return response.data;
   },
   getDepartments: async () => {
-    const response = await apiClient.get('/api/base/departments/');
+    const response = await apiClient.get('/api/base/user-departments/');
     return response.data;
   },
   // Services
