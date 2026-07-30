@@ -30,14 +30,24 @@ export const baseService = {
   },
   // Services
   getServices: async (params?: { is_featured?: boolean }) => {
-    const response = await apiClient.get('/api/base/services/', { params });
-    return response.data;
+    const query = params?.is_featured === undefined ? '' : `?is_featured=${params.is_featured}`;
+    try {
+      const response = await fetch(`https://bhli-backend.onrender.com/api/base/services/${query}`, {
+        headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(5000), cache: 'no-store',
+      });
+      if (!response.ok) return [];
+      return await response.json();
+    } catch { return []; }
   },
   getServiceDetail: async (slug: string) => {
-    const response = await apiClient.get(`/api/base/services/${slug}/`);
-    return response.data;
+    try {
+      const response = await fetch(`https://bhli-backend.onrender.com/api/base/services/${encodeURIComponent(slug)}/`, {
+        headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(5000), cache: 'no-store',
+      });
+      if (!response.ok) return null;
+      return await response.json();
+    } catch { return null; }
   },
-
   // Enquiry Types
   getEnquiryTypes: async () => {
     try {

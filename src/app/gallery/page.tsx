@@ -1,131 +1,60 @@
 import Link from "next/link";
-import { ArrowRight, Camera } from "lucide-react";
-import { cmsService } from "@/lib/api/cms";
-
-const portfolioSections = [
-  {
-    title: "Hotel portfolio",
-    description: "Premium hospitality visuals showcasing curated stays, room experiences and destination comfort.",
-    items: [
-      { title: "Luxury stay", tag: "Hotel", image: "/Asset/WhatsApp%20Image%202026-07-18%20at%2010.22.06%20PM.jpeg" },
-      { title: "Destination comfort", tag: "Hotel", image: "/Asset/WhatsApp%20Image%202026-07-18%20at%2010.22.07%20PM.jpeg" },
-      { title: "Premium experience", tag: "Hotel", image: "/Asset/WhatsApp%20Image%202026-07-18%20at%2010.22.07%20PM%20(1).jpeg" }
-    ]
-  },
-  {
-    title: "MOU & partnership highlights",
-    description: "Official moments and collaboration visuals that reflect trust, recognition and long-term partnerships.",
-    items: [
-      { title: "MoU signing", tag: "MOU", image: "/Asset/WhatsApp%20Image%202026-07-18%20at%2010.22.07%20PM%20(2).jpeg" },
-      { title: "Partnership showcase", tag: "MOU", image: "/Asset/WhatsApp%20Image%202026-07-18%20at%2010.22.08%20PM.jpeg" },
-      { title: "Official collaboration", tag: "MOU", image: "/Asset/WhatsApp%20Image%202026-07-18%20at%2010.22.09%20PM.jpeg" }
-    ]
-  },
-  {
-    title: "Corporate travel moments",
-    description: "Professional and memorable travel scenes captured across events, visits and group journeys.",
-    items: [
-      { title: "Travel readiness", tag: "Travel", image: "/Asset/WhatsApp%20Image%202026-07-18%20at%2010.22.07%20PM.jpeg" },
-      { title: "Group journey", tag: "Travel", image: "/Asset/WhatsApp%20Image%202026-07-18%20at%2010.22.08%20PM.jpeg" },
-      { title: "Executive experience", tag: "Travel", image: "/Asset/WhatsApp%20Image%202026-07-18%20at%2010.22.07%20PM%20(1).jpeg" }
-    ]
-  }
-];
+import { ArrowRight, Camera, Images } from "lucide-react";
+import { cmsService, type GalleryAlbum } from "@/lib/api/cms";
 
 export default async function Gallery() {
-  let photos: any[] = [];
+  let albums: GalleryAlbum[] = [];
   try {
-    const response = await cmsService.getGallery();
-    if (response && response.success) {
-      photos = response.data;
-    }
+    albums = await cmsService.getGallery();
   } catch (error) {
     console.error("Failed to fetch gallery:", error);
   }
 
-  // Fallback if no data is returned from API yet
-  if (photos.length === 0) {
-    photos = [
-      { image: "https://images.pexels.com/photos/258154/pexels-photo-258154.jpeg?auto=compress&cs=tinysrgb&w=1200", title: "Resort stays", caption: "Hotels" },
-      { image: "https://images.pexels.com/photos/3225531/pexels-photo-3225531.jpeg?auto=compress&cs=tinysrgb&w=1200", title: "Himalayan escapes", caption: "Destinations" },
-      { image: "https://images.pexels.com/photos/261102/pexels-photo-261102.jpeg?auto=compress&cs=tinysrgb&w=1200", title: "Curated hospitality", caption: "Hotels" },
-      { image: "https://images.pexels.com/photos/1190297/pexels-photo-1190297.jpeg?auto=compress&cs=tinysrgb&w=1200", title: "Memorable events", caption: "Events" },
-    ];
-  }
+  const activeAlbums = albums
+    .filter((album) => album.is_active)
+    .sort((a, b) => a.display_order - b.display_order);
+  const categories = [...new Set(activeAlbums.map((album) => album.category_name).filter(Boolean))];
 
   return (
-    <div className="bg-[#051b33] text-white">
+    <div className="min-h-screen bg-[#051b33] text-white">
       <section className="mx-auto max-w-7xl px-5 pb-14 pt-20 lg:px-8">
         <div className="flex flex-col justify-between gap-7 md:flex-row md:items-end">
           <div>
-            <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[.25em] text-[#13a5d8]">
-              <Camera className="size-4" />Our gallery
-            </p>
+            <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[.25em] text-[#13a5d8]"><Camera className="size-4" />Our gallery</p>
             <h1 className="mt-5 max-w-3xl font-serif text-4xl md:text-5xl lg:text-7xl">A glimpse of where great journeys can lead.</h1>
           </div>
-          <p className="max-w-sm leading-7 text-white/50">Stays, destinations, official gatherings and experiences selected to inspire your next plan.</p>
+          <p className="max-w-sm leading-7 text-white/50">Select an album to explore its photographs and highlights.</p>
         </div>
         <div className="mt-10 flex flex-wrap gap-2">
-          {["All", "Hotels", "Destinations", "Events", "Travel"].map((x, i) => (
-            <button key={x} className={`rounded-full px-5 py-2 text-sm ${i === 0 ? "bg-[#13a5d8] font-bold text-[#061f3b]" : "border border-white/15 text-white/60"}`}>
-              {x}
-            </button>
+          {["All", ...categories].map((category, index) => (
+            <span key={category} className={`rounded-full px-5 py-2 text-sm ${index === 0 ? "bg-[#13a5d8] font-bold text-[#061f3b]" : "border border-white/15 text-white/60"}`}>{category}</span>
           ))}
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-5 pb-10 lg:px-8">
-        <div className="rounded-[2rem] border border-white/10 bg-white/5 p-6 md:p-8 lg:p-10">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-[.3em] text-[#13a5d8]">Portfolio highlights</p>
-              <h2 className="mt-3 max-w-2xl font-serif text-3xl md:text-4xl">A curated mix of hotels, partnerships and travel moments.</h2>
-            </div>
-            <p className="max-w-xl text-sm leading-7 text-white/60">This portfolio section brings together the local gallery assets so hotels, MOU visuals and travel scenes appear in one polished experience.</p>
-          </div>
-          <div className="mt-8 grid gap-6 lg:grid-cols-3">
-            {portfolioSections.map((section) => (
-              <div key={section.title} className="overflow-hidden rounded-[1.5rem] border border-white/10 bg-[#071c35]">
-                <div className="grid gap-2 p-3 sm:grid-cols-2">
-                  {section.items.map((item) => (
-                    <figure key={item.title} className="relative overflow-hidden rounded-[1rem]">
-                      <img src={item.image} alt={item.title} className="h-36 w-full object-cover" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-                      <div className="absolute bottom-3 left-3">
-                        <p className="text-[10px] uppercase tracking-[0.25em] text-[#13a5d8]">{item.tag}</p>
-                        <p className="text-sm font-semibold">{item.title}</p>
-                      </div>
-                    </figure>
-                  ))}
-                </div>
-                <div className="border-t border-white/10 p-5">
-                  <h3 className="font-serif text-2xl">{section.title}</h3>
-                  <p className="mt-2 text-sm leading-6 text-white/60">{section.description}</p>
-                </div>
+      <section className="mx-auto grid max-w-7xl gap-6 px-5 pb-24 md:grid-cols-2 lg:grid-cols-3 lg:px-8">
+        {activeAlbums.map((album) => {
+          const activeImages = (Array.isArray(album.images) ? album.images : []).filter((image) => image.is_active);
+          const cover = activeImages.find((image) => image.is_cover) || activeImages[0];
+          return (
+            <Link key={album.id} href={`/gallery/${encodeURIComponent(album.slug)}`} className="group overflow-hidden rounded-3xl border border-white/10 bg-white/5 transition hover:-translate-y-1 hover:border-[#13a5d8]/50 hover:bg-white/10 focus:outline-none focus:ring-4 focus:ring-[#13a5d8]/25">
+              <div className="relative h-72 overflow-hidden bg-white/5">
+                {cover ? <img src={cover.image} alt={cover.alt_text || album.title} className="h-full w-full object-cover transition duration-700 group-hover:scale-105" /> : <div className="grid h-full place-items-center"><Images className="size-12 text-white/20" /></div>}
+                <div className="absolute inset-0 bg-gradient-to-t from-[#051b33] via-transparent to-transparent" />
+                <span className="absolute bottom-5 left-5 rounded-full bg-[#13a5d8] px-3 py-1 text-xs font-bold text-[#061f3b]">{activeImages.length} {activeImages.length === 1 ? "photo" : "photos"}</span>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="mx-auto grid max-w-7xl auto-rows-[260px] grid-cols-1 gap-4 px-5 pb-24 sm:grid-cols-2 lg:grid-cols-3 lg:px-8">
-        {photos.map((p, i) => (
-          <figure key={p.id || i} className={`group relative overflow-hidden rounded-3xl ${i === 0 || i === 5 ? "sm:row-span-2" : ""}`}>
-            <img src={p.image} alt={p.title} className="h-full w-full object-cover transition duration-700 group-hover:scale-105" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-            <figcaption className="absolute inset-x-0 bottom-0 p-6">
-              <small className="uppercase tracking-widest text-[#13a5d8]">{p.caption}</small>
-              <h2 className="mt-1 font-serif text-2xl">{p.title}</h2>
-            </figcaption>
-          </figure>
-        ))}
-      </section>
-
-      <section className="border-t border-white/10 px-5 py-20 text-center">
-        <h2 className="font-serif text-4xl">Let us turn the inspiration into an itinerary.</h2>
-        <Link href="/contact-us" className="mt-7 inline-flex items-center gap-2 rounded-full bg-[#13a5d8] px-6 py-3 font-bold text-[#061f3b]">
-          Plan your journey <ArrowRight className="size-4" />
-        </Link>
+              <div className="p-6">
+                <p className="text-xs font-bold uppercase tracking-[.2em] text-[#13a5d8]">{album.category_name}</p>
+                <div className="mt-3 flex items-start justify-between gap-4">
+                  <h2 className="font-serif text-2xl">{album.title}</h2>
+                  <ArrowRight className="mt-1 size-5 shrink-0 transition-transform group-hover:translate-x-1" />
+                </div>
+                {(album.subtitle || album.description) && <p className="mt-3 line-clamp-3 text-sm leading-6 text-white/55">{album.subtitle || album.description}</p>}
+              </div>
+            </Link>
+          );
+        })}
+        {activeAlbums.length === 0 && <p className="col-span-full rounded-3xl border border-white/10 bg-white/5 px-6 py-12 text-center text-white/55">Gallery albums will appear here once they are available.</p>}
       </section>
     </div>
   );

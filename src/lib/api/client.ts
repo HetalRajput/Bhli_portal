@@ -58,7 +58,12 @@ apiClient.interceptors.response.use(
     const isEmptySearchPage =
       error.response?.status === 404 && responseDetail === 'Invalid page.';
 
-    if (!isEmptySearchPage) {
+    const isHandledServiceFailure =
+      error.config?.method?.toLowerCase() === 'get' &&
+      error.response?.status >= 500 &&
+      error.config?.url?.startsWith('/api/base/services/');
+
+    if (!isEmptySearchPage && !isHandledServiceFailure) {
       console.warn(
       `❌ [API Response Error] ${error.config?.method?.toUpperCase()} ${fullUrl} ${status}`,
       error.response?.data || error.message

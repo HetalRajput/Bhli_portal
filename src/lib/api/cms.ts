@@ -69,6 +69,36 @@ type ChannelPartnerListResponse = {
   data: ChannelPartner[];
 };
 
+export type GalleryImage = {
+  id: number; title: string; slug: string; image: string;
+  category_label: string; caption: string; description: string; alt_text: string;
+  is_cover: boolean; is_active: boolean; display_order: number;
+  created_at: string; updated_at: string;
+};
+
+export type GalleryAlbum = {
+  id: number; category: number; category_name: string; category_slug: string;
+  title: string; slug: string; subtitle: string; description: string;
+  is_featured: boolean; is_active: boolean; display_order: number;
+  created_at: string; updated_at: string; images: GalleryImage[];
+};
+
+type GalleryListResponse = { success: boolean; count: number; data: GalleryAlbum[] };
+
+export type Testimonial = {
+  id: number;
+  name: string;
+  designation: string;
+  organization: string;
+  message: string;
+  rating: number;
+  is_active: boolean;
+  display_order: number;
+  created_at: string;
+  updated_at: string;
+};
+
+type TestimonialListResponse = { success: boolean; count: number; data: Testimonial[] };
 export const cmsService = {
   getBanners: async () => {
     try {
@@ -79,33 +109,60 @@ export const cmsService = {
       return [];
     }
   },
-  getServices: async (params?: any) => {
-    const response = await apiClient.get('/api/base/services/', { params });
-    return response.data;
-  },
-  getServiceDetail: async (slug: string, params?: any) => {
-    const response = await apiClient.get(`/api/base/services/${slug}/`, { params });
-    return response.data;
-  },
-  searchServiceItems: async (slug: string, query: string, page?: number, pageSize?: number) => {
-    const trimmed = (query || '').trim();
-    const params: Record<string, any> = {};
-    if (page) params.page = page;
-    if (pageSize) params.page_size = pageSize;
+  getServices: async (params?: Record<string, string | number | boolean>) => {
+    const searchParams = new URLSearchParams();
+    Object.entries(params ?? {}).forEach(([key, value]) => searchParams.set(key, String(value)));
+    const query = searchParams.toString();
+    const url = `https://bhli-backend.onrender.com/api/base/services/${query ? `?${query}` : ''}`;
 
     try {
-      if (trimmed) {
-        params.q = trimmed;
-        const response = await apiClient.get(`/api/base/services/${slug}/search/`, { params });
-        return response.data;
-      } else {
-        const response = await apiClient.get(`/api/base/services/${slug}/`, { params });
-        return response.data;
-      }
-    } catch (err: any) {
-      if (err.response?.status === 404) {
-        return { success: true, count: 0, results: [], data: [] };
-      }
+      const response = await fetch(url, {
+        headers: { Accept: 'application/json' },
+        signal: AbortSignal.timeout(5000),
+        cache: 'no-store',
+      });
+      if (!response.ok) return [];
+      return await response.json();
+    } catch {
+      return [];
+    }
+  },
+  getServiceDetail: async (slug: string, params?: Record<string, string | number | boolean>) => {
+    const searchParams = new URLSearchParams();
+    Object.entries(params ?? {}).forEach(([key, value]) => searchParams.set(key, String(value)));
+    const query = searchParams.toString();
+    const url = `https://bhli-backend.onrender.com/api/base/services/${encodeURIComponent(slug)}/${query ? `?${query}` : ''}`;
+
+    try {
+      const response = await fetch(url, {
+        headers: { Accept: 'application/json' },
+        signal: AbortSignal.timeout(5000),
+        cache: 'no-store',
+      });
+      if (!response.ok) return null;
+      return await response.json();
+    } catch {
+      return null;
+    }
+  },
+  searchServiceItems: async (slug: string, query: string, page?: number, pageSize?: number) => {
+    const params = new URLSearchParams();
+    const trimmed = (query || '').trim();
+    if (trimmed) params.set('q', trimmed);
+    if (page) params.set('page', String(page));
+    if (pageSize) params.set('page_size', String(pageSize));
+    const endpoint = trimmed ? `${encodeURIComponent(slug)}/search/` : `${encodeURIComponent(slug)}/`;
+
+    try {
+      const response = await fetch(`https://bhli-backend.onrender.com/api/base/services/${endpoint}?${params.toString()}`, {
+        headers: { Accept: 'application/json' },
+        signal: AbortSignal.timeout(5000),
+        cache: 'no-store',
+      });
+      if (response.status === 404) return { success: true, count: 0, results: [], data: [] };
+      if (!response.ok) return null;
+      return await response.json();
+    } catch {
       return null;
     }
   },
@@ -122,13 +179,19 @@ export const cmsService = {
     const response = await apiClient.get('/api/base/team-members/');
     return response.data;
   },
-  getGallery: async (params?: any) => {
-    const response = await apiClient.get('/api/base/gallery-albums/', { params });
-    return response.data;
+  getGallery: async (params?: Record<string, string | number | boolean>) => {
+    const response = await apiClient.get<GalleryAlbum[] | GalleryListResponse>('/api/base/gallery-albums/', { params });
+    return Array.isArray(response.data) ? response.data : response.data.data ?? [];
+  },
+  getGalleryAlbum: async (slug: string) => {
+    const response = await apiClient.get<GalleryAlbum | { success: boolean; data: GalleryAlbum }>(
+      `/api/base/gallery-albums/${encodeURIComponent(slug)}/`
+    );
+    return 'data' in response.data ? response.data.data : response.data;
   },
   getTestimonials: async () => {
-    const response = await apiClient.get('/api/base/testimonials/');
-    return response.data;
+    const response = await apiClient.get<Testimonial[] | TestimonialListResponse>('/api/base/testimonials/');
+    return Array.isArray(response.data) ? response.data : response.data.data ?? [];
   },
   getFaqs: async () => {
     const response = await apiClient.get('/api/base/faqs/');

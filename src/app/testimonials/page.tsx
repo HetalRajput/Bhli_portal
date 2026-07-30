@@ -49,10 +49,8 @@ export default function TestimonialsPage() {
       try {
         const res = await cmsService.getTestimonials();
         console.log("Testimonials API Response:", res);
-        if (res && res.success && Array.isArray(res.data) && res.data.length > 0) {
-          setTestimonials(res.data);
-        } else if (res && Array.isArray(res) && res.length > 0) {
-          setTestimonials(res);
+        if (res.length > 0) {
+          setTestimonials(res.filter((testimonial) => testimonial.is_active));
         } else {
           setTestimonials(fallbackTestimonials);
         }

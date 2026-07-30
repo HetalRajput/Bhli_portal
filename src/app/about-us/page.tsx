@@ -9,8 +9,10 @@ import {
   Users,
   Mail,
   Phone,
+  Quote,
+  Star,
 } from "lucide-react";
-import { cmsService } from "@/lib/api/cms";
+import { cmsService, type Testimonial } from "@/lib/api/cms";
 import TeamAvatar from "@/components/TeamAvatar";
 
 interface TeamMember {
@@ -63,6 +65,7 @@ const fallbackTeamMembers: TeamMember[] = [
 
 export default async function About() {
   let teamMembers: TeamMember[] = [];
+  let testimonials: Testimonial[] = [];
   try {
     const res = await cmsService.getTeam();
     console.log("About Page - Team API Response:", res);
@@ -73,6 +76,14 @@ export default async function About() {
     }
   } catch (err) {
     console.error("Failed to fetch team members for About page:", err);
+  }
+
+  try {
+    testimonials = (await cmsService.getTestimonials())
+      .filter((testimonial) => testimonial.is_active)
+      .sort((a, b) => a.display_order - b.display_order);
+  } catch (err) {
+    console.error("Failed to fetch testimonials for About page:", err);
   }
 
   const displayTeam = teamMembers.length > 0 ? teamMembers : fallbackTeamMembers;
@@ -306,6 +317,34 @@ export default async function About() {
           </div>
         </div>
       </section>
+
+      {testimonials.length > 0 && (
+        <section className="bg-[#edf6fb] px-5 py-24 lg:px-8">
+          <div className="mx-auto max-w-7xl">
+            <div className="max-w-3xl">
+              <p className="text-xs font-bold uppercase tracking-[.22em] text-[#087fbe]">Client testimonials</p>
+              <h2 className="mt-4 font-serif text-4xl md:text-5xl">Trusted by the people we serve.</h2>
+            </div>
+            <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {testimonials.map((testimonial) => (
+                <article key={testimonial.id} className="flex h-full flex-col rounded-3xl border border-black/5 bg-white p-7 shadow-sm">
+                  <Quote className="size-8 text-[#13a5d8]" />
+                  <div className="mt-5 flex gap-1" aria-label={`${testimonial.rating} out of 5 stars`}>
+                    {Array.from({ length: 5 }, (_, index) => (
+                      <Star key={index} className={`size-4 ${index < Math.min(5, Math.max(0, testimonial.rating)) ? "fill-[#f4b942] text-[#f4b942]" : "text-black/15"}`} />
+                    ))}
+                  </div>
+                  <blockquote className="mt-5 flex-1 text-base leading-8 text-black/60">“{testimonial.message}”</blockquote>
+                  <footer className="mt-7 border-t border-black/10 pt-5">
+                    <p className="font-bold text-[#062b50]">{testimonial.name}</p>
+                    {(testimonial.designation || testimonial.organization) && <p className="mt-1 text-sm text-black/45">{[testimonial.designation, testimonial.organization].filter(Boolean).join(" · ")}</p>}
+                  </footer>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Call To Action */}
       <section className="bg-[#07345d] px-5 py-20 text-center text-white">
