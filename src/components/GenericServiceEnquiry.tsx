@@ -3,7 +3,7 @@
 import { useEffect, useState, Suspense } from "react";
 import { ArrowLeft, ArrowRight, CalendarDays, CheckCircle2, MapPin, MessageSquareText, Send, ShieldCheck } from "lucide-react";
 import Link from "next/link";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { cmsService } from "@/lib/api/cms";
 import { bookingService } from "@/lib/api/bookings";
 import { getErrorMessage } from "@/lib/api/client";
@@ -17,6 +17,10 @@ type ServiceData = {
   short_description?: string;
   description?: string;
   banner_image?: string | null;
+  booking_mode?: "items" | "third_party" | "form";
+  requires_service_item?: boolean;
+  provider_code?: string;
+  provider_config?: Record<string, unknown>;
 };
 
 const fallbackBanner = "https://images.pexels.com/photos/3769138/pexels-photo-3769138.jpeg?auto=compress&cs=tinysrgb&w=1600";
@@ -24,6 +28,7 @@ const fallbackBanner = "https://images.pexels.com/photos/3769138/pexels-photo-37
 function GenericServiceEnquiryInner({ serviceSlug }: { serviceSlug?: string }) {
   const params = useParams<{ slug?: string }>();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const destinationParam = searchParams ? searchParams.get("destination") : null;
   const slug = serviceSlug || params.slug || "";
   const [service, setService] = useState<ServiceData | null>(null);
@@ -82,30 +87,36 @@ function GenericServiceEnquiryInner({ serviceSlug }: { serviceSlug?: string }) {
   };
   const bookingType = service?.service_type || serviceTypeMap[slug] || "taxi";
   const requiresJourney = ["flight", "bus", "train", "taxi"].includes(bookingType);
+  const bookingMode = service?.booking_mode;
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     setError("");
+    if (!service?.id) return setError("This service is not available for booking right now. Please refresh and try again.");
+    if (bookingMode === "items" || service.requires_service_item) return setError("Please select an available service item before booking.");
+    if (bookingMode === "third_party") return setError("This service uses a third-party booking flow. Please continue through its provider option.");
+    if (bookingMode !== "form") return setError("The booking flow for this service is not configured yet.");
     if (form.message.trim().length < 10) return setError("Please provide a few details about your requirement.");
-    if (requiresJourney && (!form.fromCity.trim() || !form.toCity.trim() || !form.travelDate)) return setError("Please enter the pickup city, destination and travel date.");
-    let profile: Record<string, string> = {};
-    let auth: Record<string, string> = {};
-    try { profile = JSON.parse(localStorage.getItem("bhli-profile-details") || "{}"); } catch {}
-    try { auth = JSON.parse(localStorage.getItem("bhli-auth") || "{}"); } catch {}
-    if (!(profile.email || auth.email || profile.mobile || profile.phone)) return setError("Please sign in so our team can contact you using your account details.");
+    if (!form.travelDate) return setError("Please select a preferred date.");
+    if (requiresJourney && (!form.fromCity.trim() || !form.toCity.trim())) return setError("Please enter the pickup city and destination.");
+    if (!localStorage.getItem("access_token")) {
+      router.push(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
+      return;
+    }
     setSubmitting(true);
+    const journeyMessage = requiresJourney
+      ? `${form.message.trim()}\nFrom: ${form.fromCity.trim()}\nTo: ${form.toCity.trim()}`
+      : form.message.trim();
     const payload = {
-      service_type: bookingType,
-      from_city: requiresJourney ? form.fromCity.trim() : undefined,
-      to_city: requiresJourney ? form.toCity.trim() : undefined,
-      travel_date: requiresJourney ? form.travelDate : undefined,
-      details: { requested_service: title, website_slug: slug },
-      special_request: form.message.trim(),
+      service: service.id,
+      date: form.travelDate,
+      message: journeyMessage,
       consent_to_contact: true,
     };
     try {
-      const result = await bookingService.createGenericBooking(payload);
-      setReference(result?.reference || result?.booking_reference || `BH${Date.now().toString().slice(-8)}`);
+      const result = await bookingService.createSimpleBooking(payload);
+      const id = result?.data?.id;
+      setReference(id ? `BH${String(id).padStart(6, "0")}` : result?.reference || result?.booking_reference || `BH${Date.now().toString().slice(-8)}`);
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
@@ -159,13 +170,16 @@ function GenericServiceEnquiryInner({ serviceSlug }: { serviceSlug?: string }) {
             <div className="mt-7 rounded-2xl border border-[#087fbe]/15 bg-[#f3f9fc] p-4">
               <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[.14em] text-[#087fbe]"><ShieldCheck className="size-4" />Selected service</p>
               <p className="mt-2 font-semibold text-[#061f3b]">{title}</p>
+              {bookingMode && <p className="mt-1 text-xs font-semibold uppercase tracking-wider text-slate-400">Booking mode: {bookingMode.replace("_", " ")}</p>}
             </div>
 
             {requiresJourney && <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <label className="block"><span className="mb-2 block text-xs font-bold text-[#456078]">Pickup city</span><span className="flex items-center gap-3 rounded-2xl border border-black/10 px-4 py-3.5 focus-within:border-[#13a5d8] focus-within:ring-4 focus-within:ring-[#13a5d8]/10"><MapPin className="size-4 text-[#087fbe]" /><input required value={form.fromCity} onChange={(event) => update("fromCity", event.target.value)} placeholder="From city" className="min-w-0 flex-1 bg-transparent text-sm font-semibold outline-none" /></span></label>
               <label className="block"><span className="mb-2 block text-xs font-bold text-[#456078]">Destination</span><span className="flex items-center gap-3 rounded-2xl border border-black/10 px-4 py-3.5 focus-within:border-[#13a5d8] focus-within:ring-4 focus-within:ring-[#13a5d8]/10"><MapPin className="size-4 text-[#087fbe]" /><input required value={form.toCity} onChange={(event) => update("toCity", event.target.value)} placeholder="To city" className="min-w-0 flex-1 bg-transparent text-sm font-semibold outline-none" /></span></label>
-              <label className="block sm:col-span-2"><span className="mb-2 block text-xs font-bold text-[#456078]">Travel date</span><span className="flex items-center gap-3 rounded-2xl border border-black/10 px-4 py-3.5 focus-within:border-[#13a5d8] focus-within:ring-4 focus-within:ring-[#13a5d8]/10"><CalendarDays className="size-4 text-[#087fbe]" /><input required type="date" min={new Date().toISOString().split("T")[0]} value={form.travelDate} onChange={(event) => update("travelDate", event.target.value)} className="min-w-0 flex-1 bg-transparent text-sm font-semibold outline-none" /></span></label>
+
             </div>}
+
+            <label className="mt-4 block"><span className="mb-2 block text-xs font-bold text-[#456078]">Preferred date</span><span className="flex items-center gap-3 rounded-2xl border border-black/10 px-4 py-3.5"><CalendarDays className="size-4 text-[#087fbe]" /><input required type="date" min={new Date().toISOString().split("T")[0]} value={form.travelDate} onChange={(event) => update("travelDate", event.target.value)} className="min-w-0 flex-1 bg-transparent text-sm font-semibold outline-none" /></span></label>
 
             <label className="mt-6 block">
               <span className="mb-2 block text-xs font-bold text-[#456078]">Your requirement</span>
@@ -177,7 +191,7 @@ function GenericServiceEnquiryInner({ serviceSlug }: { serviceSlug?: string }) {
 
             <p className="mt-4 text-xs leading-5 text-slate-400">Our team will use these details to review availability and contact you with pricing and the next steps.</p>
             {error && <p className="mt-5 rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">{error}</p>}
-            <button disabled={submitting} className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#0875b7] to-[#13a5d8] px-6 py-4 font-bold text-white shadow-lg transition hover:-translate-y-0.5 disabled:opacity-60">{submitting ? "Submitting..." : "Request a callback"}<ArrowRight className="size-4" /></button>
+            <button disabled={submitting || loadingService || bookingMode !== "form"} className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#0875b7] to-[#13a5d8] px-6 py-4 font-bold text-white shadow-lg transition hover:-translate-y-0.5 disabled:opacity-60">{loadingService ? "Loading service..." : bookingMode === "third_party" ? "Third-party booking" : bookingMode === "items" ? "Select an option" : submitting ? "Submitting..." : "Request a callback"}<ArrowRight className="size-4" /></button>
           </form>
         </div>
       </main>

@@ -29,7 +29,6 @@ const formatPrice = (value: number) =>
   }).format(value);
 
 export default function HotelCard({
-  id,
   title,
   subtitle,
   location,
@@ -138,16 +137,8 @@ export default function HotelCard({
         <button
           type="button"
           onClick={() => {
-            const bookingParams = new URLSearchParams({
-              id: String(id),
-              name: title,
-              location: displayLocation || city || "",
-              image,
-              description,
-              price: price != null ? String(price) : "",
-            });
-            const bookingHref = `/hotel-booking?${bookingParams.toString()}`;
-            const authData = typeof window !== "undefined" ? window.localStorage.getItem("bhli-auth") : null;
+            const bookingHref = buttonHref;
+            const authData = typeof window !== "undefined" ? window.localStorage.getItem("access_token") : null;
             if (!authData) {
               router.push(`/login?redirect=${encodeURIComponent(bookingHref)}`);
               return;

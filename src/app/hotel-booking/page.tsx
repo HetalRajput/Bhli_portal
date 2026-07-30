@@ -1,11 +1,12 @@
 "use client";
 
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, CalendarDays, Check, CheckCircle2, ChevronRight, IndianRupee, MapPin, UserRound } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { bookingService } from "@/lib/api/bookings";
 import { getErrorMessage } from "@/lib/api/client";
+import { cmsService } from "@/lib/api/cms";
 
 const money = (value: number) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(value);
 const localToday = () => { const date = new Date(); date.setMinutes(date.getMinutes() - date.getTimezoneOffset()); return date.toISOString().slice(0, 10); };
@@ -13,6 +14,7 @@ const localToday = () => { const date = new Date(); date.setMinutes(date.getMinu
 function BookingFlow() {
   const params = useSearchParams();
   const hotel = {
+    serviceId: params.get("service") || "",
     id: params.get("id") || "",
     name: params.get("name") || "Selected Hotel",
     location: params.get("location") || "India",
@@ -21,6 +23,8 @@ function BookingFlow() {
     description: params.get("description") || "A thoughtfully selected stay with comfort, service and effortless booking.",
     price: Number(params.get("price")) || 0,
   };
+  const [serviceId, setServiceId] = useState(hotel.serviceId);
+  const [resolvingService, setResolvingService] = useState(!hotel.serviceId);
   const [stay, setStay] = useState({ checkIn: "", checkOut: "", rooms: 1 });
   const [tariffDetails, setTariffDetails] = useState({ tdTariffAmount: "", personalVisitBudget: "" });
   const [guestDetails, setGuestDetails] = useState({ name: "", age: 18, gender: "male" });
@@ -34,11 +38,38 @@ function BookingFlow() {
   const nights = useMemo(() => stay.checkIn && stay.checkOut ? Math.max(0, Math.ceil((new Date(stay.checkOut).getTime() - new Date(stay.checkIn).getTime()) / 86400000)) : 0, [stay.checkIn, stay.checkOut]);
   const total = hotel.price * nights * stay.rooms;
   const setStayValue = (key: keyof typeof stay, value: string | number) => setStay((current) => ({ ...current, [key]: value }));
+  useEffect(() => {
+    if (serviceId) return;
+    let active = true;
+    async function resolveHotelService() {
+      try {
+        for (const slug of ["hotel-reservations", "hotel-booking"]) {
+          const detail = await cmsService.getServiceDetail(slug);
+          const candidate = detail?.success && detail?.data && !Array.isArray(detail.data) ? detail.data : null;
+          if (candidate?.id && (candidate.booking_mode === "items" || candidate.requires_service_item)) {
+            if (active) setServiceId(String(candidate.id));
+            return;
+          }
+        }
+        const response = await cmsService.getServices();
+        const services = Array.isArray(response) ? response : response?.data;
+        const candidate = Array.isArray(services) ? services.find((item: { name?: string; slug?: string; booking_mode?: string; requires_service_item?: boolean }) =>
+          (item.booking_mode === "items" || item.requires_service_item) && /hotel/i.test(`${item.name || ""} ${item.slug || ""}`)
+        ) : null;
+        if (active && candidate?.id) setServiceId(String(candidate.id));
+      } finally {
+        if (active) setResolvingService(false);
+      }
+    }
+    void resolveHotelService();
+    return () => { active = false; };
+  }, [serviceId]);
 
   async function book(event: React.FormEvent) {
     event.preventDefault();
     setError("");
     if (!stay.checkIn || !stay.checkOut || nights < 1) return setError("Select a valid check-in and check-out date.");
+    if (!serviceId || !Number.isInteger(Number(serviceId))) return setError("This hotel is missing its service ID. Please select it again.");
     if (!hotel.id || !Number.isInteger(Number(hotel.id))) return setError("This hotel is missing a valid service item ID. Please select it again.");
     if (!hotel.city.trim()) return setError("The selected hotel is missing its destination city.");
     if (guestDetails.name.trim().length < 2) return setError("At least one guest name is required.");
@@ -46,20 +77,20 @@ function BookingFlow() {
     if (!localStorage.getItem("access_token")) return setError("Please sign in before submitting a booking request.");
     setLoading(true);
     const payload = {
-      service_type: "hotel" as const,
+      service: Number(serviceId),
       service_item: Number(hotel.id),
-      destination_city: hotel.city.trim(),
       check_in_date: stay.checkIn,
       check_out_date: stay.checkOut,
       number_of_rooms: stay.rooms,
+      td_tariff_amount: tariffDetails.tdTariffAmount || undefined,
+      budget_amount: tariffDetails.personalVisitBudget || undefined,
       details: {
+        destination_city: hotel.city.trim(),
         Laundry: preferences.laundry ? "check" : "notcheck",
         breakfast: preferences.breakfast ? "check" : "notcheck",
-        td_tariff_amount: tariffDetails.tdTariffAmount || undefined,
-        personal_visit_budget: tariffDetails.personalVisitBudget || undefined,
       },
-      guests: [{ name: guestDetails.name.trim(), age: guestDetails.age, gender: guestDetails.gender }],
-      special_request: specialRequest.trim(),
+      guests: [{ name: guestDetails.name.trim(), age: guestDetails.age, gender: guestDetails.gender as "male" | "female" | "other" }],
+      message: specialRequest.trim(),
       consent_to_contact: consentToContact,
     };
     try {
@@ -131,7 +162,7 @@ function BookingFlow() {
               <div><p className="text-xs text-black/40">{nights} night(s) · {stay.rooms} room(s)</p><p className="mt-1 text-2xl font-extrabold text-[#061f3b]">{hotel.price && total ? money(total) : "Price on confirmation"}</p></div>
               <Check className="size-6 text-[#13a5d8]" />
             </div>
-            <button disabled={loading} className="mt-5 flex w-full items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-[#0875b7] to-[#13a5d8] px-6 py-4 font-bold text-white shadow-[0_14px_30px_rgba(8,127,190,.25)] transition hover:-translate-y-0.5 disabled:opacity-60">{loading ? "Confirming..." : "Book hotel"}<ChevronRight className="size-5" /></button>
+            <button disabled={loading || resolvingService} className="mt-5 flex w-full items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-[#0875b7] to-[#13a5d8] px-6 py-4 font-bold text-white shadow-[0_14px_30px_rgba(8,127,190,.25)] transition hover:-translate-y-0.5 disabled:opacity-60">{resolvingService ? "Loading service..." : loading ? "Confirming..." : "Book hotel"}<ChevronRight className="size-5" /></button>
             <p className="mt-4 text-center text-[11px] text-black/35">Your request is protected and reviewed by our travel desk.</p>
           </form>
         </div>

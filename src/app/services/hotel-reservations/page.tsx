@@ -550,7 +550,7 @@ function HotelReservationsContent() {
                   ratingText={ratingText}
                   features={features}
                   price={hotel.price ? Number(hotel.price) : null}
-                  buttonHref={`/hotel-booking?id=${encodeURIComponent(String(hotel.id))}&name=${encodeURIComponent(hotel.title)}&location=${encodeURIComponent(hotel.location || hotel.city || "")}&city=${encodeURIComponent(hotel.city || hotel.location || "")}&image=${encodeURIComponent(hotelImage)}&description=${encodeURIComponent(hotelDesc)}&price=${encodeURIComponent(String(hotel.price || ""))}`}
+                  buttonHref={`/hotel-booking?service=${encodeURIComponent(String(serviceData?.id || ""))}&id=${encodeURIComponent(String(hotel.id))}&name=${encodeURIComponent(hotel.title)}&location=${encodeURIComponent(hotel.location || hotel.city || "")}&city=${encodeURIComponent(hotel.city || hotel.location || "")}&image=${encodeURIComponent(hotelImage)}&description=${encodeURIComponent(hotelDesc)}&price=${encodeURIComponent(String(hotel.price || ""))}`}
                 />
               );
             })}
