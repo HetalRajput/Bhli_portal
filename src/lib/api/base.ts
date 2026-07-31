@@ -48,19 +48,14 @@ export const baseService = {
       return await response.json();
     } catch { return null; }
   },
-  // Enquiry Types
-  getEnquiryTypes: async () => {
-    try {
-      const response = await apiClient.get('/api/base/enquiry-types/');
-      return response.data;
-    } catch (e) {
-      const response = await apiClient.get('/api/base/get-enquiry-types/');
-      return response.data;
-    }
-  },
+  // The backend currently has no enquiry-types resource. Empty data keeps the
+  // forms on their local options without requesting known 404 endpoints.
+  getEnquiryTypes: async (): Promise<{ success: boolean; count: number; data: Array<{ id: number; name: string; slug: string }> }> => (
+    { success: true, count: 0, data: [] }
+  ),
   getEnquiryTypeDetail: async (slug: string) => {
-    const response = await apiClient.get(`/api/base/enquiry-types/${slug}/`);
-    return response.data;
+    void slug;
+    return null;
   },
 
   // Contact Leads

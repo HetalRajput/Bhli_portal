@@ -1,6 +1,7 @@
 import HeroBackground from "@/components/HeroBackground"; import BookingSearch from "@/components/BookingSearch"; import UpcomingEventCard from "@/components/UpcomingEventCard"; import EventGalleryCarousel from "@/components/EventGalleryCarousel"; import Link from "next/link"; import { ArrowRight, Building2, Bus, CalendarDays, Car, CheckCircle2, MapPin, Plane, Search, ShieldCheck, Sparkles, Star, Train } from "lucide-react";
 import { cmsService } from "@/lib/api/cms";
 import type { Banner } from "@/lib/api/cms";
+import HomeFaqSection, { type HomeFaq } from "@/components/HomeFaqSection";
 
 export const dynamic = "force-dynamic";
 const cardImages = ["https://images.pexels.com/photos/261102/pexels-photo-261102.jpeg?auto=compress&cs=tinysrgb&w=900", "https://images.pexels.com/photos/358319/pexels-photo-358319.jpeg?auto=compress&cs=tinysrgb&w=900", "https://images.pexels.com/photos/3225531/pexels-photo-3225531.jpeg?auto=compress&cs=tinysrgb&w=900", "https://images.pexels.com/photos/417074/pexels-photo-417074.jpeg?auto=compress&cs=tinysrgb&w=900"];
@@ -106,12 +107,14 @@ export default async function Home() {
   let apiServices: any[] = [];
   let apiPartners: any[] = [];
   let apiBanners: Banner[] = [];
+  let apiFaqs: HomeFaq[] = [];
   
   try {
-    const [servicesRes, partnersRes, bannersRes] = await Promise.all([
+    const [servicesRes, partnersRes, bannersRes, faqsRes] = await Promise.all([
       cmsService.getServices({ is_featured: true }),
       cmsService.getChannelPartners(),
-      cmsService.getBanners()
+      cmsService.getBanners(),
+      cmsService.getFaqs().catch(() => ({ data: [] }))
     ]);
     
     const serviceData = Array.isArray(servicesRes) ? servicesRes : servicesRes?.data;
@@ -122,6 +125,8 @@ export default async function Home() {
     apiBanners = bannersRes
       .filter((banner: Banner) => banner.is_active !== false && Boolean(banner.image))
       .sort((a: Banner, b: Banner) => (a.display_order ?? 0) - (b.display_order ?? 0));
+    const faqData = Array.isArray(faqsRes) ? faqsRes : faqsRes?.data;
+    if (Array.isArray(faqData)) apiFaqs = faqData;
   } catch (err) {
     console.warn("Failed to fetch home page data; using fallback content.", err);
   }
@@ -225,7 +230,8 @@ export default async function Home() {
       <div className="mx-auto max-w-7xl px-5 lg:px-8 text-center">
         <Star className="mx-auto fill-[#13a5d8] text-[#13a5d8]" /><blockquote className="mx-auto mt-5 max-w-3xl font-serif text-2xl leading-relaxed md:text-3xl text-white">Hospitality Beyond Borders - thoughtful travel management, trusted support and memorable journeys.</blockquote><p className="mt-5 text-sm text-white/60">The BHLI service promise</p>
       </div>
-    </section></div>}
+    </section><HomeFaqSection faqs={apiFaqs} />
+  </div>}
 
 
 

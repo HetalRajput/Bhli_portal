@@ -31,10 +31,11 @@ import {
   UploadCloud,
   Trash2,
 } from "lucide-react";
-import { bookingService } from "@/lib/api/bookings";
+import { bookingService, type BookingRequest } from "@/lib/api/bookings";
 import { authService } from "@/lib/api/auth";
 import { getErrorMessage } from "@/lib/api/client";
 import { baseService } from "@/lib/api/base";
+import BookingHistoryPanel from "@/components/BookingHistoryPanel";
 
 type LookupItem = { id: number; name: string };
 
@@ -74,8 +75,9 @@ export default function ProfilePage() {
   const [isSaved, setIsSaved] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [profileError, setProfileError] = useState<string>("");
-  const [bookings, setBookings] = useState<any[]>([]);
+  const [bookings, setBookings] = useState<BookingRequest[]>([]);
   const [loadingBookings, setLoadingBookings] = useState<boolean>(true);
+  const [bookingsError, setBookingsError] = useState<string>("");
   const [selectedBooking, setSelectedBooking] = useState<any | null>(null);
   const [loadingBookingDetail, setLoadingBookingDetail] = useState<number | null>(null);
   const [bookingDetailError, setBookingDetailError] = useState<string>("");
@@ -87,6 +89,10 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
+      const requestedSection = new URLSearchParams(window.location.search).get("section");
+      if (["profile", "bookings", "membership", "support"].includes(requestedSection || "")) {
+        queueMicrotask(() => setActiveProfileSection(requestedSection as typeof activeProfileSection));
+      }
       const authData = localStorage.getItem("bhli-auth");
       const token = localStorage.getItem("access_token");
 
@@ -155,16 +161,13 @@ export default function ProfilePage() {
       };
 
       const fetchBookingsList = async () => {
+        setBookingsError("");
         try {
           const res = await bookingService.listBookings();
-          console.log("Profile Bookings API Response:", res);
-          if (res && res.success && Array.isArray(res.data)) {
-            setBookings(res.data);
-          } else if (res && Array.isArray(res)) {
-            setBookings(res);
-          }
-        } catch (e) {
-          console.warn("Failed to fetch booking requests", e);
+          setBookings(res?.success && Array.isArray(res.data) ? res.data : []);
+        } catch (requestError) {
+          setBookings([]);
+          setBookingsError(getErrorMessage(requestError));
         } finally {
           setLoadingBookings(false);
         }
@@ -432,7 +435,7 @@ export default function ProfilePage() {
             <nav aria-label="Profile sections" className="mt-3 space-y-1.5">
               {[
                 ["profile", "Personal details", "Contact and service profile", User],
-                ["bookings", "Booking requests", `${bookings.length} active request${bookings.length === 1 ? "" : "s"}`, Ticket],
+                ["bookings", "Booking requests", `${bookings.length} total request${bookings.length === 1 ? "" : "s"}`, Ticket],
                 ["membership", "Membership pass", "Benefits and digital card", Award],
                 ["support", "Travel support", "Quick links and assistance", ShieldCheck],
               ].map(([section, label, description, Icon]) => {
@@ -613,6 +616,13 @@ export default function ProfilePage() {
                   Track the status of your hospitality and travel reservation requests in boarding-pass style.
                 </p>
               </div>
+              <BookingHistoryPanel
+                bookings={bookings}
+                loading={loadingBookings}
+                error={bookingsError}
+                onBookingUpdated={(updated) => setBookings((current) => current.map((booking) => booking.id === updated.id ? updated : booking))}
+              />
+              <div className="hidden">
 
               {loadingBookings ? (
                 <div className="flex justify-center py-12">
@@ -716,6 +726,7 @@ export default function ProfilePage() {
                 </div>
               )}
               {bookingDetailError && <p className="rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">{bookingDetailError}</p>}
+              </div>
             </div>
 
           </div>

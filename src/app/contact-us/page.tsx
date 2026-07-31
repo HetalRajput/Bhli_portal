@@ -26,7 +26,7 @@ export default function Contact() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
-  const [enquiryType, setEnquiryType] = useState("");
+  const [enquiryType, setEnquiryType] = useState("Leisure travel");
   const [enquiryTypes, setEnquiryTypes] = useState<EnquiryTypeItem[]>([]);
   const [message, setMessage] = useState("");
 

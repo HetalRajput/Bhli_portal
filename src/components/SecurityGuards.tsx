@@ -14,7 +14,6 @@ export default function SecurityGuards() {
       }
     };
 
-    document.querySelectorAll("img").forEach((image) => { image.draggable = false; });
     document.addEventListener("contextmenu", blockContextMenu);
     document.addEventListener("dragstart", blockImageDrag);
     document.addEventListener("keydown", blockSaveShortcut);
