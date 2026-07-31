@@ -13,7 +13,6 @@ import {
   Save,
   CheckCircle2,
   Bookmark,
-  Clock,
   ArrowLeft,
   Building,
   Calendar,
@@ -60,7 +59,6 @@ const formatBookingDate = (value: unknown, includeTime = false) => {
 export default function ProfilePage() {
   const router = useRouter();
   const [email, setEmail] = useState<string>("");
-  const [authenticatedAt, setAuthenticatedAt] = useState<string>("");
   const [name, setName] = useState<string>("");
   const [phone, setPhone] = useState<string>("");
   const [serviceNumber, setServiceNumber] = useState<string>("");
@@ -105,9 +103,6 @@ export default function ProfilePage() {
         try {
           const parsed = JSON.parse(authData);
           if (parsed.email) setEmail(parsed.email);
-          if (parsed.authenticatedAt) {
-            setAuthenticatedAt(new Date(parsed.authenticatedAt).toLocaleString());
-          }
         } catch (e) {
           console.error("Error parsing session data", e);
         }
@@ -139,7 +134,6 @@ export default function ProfilePage() {
           setEmployeeId(profile.employee_id || "");
           setDepartment(profile.department_name || "");
           setDepartmentId(profile.department ? String(profile.department) : "");
-          if (profile.created_at) setAuthenticatedAt(new Date(profile.created_at).toLocaleString());
         } catch (error) {
           setProfileError(getErrorMessage(error));
         } finally {
@@ -293,38 +287,47 @@ export default function ProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-[#f3f9fc] via-white to-[#edf7fc] px-4 py-12 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-5xl animate-pulse space-y-8" aria-label="Loading profile">
-          <div className="flex justify-between">
-            <div className="h-5 w-28 rounded bg-slate-200" />
-            <div className="h-6 w-36 rounded-full bg-slate-200" />
-          </div>
-          <div className="flex flex-col items-center gap-6 rounded-3xl bg-slate-800 p-8 md:flex-row">
-            <div className="h-24 w-24 shrink-0 rounded-full bg-slate-600" />
-            <div className="flex-1 space-y-3">
-              <div className="h-8 w-52 rounded bg-slate-600" />
-              <div className="h-4 w-64 max-w-full rounded bg-slate-600" />
-              <div className="h-3 w-44 rounded bg-slate-700" />
+      <div id="profile-workspace" className="min-h-screen bg-gradient-to-b from-[#f3f9fc] via-white to-[#edf7fc] lg:h-[calc(100dvh-5rem)] lg:min-h-0 lg:overflow-hidden">
+        <div className="flex w-full animate-pulse flex-col gap-3 lg:h-full" aria-label="Loading profile">
+          <div className="shrink-0 border-y border-[#1b3d64]/50 bg-gradient-to-r from-[#071c35] to-[#155d91] px-4 py-3 sm:px-6 lg:px-8">
+            <div className="flex items-center gap-3">
+              <div className="size-16 shrink-0 rounded-full bg-white/20 ring-2 ring-white/10" />
+              <div className="flex-1 space-y-2">
+                <div className="h-5 w-44 rounded bg-white/25" />
+                <div className="h-3 w-56 max-w-full rounded bg-white/15" />
+                <div className="h-2.5 w-36 rounded bg-white/10" />
+              </div>
             </div>
-            <div className="h-11 w-28 rounded-xl bg-slate-700" />
           </div>
-          <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-3">
-            <div className="space-y-8 lg:col-span-2">
-              <div className="rounded-3xl border border-slate-100 bg-white p-8 shadow-sm">
-                <div className="mb-8 h-6 w-44 rounded bg-slate-200" />
-                <div className="space-y-5">
-                  <div className="h-20 rounded-2xl bg-slate-100" />
-                  <div className="h-12 rounded-xl bg-slate-100" />
-                  <div className="grid grid-cols-2 gap-4"><div className="h-12 rounded-xl bg-slate-100" /><div className="h-12 rounded-xl bg-slate-100" /></div>
-                  <div className="grid grid-cols-2 gap-4"><div className="h-12 rounded-xl bg-slate-100" /><div className="h-12 rounded-xl bg-slate-100" /></div>
-                  <div className="h-11 w-36 rounded-xl bg-sky-200" />
+
+          <div className="grid min-h-0 w-full items-start border-t border-[#0a79bf]/10 lg:flex-1 lg:grid-cols-[220px_minmax(0,1fr)] lg:items-stretch lg:overflow-hidden">
+            <aside className="flex h-fit flex-col border-b border-r border-[#0a79bf]/10 bg-white p-2 lg:h-full lg:border-b-0">
+              <div className="border-b border-slate-100 px-2 pb-3 pt-2">
+                <div className="h-2.5 w-24 rounded bg-sky-200" />
+                <div className="mt-2 h-4 w-36 rounded bg-slate-200" />
+                <div className="mt-3 h-8 rounded-lg bg-sky-50" />
+              </div>
+              <div className="mt-2 divide-y divide-slate-100">
+                {[1, 2, 3, 4].map((item) => (
+                  <div key={item} className="flex items-center gap-2.5 px-2.5 py-2.5">
+                    <div className="size-9 shrink-0 rounded-lg bg-sky-50" />
+                    <div className="flex-1 space-y-1.5"><div className="h-2.5 w-24 rounded bg-slate-200" /><div className="h-2 w-28 max-w-full rounded bg-slate-100" /></div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-auto space-y-2 border-t border-slate-100 p-2 pt-3"><div className="h-9 rounded-lg bg-slate-800" /><div className="h-9 rounded-lg bg-rose-100" /></div>
+            </aside>
+
+            <div className="min-w-0 lg:h-full lg:overflow-hidden">
+              <div className="overflow-hidden rounded-2xl border border-[#0a79bf]/10 bg-white shadow-sm">
+                <div className="border-b border-slate-100 px-4 py-4 sm:px-5"><div className="h-5 w-40 rounded bg-slate-200" /><div className="mt-2 h-2.5 w-72 max-w-full rounded bg-slate-100" /></div>
+                <div className="divide-y divide-slate-100 px-4 sm:px-5">
+                  <div className="flex items-center gap-4 py-3"><div className="size-16 rounded-full bg-sky-50" /><div className="space-y-2"><div className="h-3 w-24 rounded bg-slate-200" /><div className="h-2.5 w-48 rounded bg-slate-100" /><div className="h-7 w-24 rounded-lg bg-sky-100" /></div></div>
+                  <div className="py-3"><div className="mb-2 h-2.5 w-20 rounded bg-slate-200" /><div className="h-10 rounded-lg bg-slate-100" /></div>
+                  {[1, 2, 3].map((row) => <div key={row} className="grid gap-3 py-3 sm:grid-cols-2"><div className="h-10 rounded-lg bg-slate-100" /><div className="h-10 rounded-lg bg-slate-100" /></div>)}
+                  <div className="flex items-center justify-between py-3"><div className="h-9 w-32 rounded-lg bg-sky-200" /><div className="h-3 w-24 rounded bg-slate-100" /></div>
                 </div>
               </div>
-              <div className="h-52 rounded-3xl border border-slate-100 bg-white shadow-sm" />
-            </div>
-            <div className="space-y-6">
-              <div className="h-72 rounded-3xl border border-slate-100 bg-white shadow-sm" />
-              <div className="h-44 rounded-3xl border border-slate-100 bg-white shadow-sm" />
             </div>
           </div>
         </div>
@@ -338,27 +341,12 @@ export default function ProfilePage() {
     : "BHLI-GUEST-2026";
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#f3f9fc] via-white to-[#edf7fc] py-12 px-4 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-7xl space-y-8">
+    <div id="profile-workspace" className="min-h-screen bg-gradient-to-b from-[#f3f9fc] via-white to-[#edf7fc] lg:h-[calc(100dvh-5rem)] lg:min-h-0 lg:overflow-hidden">
+      <div className="flex w-full flex-col gap-3 lg:h-full">
         
-        {/* Back Link & Header */}
-        <div className="flex items-center justify-between">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-sm font-bold text-[#0879b7] hover:text-[#065b8b] transition-all hover:-translate-x-0.5"
-          >
-            <ArrowLeft className="w-4 h-4 stroke-[2.5]" />
-            Back to Home
-          </Link>
-          <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-semibold bg-[#e0f2fe] text-[#0369a1] border border-[#bae6fd] shadow-sm">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            Authenticated Session
-          </span>
-        </div>
-
         {/* Profile Header Banner */}
         <div 
-          className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#06182c] via-[#0b2b4d] to-[#12538b] p-8 text-white shadow-xl border border-[#1b3d64]/50"
+          className="relative shrink-0 overflow-hidden border-y border-[#1b3d64]/50 bg-gradient-to-br from-[#06182c] via-[#0b2b4d] to-[#12538b] px-4 py-3 text-white shadow-md sm:px-6 lg:px-8"
           style={{ 
             backgroundImage: `radial-gradient(circle at 100% 0%, rgba(19, 165, 216, 0.2) 0%, transparent 60%), radial-gradient(circle at 0% 100%, rgba(8, 121, 183, 0.2) 0%, transparent 60%), linear-gradient(135deg, #06182c 0%, #0b2b4d 60%, #12538b 100%)` 
           }}
@@ -367,12 +355,13 @@ export default function ProfilePage() {
           <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] [background-size:20px_20px] pointer-events-none" />
           <div className="absolute top-0 right-0 -mt-12 -mr-12 w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none" />
 
-          <div className="relative z-10 flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
+          <div className="relative z-10 flex flex-wrap items-center gap-3 text-left sm:flex-nowrap">
+
             
             {/* Interactive Banner Avatar with Camera Upload */}
             <div className="relative shrink-0 group/avatar">
               <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-[#13a5d8] to-[#00aeef] blur-md opacity-70 animate-pulse" />
-              <div className="relative w-24 h-24 rounded-full overflow-hidden bg-gradient-to-tr from-[#13a5d8] to-[#00aeef] flex items-center justify-center text-3xl font-bold text-white shadow-lg ring-4 ring-white/20">
+              <div className="relative flex size-16 items-center justify-center overflow-hidden rounded-full bg-gradient-to-tr from-[#13a5d8] to-[#00aeef] text-xl font-bold text-white shadow-md ring-2 ring-white/20">
                 {profileImage ? (
                   <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
                 ) : (
@@ -385,37 +374,23 @@ export default function ProfilePage() {
                   <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
                 </label>
               </div>
+              <span title="Verified Profile" aria-label="Verified Profile" className="absolute -bottom-1 -right-1 z-20 grid size-6 place-items-center rounded-full border-2 border-[#0b2b4d] bg-emerald-500 text-white shadow-md">
+                <ShieldCheck className="size-3.5 stroke-[2.5]" />
+              </span>
             </div>
 
-            <div className="flex-1 space-y-2">
-              <div className="flex flex-col md:flex-row md:items-center gap-2.5 justify-center md:justify-start">
-                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+            <div className="min-w-[160px] flex-1 space-y-1">
+              <div className="flex items-center">
+                <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
                   {name || "Valued Guest"}
                 </h1>
-                <span className="inline-flex items-center gap-1 self-center md:self-auto text-xs px-3 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-400/30 text-emerald-400 font-semibold shadow-inner">
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                  Verified Profile
-                </span>
               </div>
-              <p className="text-white/80 text-sm flex items-center justify-center md:justify-start gap-2">
+              <p className="flex items-center justify-center gap-2 text-xs text-white/75 md:justify-start">
                 <Mail className="w-4 h-4 text-[#8dcfe9]" />
                 {email || "user@gmail.com"}
               </p>
-              {authenticatedAt && (
-                <p className="text-xs text-white/60 flex items-center justify-center md:justify-start gap-2">
-                  <Clock className="w-3.5 h-3.5 text-[#8dcfe9]" />
-                  Account created: {authenticatedAt}
-                </p>
-              )}
             </div>
 
-            <button
-              onClick={handleLogout}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-200 text-sm font-semibold transition-all hover:scale-105 shadow-md shadow-black/10 shrink-0"
-            >
-              <LogOut className="w-4 h-4" />
-              Sign Out
-            </button>
           </div>
         </div>
 
@@ -426,13 +401,16 @@ export default function ProfilePage() {
         )}
 
         {/* Content Grid */}
-        <div className="grid items-start gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
-          <aside className="sticky top-6 overflow-hidden rounded-3xl border border-[#0a79bf]/10 bg-white p-3 shadow-sm">
-            <div className="border-b border-slate-100 px-3 pb-4 pt-2">
+        <div className="grid min-h-0 w-full items-start border-t border-[#0a79bf]/10 lg:flex-1 lg:grid-cols-[220px_minmax(0,1fr)] lg:items-stretch lg:overflow-hidden">
+          <aside className="flex h-fit flex-col overflow-y-auto overscroll-contain border-b border-r border-[#0a79bf]/10 bg-white p-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:h-full lg:border-b-0">
+            <div className="border-b border-slate-100 px-2 pb-3 pt-2">
               <p className="text-[10px] font-extrabold uppercase tracking-[.2em] text-[#0879b7]">Account centre</p>
-              <h2 className="mt-1 text-lg font-bold text-[#07152d]">Manage your journey</h2>
+              <h2 className="mt-1 text-base font-bold text-[#07152d]">Manage your journey</h2>
+              <Link href="/" className="mt-3 flex items-center gap-2 rounded-lg border border-[#0a79bf]/10 bg-[#edf8fd] px-3 py-2 text-[11px] font-bold text-[#0879b7] transition hover:bg-[#dff3fb]">
+                <ArrowLeft className="size-3.5 stroke-[2.5]" />Back to Home
+              </Link>
             </div>
-            <nav aria-label="Profile sections" className="mt-3 space-y-1.5">
+            <nav aria-label="Profile sections" className="mt-2 divide-y divide-slate-100">
               {[
                 ["profile", "Personal details", "Contact and service profile", User],
                 ["bookings", "Booking requests", `${bookings.length} total request${bookings.length === 1 ? "" : "s"}`, Ticket],
@@ -441,26 +419,29 @@ export default function ProfilePage() {
               ].map(([section, label, description, Icon]) => {
                 const isActive = activeProfileSection === section;
                 const NavIcon = Icon as React.ComponentType<{ className?: string }>;
-                return <button key={String(section)} type="button" onClick={() => setActiveProfileSection(section as typeof activeProfileSection)} className={`group flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition ${isActive ? "bg-gradient-to-r from-[#0879b7] to-[#13a5d8] text-white shadow-md shadow-[#0879b7]/20" : "text-[#344a5c] hover:bg-[#edf8fd]"}`}>
-                  <span className={`grid size-10 shrink-0 place-items-center rounded-xl ${isActive ? "bg-white/15" : "bg-[#edf8fd] text-[#0879b7] group-hover:bg-white"}`}><NavIcon className="size-4.5" /></span>
-                  <span className="min-w-0"><span className="block text-sm font-bold">{String(label)}</span><span className={`mt-0.5 block truncate text-[10px] font-semibold ${isActive ? "text-white/70" : "text-slate-400"}`}>{String(description)}</span></span>
+                return <button key={String(section)} type="button" onClick={() => setActiveProfileSection(section as typeof activeProfileSection)} className={`group flex w-full items-center gap-2.5 px-2.5 py-2.5 text-left transition first:rounded-t-xl last:rounded-b-xl ${isActive ? "bg-gradient-to-r from-[#0879b7] to-[#13a5d8] text-white shadow-md shadow-[#0879b7]/20" : "text-[#344a5c] hover:bg-[#edf8fd]"}`}>
+                  <span className={`grid size-9 shrink-0 place-items-center rounded-lg ${isActive ? "bg-white/15" : "bg-[#edf8fd] text-[#0879b7] group-hover:bg-white"}`}><NavIcon className="size-4" /></span>
+                  <span className="min-w-0"><span className="block text-xs font-bold">{String(label)}</span><span className={`mt-0.5 block truncate text-[9px] font-semibold ${isActive ? "text-white/70" : "text-slate-400"}`}>{String(description)}</span></span>
                 </button>;
               })}
             </nav>
-            <div className="mt-3 border-t border-slate-100 p-2 pt-4">
-              <Link href="/services" className="flex items-center justify-center gap-2 rounded-xl bg-[#07152d] px-4 py-3 text-xs font-bold text-white transition hover:bg-[#0b2b4d]"><Building className="size-4" />Explore services</Link>
+            <div className="mt-auto space-y-2 border-t border-slate-100 p-2 pt-3">
+              <Link href="/services" className="flex items-center justify-center gap-2 rounded-lg bg-[#07152d] px-3 py-2.5 text-[11px] font-bold text-white transition hover:bg-[#0b2b4d]"><Building className="size-3.5" />Explore services</Link>
+              <button type="button" onClick={handleLogout} className="flex w-full items-center justify-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2.5 text-[11px] font-bold text-rose-700 transition hover:bg-rose-100">
+                <LogOut className="size-3.5" />Sign Out
+              </button>
             </div>
           </aside>
 
-          <div className="min-w-0 space-y-8">
+          <div className="min-w-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:h-full lg:overflow-y-auto lg:overscroll-contain">
           
           {/* Left Column: Personal Information Form & Booking Requests */}
-          <div className="min-w-0 space-y-8">
+          <div className="min-w-0">
             
             {/* Personal Details Form */}
-            <div className={`${activeProfileSection === "profile" ? "block" : "hidden"} bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-[#0a79bf]/10 space-y-6`}>
-              <div>
-                <h2 className="text-xl font-bold text-[#07152d] flex items-center gap-2.5">
+            <div className={`${activeProfileSection === "profile" ? "block" : "hidden"} overflow-hidden rounded-2xl border border-[#0a79bf]/10 bg-white shadow-sm`}>
+              <div className="border-b border-slate-100 px-4 py-4 sm:px-5">
+                <h2 className="flex items-center gap-2 text-lg font-bold text-[#07152d]">
                   <User className="w-5 h-5 text-[#0879b7]" />
                   Personal Details
                 </h2>
@@ -469,11 +450,11 @@ export default function ProfilePage() {
                 </p>
               </div>
 
-              <form onSubmit={handleSaveProfile} className="space-y-5">
+              <form onSubmit={handleSaveProfile} className="divide-y divide-slate-100 px-4 sm:px-5 [&>div]:py-3">
                 
                 {/* Profile Photo Upload Control */}
-                <div className="flex flex-col sm:flex-row items-center gap-5 pb-5 border-b border-slate-100">
-                  <div className="relative w-20 h-20 rounded-full overflow-hidden bg-[#f0f8fc] border-2 border-[#0a79bf]/20 flex items-center justify-center text-2xl font-bold text-[#0879b7] shrink-0 shadow-inner">
+                <div className="flex flex-col items-center gap-4 sm:flex-row">
+                  <div className="relative flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-[#0a79bf]/20 bg-[#f0f8fc] text-xl font-bold text-[#0879b7] shadow-inner">
                     {profileImage ? (
                       <img src={profileImage} alt="Preview" className="w-full h-full object-cover" />
                     ) : (
@@ -516,12 +497,12 @@ export default function ProfilePage() {
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       placeholder="Enter your full name"
-                      className="w-full bg-[#f8fafc] border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm text-[#07152d] font-semibold outline-none focus:border-[#0879b7] focus:ring-4 focus:ring-[#0879b7]/10 focus:bg-white transition-all"
+                      className="w-full rounded-lg border border-gray-200 bg-[#f8fafc] py-2.5 pl-10 pr-4 text-sm font-semibold text-[#07152d] outline-none transition-all focus:border-[#0879b7] focus:bg-white focus:ring-4 focus:ring-[#0879b7]/10"
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <div>
                     <label className="block text-xs font-semibold text-[#344a5c] mb-1.5">
                       Phone Number
@@ -533,7 +514,7 @@ export default function ProfilePage() {
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
                         placeholder="+91 9876543210"
-                        className="w-full bg-[#f8fafc] border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm text-[#07152d] font-semibold outline-none focus:border-[#0879b7] focus:ring-4 focus:ring-[#0879b7]/10 focus:bg-white transition-all"
+                        className="w-full rounded-lg border border-gray-200 bg-[#f8fafc] py-2.5 pl-10 pr-4 text-sm font-semibold text-[#07152d] outline-none transition-all focus:border-[#0879b7] focus:bg-white focus:ring-4 focus:ring-[#0879b7]/10"
                       />
                     </div>
                   </div>
@@ -549,7 +530,7 @@ export default function ProfilePage() {
                         value={departmentId}
                         readOnly
                       />
-                      <select value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} className="w-full bg-[#f8fafc] border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm text-[#07152d] font-semibold outline-none focus:border-[#0879b7]">
+                      <select value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} className="w-full rounded-lg border border-gray-200 bg-[#f8fafc] py-2.5 pl-10 pr-4 text-sm font-semibold text-[#07152d] outline-none focus:border-[#0879b7]">
                         <option value="">{department || "Select department"}</option>
                         {departments.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
                       </select>
@@ -557,21 +538,21 @@ export default function ProfilePage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <label className="block text-xs font-semibold text-[#344a5c]">
                     Service Number
-                    <input type="text" value={serviceNumber} onChange={(e) => setServiceNumber(e.target.value)} placeholder="Enter service number" className="mt-1.5 w-full bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-3 text-sm text-[#07152d] font-semibold outline-none focus:border-[#0879b7]" />
+                    <input type="text" value={serviceNumber} onChange={(e) => setServiceNumber(e.target.value)} placeholder="Enter service number" className="mt-1.5 w-full rounded-lg border border-gray-200 bg-[#f8fafc] px-4 py-2.5 text-sm font-semibold text-[#07152d] outline-none focus:border-[#0879b7]" />
                   </label>
                   <label className="block text-xs font-semibold text-[#344a5c]">
                     Employee ID
-                    <input type="text" value={employeeId} onChange={(e) => setEmployeeId(e.target.value)} placeholder="Enter employee ID" className="mt-1.5 w-full bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-3 text-sm text-[#07152d] font-semibold outline-none focus:border-[#0879b7]" />
+                    <input type="text" value={employeeId} onChange={(e) => setEmployeeId(e.target.value)} placeholder="Enter employee ID" className="mt-1.5 w-full rounded-lg border border-gray-200 bg-[#f8fafc] px-4 py-2.5 text-sm font-semibold text-[#07152d] outline-none focus:border-[#0879b7]" />
                   </label>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <label className="block text-xs font-semibold text-[#344a5c]">
                     Officer Rank
-                    <select value={officerRankId} onChange={(e) => setOfficerRankId(e.target.value)} className="mt-1.5 w-full bg-[#f8fafc] border border-gray-200 rounded-xl px-4 py-3 text-sm text-[#07152d] font-semibold outline-none focus:border-[#0879b7]">
+                    <select value={officerRankId} onChange={(e) => setOfficerRankId(e.target.value)} className="mt-1.5 w-full rounded-lg border border-gray-200 bg-[#f8fafc] px-4 py-2.5 text-sm font-semibold text-[#07152d] outline-none focus:border-[#0879b7]">
                       <option value="">{officerRank || "Select rank"}</option>
                       {ranks.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
                     </select>
@@ -582,15 +563,15 @@ export default function ProfilePage() {
                     </label>
                     <div className="relative">
                       <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                      <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full bg-[#f8fafc] border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm text-[#07152d] font-semibold outline-none focus:border-[#0879b7]" />
+                      <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-lg border border-gray-200 bg-[#f8fafc] py-2.5 pl-10 pr-4 text-sm font-semibold text-[#07152d] outline-none focus:border-[#0879b7]" />
                     </div>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between pt-2">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <button
                     type="submit"
-                    className="inline-flex items-center gap-2 bg-gradient-to-r from-[#168dcc] to-[#0871b2] hover:from-[#13a5d8] hover:to-[#0879b7] text-white font-bold px-6 py-3 rounded-xl text-sm transition-all shadow-md shadow-[#003b70]/15 hover:shadow-lg hover:shadow-[#003b70]/20 hover:-translate-y-0.5 active:translate-y-0"
+                    className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#168dcc] to-[#0871b2] px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-[#003b70]/15 transition-all hover:-translate-y-0.5 hover:from-[#13a5d8] hover:to-[#0879b7] hover:shadow-lg hover:shadow-[#003b70]/20 active:translate-y-0"
                   >
                     <Save className="w-4 h-4" />
                     Save Changes
@@ -606,9 +587,9 @@ export default function ProfilePage() {
             </div>
 
             {/* My Bookings Section (Boarding Pass Restyle) */}
-            <div className={`${activeProfileSection === "bookings" ? "block" : "hidden"} bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-[#0a79bf]/10 space-y-6`}>
+            <div className={`${activeProfileSection === "bookings" ? "block" : "hidden"} space-y-4 rounded-2xl border border-[#0a79bf]/10 bg-white p-4 shadow-sm sm:p-5`}>
               <div>
-                <h2 className="text-xl font-bold text-[#07152d] flex items-center gap-2.5">
+                <h2 className="flex items-center gap-2 text-lg font-bold text-[#07152d]">
                   <Ticket className="w-5 h-5 text-[#0879b7]" />
                   My Booking Requests
                 </h2>
@@ -735,14 +716,14 @@ export default function ProfilePage() {
           <div className="space-y-6">
             
             {/* Membership section */}
-            <div className={`${activeProfileSection === "membership" ? "block" : "hidden"} bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-[#0a79bf]/10 space-y-5`}>
+            <div className={`${activeProfileSection === "membership" ? "block" : "hidden"} space-y-4 rounded-2xl border border-[#0a79bf]/10 bg-white p-4 shadow-sm sm:p-5`}>
               <h3 className="text-base font-bold text-[#07152d] flex items-center gap-2">
                 <Award className="w-5 h-5 text-amber-500" />
                 Digital Membership Pass
               </h3>
 
               {/* 3D-effect Membership Card */}
-              <div className="group relative mx-auto w-full max-w-[360px] perspective-1000">
+              <div className="group relative mx-auto w-full max-w-[320px] perspective-1000">
                 {/* Outer Glow Backing */}
                 <div className="absolute -inset-1 bg-gradient-to-tr from-amber-500/20 via-sky-500/10 to-emerald-500/10 rounded-2xl blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
 
@@ -875,7 +856,7 @@ export default function ProfilePage() {
             </div>
 
             {/* Quick Dashboard */}
-            <div className={`${activeProfileSection === "support" ? "block" : "hidden"} bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-[#0a79bf]/10 space-y-4`}>
+            <div className={`${activeProfileSection === "support" ? "block" : "hidden"} space-y-3 rounded-2xl border border-[#0a79bf]/10 bg-white p-4 shadow-sm sm:p-5`}>
               <h3 className="text-base font-bold text-[#07152d] flex items-center gap-2">
                 <Bookmark className="w-4 h-4 text-[#0879b7]" />
                 Quick Dashboard
@@ -918,7 +899,7 @@ export default function ProfilePage() {
             </div>
 
             {/* Assistance Card */}
-            <div className={`${activeProfileSection === "support" ? "block" : "hidden"} bg-gradient-to-br from-[#e0f2fe] to-[#f0f9ff] rounded-3xl p-6 border border-[#bae6fd] space-y-3`}>
+            <div className={`${activeProfileSection === "support" ? "block" : "hidden"} space-y-2 rounded-2xl border border-[#bae6fd] bg-gradient-to-br from-[#e0f2fe] to-[#f0f9ff] p-4`}>
               <h4 className="text-sm font-bold text-[#0369a1] flex items-center gap-1.5">
                 <ShieldCheck className="w-4 h-4" />
                 Need Assistance?

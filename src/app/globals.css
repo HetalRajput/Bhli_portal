@@ -335,3 +335,14 @@ main :where(article, figure, a.rounded-3xl, div.rounded-3xl):not(.travel-solutio
   animation-play-state: paused;
 }
 
+
+/* The authenticated profile is an application workspace on desktop. */
+@media (min-width: 1024px) {
+  body:has(#profile-workspace) > footer {
+    display: none;
+  }
+
+  body:has(#profile-workspace) > main {
+    overflow: hidden;
+  }
+}
