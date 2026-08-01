@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, ShieldAlert, Award, Plane, Trophy, Briefcase, Phone, Mail, Landmark } from "lucide-react";
-import { cmsService, type OurClient } from "@/lib/api/cms";
+import { cmsService, type ClientCategory, type OurClient } from "@/lib/api/cms";
 
 interface InstitutionalClient {
   name: string;
@@ -13,7 +13,7 @@ interface InstitutionalClient {
 interface ClientItem {
   id: string;
   name: string;
-  category: "defence" | "corporate" | "sports" | "aviation";
+  category: string;
   categoryName: string;
   badge: string;
   image: string;
@@ -322,11 +322,12 @@ const publicSectorClients: InstitutionalClient[] = [
 export default function ClientsPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [displayClients, setDisplayClients] = useState<ClientItem[]>([]);
+  const [clientCategories, setClientCategories] = useState<ClientCategory[]>([]);
 
   useEffect(() => {
     let cancelled = false;
 
-    cmsService.getClients().then((clients) => {
+    Promise.all([cmsService.getClients(), cmsService.getClientCategories()]).then(([clients, categories]) => {
       if (cancelled) return;
 
       const mappedClients = clients
@@ -335,7 +336,7 @@ export default function ClientsPage() {
         .map((client: OurClient): ClientItem => ({
           id: String(client.id),
           name: client.name,
-          category: client.category_slug.includes("defence") || client.category_slug.includes("protocol") ? "defence" : "corporate",
+          category: client.category_slug,
           categoryName: client.category_name || "Our Clients",
           badge: client.label || client.account_status_label || "Trusted Client",
           image: client.logo,
@@ -346,6 +347,7 @@ export default function ClientsPage() {
         }));
 
       setDisplayClients(mappedClients);
+      setClientCategories(categories.filter((category) => category.is_active !== false).sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0) || a.name.localeCompare(b.name)));
     });
 
     return () => {
@@ -353,12 +355,21 @@ export default function ClientsPage() {
     };
   }, []);
 
+  const getCategoryIcon = (category: Pick<ClientCategory, "name" | "slug">) => {
+    const value = `${category.name} ${category.slug}`.toLowerCase();
+    if (/airline|aviation/.test(value)) return Plane;
+    if (/sport|league|kabaddi|football|cricket/.test(value)) return Trophy;
+    if (/defence|government|civic|postal|protocol|research|infrastructure/.test(value)) return Landmark;
+    return Briefcase;
+  };
+
   const categories = [
     { id: "all", label: "All Clients", icon: Award },
-    { id: "defence", label: "Government & Defence", icon: Landmark },
-    { id: "corporate", label: "Corporates & Tech", icon: Briefcase },
-    { id: "sports", label: "Sports & Athletics", icon: Trophy },
-    { id: "aviation", label: "Airlines & Aviation", icon: Plane }
+    ...clientCategories.map((category) => ({
+      id: category.slug,
+      label: category.name,
+      icon: getCategoryIcon(category),
+    })),
   ];
 
   const filteredClients = selectedCategory === "all"

@@ -43,6 +43,21 @@ export type OurClient = {
   updated_at: string;
 };
 
+export type ClientCategory = {
+  id: number;
+  name: string;
+  slug: string;
+  icon: string;
+  is_active: boolean;
+  display_order: number;
+};
+
+type ClientCategoryListResponse = {
+  success: boolean;
+  count: number;
+  data: ClientCategory[];
+};
+
 type ClientListResponse = {
   success: boolean;
   count: number;
@@ -81,6 +96,21 @@ export type GalleryAlbum = {
   title: string; slug: string; subtitle: string; description: string;
   is_featured: boolean; is_active: boolean; display_order: number;
   created_at: string; updated_at: string; images: GalleryImage[];
+};
+
+export type GalleryCategory = {
+  id: number;
+  name: string;
+  slug: string;
+  icon: string;
+  is_active: boolean;
+  display_order: number;
+};
+
+type GalleryCategoryListResponse = {
+  success: boolean;
+  count: number;
+  data: GalleryCategory[];
 };
 
 type GalleryListResponse = { success: boolean; count: number; data: GalleryAlbum[] };
@@ -122,8 +152,18 @@ export const cmsService = {
         cache: 'no-store',
       });
       if (!response.ok) return [];
-      return await response.json();
-    } catch {
+      const payload = await response.json();
+      console.log('[Services API] Response:', payload);
+      const services = Array.isArray(payload) ? payload : payload?.data;
+      const cateringService = Array.isArray(services)
+        ? services.find((service: { slug?: string; name?: string }) =>
+            service.slug === 'catering-services' || service.name?.toLowerCase().includes('catering')
+          )
+        : undefined;
+      console.log('[Services API] Catering service:', cateringService ?? 'Catering service not found');
+      return payload;
+    } catch (error) {
+      console.warn('[Services API] Request failed:', error);
       return [];
     }
   },
@@ -140,8 +180,15 @@ export const cmsService = {
         cache: 'no-store',
       });
       if (!response.ok) return null;
-      return await response.json();
-    } catch {
+      const payload = await response.json();
+      console.log('[Service Detail API] ' + slug + ':', payload);
+      if (slug === 'catering-services') {
+        console.log('[Service Detail API] Catering redirect link:', payload?.data?.redirect_link ?? payload?.redirect_link ?? payload?.data?.redirect_url ?? payload?.redirect_url ?? 'No redirect link returned');
+        console.log('[Service Detail API] Catering service:', payload?.data ?? payload);
+      }
+      return payload;
+    } catch (error) {
+      console.warn('[Service Detail API] ' + slug + ' request failed:', error);
       return null;
     }
   },
@@ -206,12 +253,22 @@ export const cmsService = {
     return Array.isArray(response.data) ? response.data : response.data.data ?? [];
   },
   getClientCategories: async () => {
-    const response = await apiClient.get('/api/base/client-categories/');
-    return response.data;
+    try {
+      const response = await apiClient.get<ClientCategory[] | ClientCategoryListResponse>('/api/base/client-categories/');
+      return Array.isArray(response.data) ? response.data : response.data.data ?? [];
+    } catch (error) {
+      console.warn('[Client categories API] Unable to load categories.', error);
+      return [];
+    }
   },
   getGalleryCategories: async () => {
-    const response = await apiClient.get('/api/base/gallery-categories/');
-    return response.data;
+    try {
+      const response = await apiClient.get<GalleryCategory[] | GalleryCategoryListResponse>('/api/base/gallery-categories/');
+      return Array.isArray(response.data) ? response.data : response.data.data ?? [];
+    } catch (error) {
+      console.warn('[Gallery categories API] Unable to load categories.', error);
+      return [];
+    }
   },
   getEvents: async () => {
     const response = await apiClient.get('/api/base/events/');

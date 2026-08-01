@@ -288,7 +288,7 @@ export default function ProfilePage() {
   if (isLoading) {
     return (
       <div id="profile-workspace" className="min-h-screen bg-gradient-to-b from-[#f3f9fc] via-white to-[#edf7fc] lg:h-[calc(100dvh-5rem)] lg:min-h-0 lg:overflow-hidden">
-        <div className="flex w-full animate-pulse flex-col gap-3 lg:h-full" aria-label="Loading profile">
+        <div className="mx-auto flex w-full max-w-7xl animate-pulse flex-col gap-3 lg:h-full lg:border-x lg:border-[#0a79bf]/10" aria-label="Loading profile">
           <div className="shrink-0 border-y border-[#1b3d64]/50 bg-gradient-to-r from-[#071c35] to-[#155d91] px-4 py-3 sm:px-6 lg:px-8">
             <div className="flex items-center gap-3">
               <div className="size-16 shrink-0 rounded-full bg-white/20 ring-2 ring-white/10" />
@@ -342,7 +342,7 @@ export default function ProfilePage() {
 
   return (
     <div id="profile-workspace" className="min-h-screen bg-gradient-to-b from-[#f3f9fc] via-white to-[#edf7fc] lg:h-[calc(100dvh-5rem)] lg:min-h-0 lg:overflow-hidden">
-      <div className="flex w-full flex-col gap-3 lg:h-full">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 lg:h-full lg:border-x lg:border-[#0a79bf]/10 lg:shadow-[0_0_45px_rgba(6,31,59,.06)]">
         
         {/* Profile Header Banner */}
         <div 

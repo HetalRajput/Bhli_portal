@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { Mail, Phone, Users, Search, UserCheck } from "lucide-react";
+import { ArrowUpRight, BadgeCheck, Mail, Phone, Users, Search } from "lucide-react";
 import { cmsService } from "@/lib/api/cms";
 import TeamAvatar from "@/components/TeamAvatar";
 
@@ -244,80 +244,32 @@ export default function OurTeamPage() {
             {filteredTeam.map((member) => (
               <div
                 key={member.id}
-                className="group relative flex flex-col justify-between overflow-hidden rounded-[1.75rem] border border-[#dce8ef] bg-white p-7 shadow-[0_8px_30px_rgba(6,31,59,.05)] transition duration-300 hover:-translate-y-1 hover:border-[#13a5d8]/40 hover:shadow-[0_22px_55px_rgba(6,31,59,.12)]"
+                className="group relative flex min-h-full flex-col overflow-hidden rounded-[2rem] border border-[#d9e7ef] bg-white shadow-[0_10px_35px_rgba(6,31,59,.07)] transition duration-500 hover:-translate-y-1.5 hover:border-[#13a5d8]/45 hover:shadow-[0_28px_65px_rgba(6,31,59,.14)]"
               >
-                {/* Decorative Top Accent Line */}
-                <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#062b50] via-[#087dbd] to-[#13a5d8] opacity-0 group-hover:opacity-100 transition-opacity" />
-
-                <div>
+                <div className="h-1.5 w-full bg-gradient-to-r from-[#062b50] via-[#087dbd] to-[#20b7df]" />
+                <div className="flex flex-1 flex-col p-5 sm:p-6">
                   {/* Photo Container */}
-                  <div className="relative mb-6 flex items-center justify-center rounded-2xl bg-gradient-to-br from-[#edf7fb] to-[#e1eef5] py-6">
-                    <div className="relative">
-                      <TeamAvatar
-                        photo={member.photo}
-                        name={member.name}
-                        className="h-32 w-32 rounded-full border-4 border-white object-cover object-top shadow-[0_10px_25px_rgba(6,31,59,.15)] transition duration-500 group-hover:scale-105"
-                      />
-                      <span className="absolute bottom-0 right-0 bg-[#087dbd] text-white p-1.5 rounded-full shadow-md">
-                        <UserCheck className="size-3.5" />
-                      </span>
+                  <div className="relative mb-6 flex min-h-52 items-center justify-center overflow-hidden rounded-[1.5rem] bg-[#eaf5fa] px-6 py-7">
+                    <div className="absolute -right-12 -top-16 size-48 rounded-full bg-[#13a5d8]/15 blur-2xl transition duration-700 group-hover:scale-125" />
+                    <div className="absolute -bottom-20 -left-12 size-52 rounded-full bg-[#062b50]/10 blur-3xl" />
+                    <div className="absolute inset-x-8 bottom-0 h-px bg-gradient-to-r from-transparent via-[#087dbd]/20 to-transparent" />
+                    <div className="relative transition duration-500 group-hover:-translate-y-1">
+                      <TeamAvatar photo={member.photo} name={member.name} className="size-36 rounded-full border-[5px] border-white object-cover object-top shadow-[0_16px_38px_rgba(6,31,59,.18)] sm:size-40" />
+                      <span className="absolute bottom-2 right-1 grid size-9 place-items-center rounded-full border-[3px] border-white bg-[#087fbe] text-white shadow-lg" title="BHLI team member"><BadgeCheck className="size-4" /></span>
                     </div>
                   </div>
-
-                  {/* Header */}
-                  <div className="text-center">
-                    {member.subtitle && (
-                      <span className="inline-block text-[10px] uppercase font-bold tracking-widest text-[#087dbd] bg-[#087dbd]/8 px-3 py-1 rounded-full mb-2">
-                        {member.subtitle}
-                      </span>
-                    )}
-                    <h3 className="font-serif text-2xl font-bold text-[#062b50] group-hover:text-[#087dbd] transition-colors">
-                      {member.name}
-                    </h3>
-                    <p className="mt-1.5 text-xs font-semibold uppercase tracking-wider text-[#087dbd]">
-                      {member.designation}
-                    </p>
+                  <div className="flex flex-1 flex-col">
+                    {member.subtitle && <span className="mb-3 w-fit rounded-full border border-[#bfe4f2] bg-[#edf8fc] px-3 py-1 text-[10px] font-bold uppercase tracking-[.18em] text-[#087dbd]">{member.subtitle}</span>}
+                    <h3 className="font-serif text-[1.65rem] font-bold leading-tight text-[#062b50] transition-colors group-hover:text-[#087dbd]">{member.name}</h3>
+                    <p className="mt-2 text-[11px] font-bold uppercase leading-5 tracking-[.14em] text-[#087dbd]">{member.designation}</p>
+                    {member.bio && <p className="mt-4 line-clamp-3 text-sm leading-6 text-[#607789]">{member.bio}</p>}
                   </div>
-
-                  {/* Bio */}
-                  {member.bio && (
-                    <p className="mt-5 text-sm leading-relaxed text-black/60 text-center font-medium line-clamp-3">
-                      {member.bio}
-                    </p>
-                  )}
-                </div>
-
-                {/* Contact Links & Actions */}
-                <div className="mt-8 border-t border-black/5 pt-5 flex items-center justify-center gap-4">
-                  {member.email && (
-                    <a
-                      href={`mailto:${member.email}`}
-                      className="p-2.5 rounded-full bg-[#f0f6fa] hover:bg-[#087dbd] hover:text-white text-[#087dbd] transition-all shadow-sm"
-                      title={`Email ${member.name}`}
-                    >
-                      <Mail className="size-4" />
-                    </a>
-                  )}
-                  {member.phone_number && (
-                    <a
-                      href={`tel:${member.phone_number.replace(/\s/g, "")}`}
-                      className="p-2.5 rounded-full bg-[#f0f6fa] hover:bg-[#087dbd] hover:text-white text-[#087dbd] transition-all shadow-sm"
-                      title={`Call ${member.name}`}
-                    >
-                      <Phone className="size-4" />
-                    </a>
-                  )}
-                  {member.linkedin_url && (
-                    <a
-                      href={member.linkedin_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-2.5 rounded-full bg-[#f0f6fa] hover:bg-[#087dbd] hover:text-white text-[#087dbd] transition-all shadow-sm"
-                      title="LinkedIn Profile"
-                    >
-                      <Linkedin className="size-4" />
-                    </a>
-                  )}
+                  <div className="mt-6 flex items-center gap-2 border-t border-[#e4edf2] pt-5">
+                    {member.email && <a href={`mailto:${member.email}`} className="inline-flex min-w-0 flex-1 items-center justify-center gap-2 rounded-xl bg-[#062b50] px-4 py-3 text-xs font-bold text-white transition hover:bg-[#087dbd] focus:outline-none focus:ring-4 focus:ring-[#13a5d8]/20" aria-label={`Email ${member.name}`}><Mail className="size-4" /><span>Get in touch</span><ArrowUpRight className="size-3.5 opacity-70" /></a>}
+                    {member.phone_number && <a href={`tel:${member.phone_number.replace(/\s/g, "")}`} className="grid size-11 shrink-0 place-items-center rounded-xl border border-[#d8e8f0] bg-[#f2f8fb] text-[#087dbd] transition hover:border-[#087dbd] hover:bg-[#087dbd] hover:text-white focus:outline-none focus:ring-4 focus:ring-[#13a5d8]/20" aria-label={`Call ${member.name}`}><Phone className="size-4" /></a>}
+                    {member.linkedin_url && <a href={member.linkedin_url} target="_blank" rel="noopener noreferrer" className="grid size-11 shrink-0 place-items-center rounded-xl border border-[#d8e8f0] bg-[#f2f8fb] text-[#087dbd] transition hover:border-[#087dbd] hover:bg-[#087dbd] hover:text-white focus:outline-none focus:ring-4 focus:ring-[#13a5d8]/20" aria-label={`View ${member.name} on LinkedIn`}><Linkedin className="size-4" /></a>}
+                    {!member.email && !member.phone_number && !member.linkedin_url && <p className="py-2 text-xs font-semibold text-[#7890a1]">BHLI team member</p>}
+                  </div>
                 </div>
               </div>
             ))}
