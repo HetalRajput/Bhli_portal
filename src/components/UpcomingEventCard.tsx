@@ -3,11 +3,11 @@ import { ArrowUpRight, CalendarDays, MapPin, Plane } from "lucide-react";
 
 export default function UpcomingEventCard() {
   return (
-    <article className="w-full max-w-[390px] overflow-hidden rounded-[1.75rem] border border-white/20 bg-white text-[#062b50] shadow-[0_25px_70px_rgba(0,15,35,.32)]">
+    <article className="upcoming-event-card w-full max-w-[390px] overflow-hidden rounded-[1.75rem] border border-white/20 bg-white text-[#062b50] shadow-[0_25px_70px_rgba(0,15,35,.32)]">
       <div className="relative h-40 overflow-hidden bg-[#087fbe]">
         <img src="https://images.pexels.com/photos/358319/pexels-photo-358319.jpeg?auto=compress&cs=tinysrgb&w=900" alt="Aircraft representing Aero India 2027" className="h-full w-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#062b50]/75 via-transparent to-transparent" />
-        <span className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-white/25 bg-[#062b50]/70 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[.16em] text-white backdrop-blur"><Plane className="size-3.5 text-[#f0ba4f]" />Upcoming event</span>
+        <span className="upcoming-event-badge absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-white/25 bg-[#062b50]/70 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[.16em] text-white backdrop-blur"><Plane className="size-3.5 text-[#f0ba4f]" />Upcoming event</span>
       </div>
       <div className="p-6">
         <p className="text-[10px] font-extrabold uppercase tracking-[.2em] text-[#b47500]">Aerospace · Defence</p>

@@ -336,6 +336,38 @@ main :where(article, figure, a.rounded-3xl, div.rounded-3xl):not(.travel-solutio
 }
 
 
+@keyframes upcoming-card-highlight {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+    border-color: rgba(255, 255, 255, .35);
+    box-shadow: 0 25px 70px rgba(0, 15, 35, .38), 0 0 0 0 rgba(19, 165, 216, 0);
+  }
+  50% {
+    transform: translateY(-9px) scale(1.018);
+    border-color: rgba(91, 198, 234, .9);
+    box-shadow: 0 34px 90px rgba(0, 15, 35, .48), 0 0 0 5px rgba(19, 165, 216, .2), 0 0 38px rgba(91, 198, 234, .42);
+  }
+}
+
+@keyframes upcoming-badge-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(240, 186, 79, .75); }
+  50% { box-shadow: 0 0 0 10px rgba(240, 186, 79, 0); }
+}
+
+.upcoming-event-card {
+  animation: upcoming-card-highlight 3s ease-in-out infinite;
+}
+
+.upcoming-event-badge {
+  animation: upcoming-badge-pulse 1.8s ease-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .upcoming-event-card,
+  .upcoming-event-badge {
+    animation: none;
+  }
+}
 /* The authenticated profile is an application workspace on desktop. */
 @media (min-width: 1024px) {
   body:has(#profile-workspace) > footer {
