@@ -1,5 +1,9 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
+  ArrowLeft,
   ArrowRight,
   ArrowUpRight,
   BadgeCheck,
@@ -51,6 +55,12 @@ const assurances = [
 ];
 
 export default function HelpCentre() {
+  const router = useRouter();
+
+  const goBack = () => {
+    if (window.history.length > 1) router.back();
+    else router.push("/");
+  };
   return <div className="bg-[#f4f9fc] text-[#071f38]">
     <section className="relative overflow-hidden bg-[#061f3b] text-white">
       <div className="absolute -right-28 -top-36 size-[520px] rounded-full bg-[#13a5d8]/20 blur-3xl" />
@@ -58,6 +68,7 @@ export default function HelpCentre() {
       <div className="absolute inset-0 opacity-[.08] [background-image:linear-gradient(rgba(255,255,255,.7)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.7)_1px,transparent_1px)] [background-size:54px_54px]" />
       <div className="relative mx-auto grid max-w-7xl gap-12 px-5 pb-32 pt-20 lg:grid-cols-[1.15fr_.85fr] lg:items-center lg:px-8 lg:pb-36 lg:pt-24">
         <div>
+          <div><button type="button" onClick={goBack} className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-bold text-white/80 backdrop-blur transition hover:border-white/40 hover:bg-white/20 hover:text-white" aria-label="Go back to the previous page"><ArrowLeft className="size-4" />Back</button></div>
           <div className="inline-flex items-center gap-2 rounded-full border border-sky-300/20 bg-white/8 px-4 py-2 text-xs font-bold uppercase tracking-[.2em] text-sky-200"><Sparkles className="size-4" />Help & opportunities</div>
           <h1 className="mt-7 max-w-4xl font-serif text-5xl leading-[1.05] md:text-7xl">The right next step, all in one place.</h1>
           <p className="mt-6 max-w-2xl text-base leading-8 text-white/65 md:text-lg">Whether you need travel support, want to work with us, are ready to become a partner, or need a concern resolved—we’ll help you move forward.</p>
