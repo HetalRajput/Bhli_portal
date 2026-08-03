@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, MapPin, Sparkles } from "lucide-react";
+import { ArrowRight, MapPin, Sparkles, Star } from "lucide-react";
 
 export interface HotelCardProps {
   id: string | number;
@@ -45,6 +45,8 @@ export default function HotelCard({
 }: HotelCardProps) {
   const router = useRouter();
   const displayLocation = location || subtitle;
+  const starMatch = ratingText.match(/\b([1-5])\s*(?:star)?\b/i);
+  const starRating = starMatch ? Number(starMatch[1]) : null;
   const showCityLine = city
     ? !displayLocation?.toLowerCase().includes(city.toLowerCase())
     : false;
@@ -73,10 +75,17 @@ export default function HotelCard({
               }
             }}
           />
-          <span className="absolute top-4 left-5 flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider text-indigo-900 bg-indigo-50 border border-indigo-100 px-3.5 py-1 rounded-full shadow-sm">
-            <Sparkles className="size-3 text-indigo-500 fill-indigo-500" />
-            {ratingText}
-          </span>
+          {starRating ? (
+            <span aria-label={`${starRating} star hotel`} className="absolute left-4 top-4 inline-flex items-center gap-1 rounded-full border border-amber-200/80 bg-white/95 px-2.5 py-1 text-[10px] font-extrabold text-amber-700 shadow-sm backdrop-blur">
+              <Star className="size-3 fill-amber-400 text-amber-400" />
+              {starRating} Star
+            </span>
+          ) : (
+            <span className="absolute left-4 top-4 inline-flex items-center gap-1 rounded-full border border-indigo-100 bg-white/95 px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-wide text-indigo-900 shadow-sm backdrop-blur">
+              <Sparkles className="size-2.5 fill-indigo-500 text-indigo-500" />
+              {ratingText}
+            </span>
+          )}
         </div>
 
         <div className="px-5 py-6 space-y-4">

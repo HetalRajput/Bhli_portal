@@ -12,7 +12,7 @@ const links = [
   ["Events", "/events"],
   ["About us", "/about-us"],
   ["Clients", "/clients"],
-  ["Gallery", "/gallery"],
+  ["Help & opportunities", "/help-centre"],
   ["Contact", "/contact-us"],
 ];
 

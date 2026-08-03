@@ -1,18 +1,16 @@
 "use client";
 
-import React, { useState, useEffect, useRef, Suspense } from "react";
+import React, { useState, useEffect, useMemo, useRef, Suspense } from "react";
 
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import HotelCard from "@/components/HotelCard";
-import { 
-  MapPin, 
-  Star, 
-  Building2, 
-  ArrowRight, 
-  ShieldCheck, 
-  Search, 
-  ChevronLeft, 
+import {
+  MapPin,
+  Building2,
+  ArrowRight,
+  ShieldCheck,
+  Search,
+  ChevronLeft,
   ChevronRight,
   Download,
   Sparkles,
@@ -79,6 +77,24 @@ const fallbackHotelImages = [
   "https://images.pexels.com/photos/271619/pexels-photo-271619.jpeg?auto=compress&cs=tinysrgb&w=600"
 ];
 
+const commonHotelSearchTerms = ["Bengaluru", "Bangalore", "Delhi", "New Delhi", "Mumbai", "Chennai", "Hyderabad", "Kolkata", "Pune", "Goa", "Jaipur", "Gurugram", "Noida", "Aerocity"];
+
+function editDistance(left: string, right: string) {
+  const a = left.toLowerCase();
+  const b = right.toLowerCase();
+  const row = Array.from({ length: b.length + 1 }, (_, index) => index);
+  for (let i = 1; i <= a.length; i++) {
+    let previous = row[0];
+    row[0] = i;
+    for (let j = 1; j <= b.length; j++) {
+      const current = row[j];
+      row[j] = Math.min(row[j] + 1, row[j - 1] + 1, previous + (a[i - 1] === b[j - 1] ? 0 : 1));
+      previous = current;
+    }
+  }
+  return row[b.length];
+}
+
 function HotelCardSkeleton() {
   return (
     <div className="flex flex-col justify-between overflow-hidden rounded-[2.5rem] border border-slate-100 bg-white p-2 shadow-sm animate-pulse">
@@ -107,22 +123,36 @@ function HotelCardSkeleton() {
 
 function HotelReservationsContent() {
   const searchParams = useSearchParams();
-  const initialDestination = searchParams ? (searchParams.get("destination") || searchParams.get("search") || "") : "";
+  const initialDestination = searchParams ? (searchParams.get("destination") || searchParams.get("search") || searchParams.get("q") || "") : "";
+  const initialCity = searchParams?.get("city") || "";
+  const initialLocation = searchParams?.get("location") || "";
+  const initialRating = searchParams?.get("rating") || "";
 
   const gridRef = useRef<HTMLDivElement>(null);
   const [serviceData, setServiceData] = useState<any>(null);
   const [hotels, setHotels] = useState<HotelItem[]>([]);
   const [totalCount, setTotalCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
-  
+  const [usingFallback, setUsingFallback] = useState(false);
+  const [availableCities, setAvailableCities] = useState<string[]>(() =>
+    Array.from(new Set(fallbackHotels.map((hotel) => hotel.city).filter((value): value is string => Boolean(value)))).sort(),
+  );
+  const [availableLocations, setAvailableLocations] = useState<string[]>(() =>
+    Array.from(new Set(fallbackHotels.map((hotel) => hotel.location).filter((value): value is string => Boolean(value)))).sort(),
+  );
+  const [availableRatings, setAvailableRatings] = useState<string[]>(() =>
+    Array.from(new Set(fallbackHotels.map((hotel) => hotel.rating).filter((value): value is string => Boolean(value)))).sort(),
+  );
+
   // Search & Pagination State
   const [searchInput, setSearchInput] = useState(initialDestination);
   const [searchTerm, setSearchTerm] = useState(initialDestination);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [locationFilter, setLocationFilter] = useState("All");
-  const [starFilter, setStarFilter] = useState("All");
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 9;
+  const [cityFilter, setCityFilter] = useState(initialCity);
+  const [locationFilter, setLocationFilter] = useState(initialLocation);
+  const [ratingFilter, setRatingFilter] = useState(initialRating);
+  const pageSize = 20;
 
   const handlePageChange = (pageNum: number) => {
     setCurrentPage(pageNum);
@@ -151,6 +181,7 @@ function HotelReservationsContent() {
     return () => clearTimeout(timer);
   }, [searchInput, searchTerm]);
 
+
   // Load service metadata once on mount
   useEffect(() => {
     cmsService.getServiceDetail("hotel-reservations").then((detail) => {
@@ -162,16 +193,33 @@ function HotelReservationsContent() {
 
   useEffect(() => {
     let active = true;
+    cmsService.getHotelReservationFilters().then((filters) => {
+      if (!active || !filters) return;
+      setAvailableCities(Array.from(new Set(filters.cities.filter(Boolean))).sort());
+      setAvailableLocations(Array.from(new Set(filters.locations.filter(Boolean))).sort());
+      setAvailableRatings(Array.from(new Set(filters.ratings.filter(Boolean))).sort());
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
     const fetchHotels = async () => {
       setLoading(true);
       try {
         let items: HotelItem[] = [];
         let count = 0;
 
-        if (searchTerm.trim()) {
+        if (searchTerm.trim() || cityFilter || locationFilter || ratingFilter) {
           // ── SEARCH PATH ─────────────────────────────────────────────────
           // GET /api/base/services/hotel-reservations/search/?q=...&page=...&page_size=...
-          const res = await cmsService.searchServiceItems("hotel-reservations", searchTerm.trim(), currentPage, pageSize);
+          const res = await cmsService.searchServiceItems("hotel-reservations", searchTerm.trim(), currentPage, pageSize, {
+            city: cityFilter,
+            location: locationFilter,
+            rating: ratingFilter,
+          });
 
           if (res && res.success !== false) {
             // search endpoint returns: { success, count, total_pages, data: [ ...hotel items... ] }
@@ -207,16 +255,20 @@ function HotelReservationsContent() {
         if (!active) return;
 
         if (items.length > 0) {
+
           setHotels(items);
           setTotalCount(count);
+          setUsingFallback(false);
         } else {
           setHotels(fallbackHotels);
           setTotalCount(fallbackHotels.length);
+          setUsingFallback(true);
         }
       } catch (err) {
         if (active) {
           setHotels(fallbackHotels);
           setTotalCount(fallbackHotels.length);
+          setUsingFallback(true);
         }
       } finally {
         if (active) setLoading(false);
@@ -227,7 +279,7 @@ function HotelReservationsContent() {
     return () => {
       active = false;
     };
-  }, [searchTerm, currentPage]);
+  }, [searchTerm, cityFilter, locationFilter, ratingFilter, currentPage]);
 
   // Client side fallback filtering if API returned unpaginated list
   const filteredHotels = hotels.filter((hotel) => {
@@ -238,14 +290,16 @@ function HotelReservationsContent() {
       (hotel.location || "").toLowerCase().includes(term) ||
       (hotel.rating || "").toLowerCase().includes(term)
     );
-    const hotelLocation = hotel.city || hotel.location || "Other";
-    const matchesLocation = locationFilter === "All" || hotelLocation === locationFilter;
-    const stars = Number((hotel.rating || "").match(/[1-5]/)?.[0] || 0);
-    const matchesStars = starFilter === "All" || stars === Number(starFilter);
-    return matchesSearch && matchesLocation && matchesStars;
+    const matchesCity = !cityFilter || (hotel.city || "").toLowerCase() === cityFilter.toLowerCase();
+    const matchesLocation = !locationFilter || (hotel.location || "").toLowerCase().includes(locationFilter.toLowerCase());
+    const matchesRating = !ratingFilter || (hotel.rating || "").toLowerCase() === ratingFilter.toLowerCase();
+    return matchesSearch && matchesCity && matchesLocation && matchesRating;
   });
 
-  const locations = Array.from(new Set(hotels.map((hotel) => hotel.city || hotel.location || "Other"))).sort();
+  const cityOptions = availableCities;
+  const locationOptions = availableLocations;
+  const ratingOptions = availableRatings;
+
   const suggestions = hotels
     .filter((hotel) => {
       const term = searchInput.trim().toLowerCase();
@@ -255,14 +309,23 @@ function HotelReservationsContent() {
       );
     })
     .slice(0, 6);
-  const hasClientFilters = locationFilter !== "All" || starFilter !== "All";
-  const isApiData = totalCount > 0;
-  const totalItems = hasClientFilters ? filteredHotels.length : (isApiData ? totalCount : filteredHotels.length);
+  const spellingSuggestions = useMemo(() => {
+    const query = searchInput.trim().toLowerCase();
+    if (query.length < 3 || suggestions.length > 0) return [];
+    const values = hotels.flatMap((hotel) => [hotel.title, hotel.city, hotel.location]).filter((value): value is string => Boolean(value?.trim()));
+    const candidates = Array.from(new Set([...commonHotelSearchTerms, ...values, ...values.flatMap((value) => value.split(/[\s,()-]+/))]));
+    return candidates
+      .map((value) => ({ value, distance: editDistance(query, value.toLowerCase()) }))
+      .filter(({ value, distance }) => value.length >= 3 && value.toLowerCase() !== query && distance <= Math.max(2, Math.ceil(query.length * 0.35)))
+      .sort((a, b) => a.distance - b.distance || a.value.length - b.value.length)
+      .slice(0, 3)
+      .map(({ value }) => value);
+  }, [hotels, searchInput, suggestions.length]);
+  const isApiData = !usingFallback && totalCount > 0;
+  const totalItems = isApiData ? totalCount : filteredHotels.length;
   const totalPages = Math.ceil(totalItems / pageSize) || 1;
 
-  const paginatedHotels = hasClientFilters
-    ? filteredHotels
-    : isApiData
+  const paginatedHotels = isApiData
       ? hotels
       : filteredHotels.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
@@ -310,11 +373,15 @@ function HotelReservationsContent() {
 
   // Prefetch & Preload Next Page Data & Images in background
   useEffect(() => {
-    if (searchTerm || loading || !totalPages || currentPage >= totalPages || (totalCount > 0 && totalItems <= currentPage * pageSize)) return;
+    if (searchTerm || cityFilter || locationFilter || ratingFilter || loading || !totalPages || currentPage >= totalPages || (totalCount > 0 && totalItems <= currentPage * pageSize)) return;
     const nextPage = currentPage + 1;
     const prefetchNextPage = async () => {
       try {
-        const res = await cmsService.searchServiceItems("hotel-reservations", searchTerm, nextPage, pageSize);
+        const res = await cmsService.searchServiceItems("hotel-reservations", searchTerm, nextPage, pageSize, {
+          city: cityFilter,
+          location: locationFilter,
+          rating: ratingFilter,
+        });
         if (res && res.success !== false) {
           const nextItems = res?.results || res?.data || res?.items || (Array.isArray(res) ? res : []);
           if (Array.isArray(nextItems)) {
@@ -331,7 +398,7 @@ function HotelReservationsContent() {
       }
     };
     prefetchNextPage();
-  }, [searchTerm, currentPage, totalPages, totalCount, totalItems, pageSize, loading]);
+  }, [searchTerm, cityFilter, locationFilter, ratingFilter, currentPage, totalPages, totalCount, totalItems, pageSize, loading]);
 
   const displayName = serviceData?.name || "Hotel Reservations";
   const displayDesc = serviceData?.description || serviceData?.short_description || "Handpicked stays aligned to comfort, policy and official entitlement rates.";
@@ -342,9 +409,9 @@ function HotelReservationsContent() {
       {/* Hero Header */}
       <section className="relative h-[280px] md:h-[300px] flex items-center overflow-hidden bg-[#061f3b] text-white px-5 lg:px-8">
         <div className="absolute inset-0 z-0">
-          <img 
-            src={displayBanner} 
-            alt={displayName} 
+          <img
+            src={displayBanner}
+            alt={displayName}
             className="w-full h-full object-cover opacity-35"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-[#061f3b]/90 via-[#061f3b]/60 to-transparent" />
@@ -375,128 +442,187 @@ function HotelReservationsContent() {
       </section>
 
       {/* Filter and Search Bar */}
-      <section className="relative z-20 mx-auto max-w-7xl px-5 pt-12 lg:px-8">
-        <div className="bg-white border border-black/8 p-5 rounded-3xl shadow-sm flex flex-col lg:flex-row lg:flex-wrap items-center gap-4 justify-between">
-          <form 
-            onSubmit={(e) => {
-              e.preventDefault();
-              setSearchTerm(searchInput.trim());
-              setCurrentPage(1);
-              setShowSuggestions(false);
-            }}
-            className="flex w-full lg:max-w-lg items-center gap-2"
-          >
-            <div className="relative z-30 flex-1">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-zinc-400 pointer-events-none" />
-              <input
-                type="text"
-                placeholder="Search by hotel name, city, location or rating..."
-                value={searchInput}
-                onChange={(e) => { setSearchInput(e.target.value); setShowSuggestions(true); }}
-                onFocus={() => setShowSuggestions(true)}
-                onBlur={() => window.setTimeout(() => setShowSuggestions(false), 150)}
-                autoComplete="off"
-                role="combobox"
-                aria-expanded={showSuggestions}
-                aria-controls="hotel-search-suggestions"
-                className="w-full pl-11 pr-10 py-3.5 border border-black/10 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-[#087dbd]/20 focus:border-[#087dbd] bg-[#f8fafc] text-black font-semibold placeholder:text-zinc-400 transition"
-              />
-              {searchInput && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSearchInput("");
-                    setSearchTerm("");
-                    setCurrentPage(1);
-                  }}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 rounded-full text-zinc-400 hover:text-zinc-700 hover:bg-zinc-200/60 transition cursor-pointer"
-                  title="Clear search"
-                >
-                  <X className="size-4" />
-                </button>
-              )}
-              {showSuggestions && (
-                <div id="hotel-search-suggestions" role="listbox" className="absolute left-0 right-0 top-[calc(100%+8px)] z-50 max-h-96 overflow-y-auto rounded-2xl border border-[#dce8ef] bg-white p-2 shadow-[0_18px_45px_rgba(6,31,59,.16)]">
-                  <p className="px-3 pb-2 pt-1 text-[10px] font-bold uppercase tracking-[.18em] text-[#8295a4]">
-                    {searchInput.trim() ? "Suggested matches" : "Popular properties"}
-                  </p>
-                  {suggestions.length > 0 ? suggestions.map((hotel) => (
-                    <button
-                      key={hotel.id}
-                      type="button"
-                      role="option"
-                      aria-selected={false}
-                      onMouseDown={(event) => event.preventDefault()}
-                      onClick={() => {
-                        setSearchInput(hotel.title);
-                        setSearchTerm(hotel.title);
-                        setCurrentPage(1);
-                        setShowSuggestions(false);
-                      }}
-                      className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-[#edf8fd] focus:bg-[#edf8fd] focus:outline-none"
-                    >
-                      <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-[#e5f5fc] text-[#087dbd]"><Building2 className="size-4" /></span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-bold text-[#122b42]">{hotel.title}</span>
-                        <span className="mt-0.5 flex items-center gap-1 truncate text-xs text-[#607789]"><MapPin className="size-3 shrink-0" />{hotel.location || hotel.city || "Location available on request"}</span>
-                      </span>
-                      {hotel.rating && <span className="shrink-0 text-[10px] font-bold text-[#087dbd]">{hotel.rating}</span>}
-                    </button>
-                  )) : <p className="px-3 py-4 text-sm text-[#607789]">No matching hotel suggestions.</p>}
-                </div>
-              )}
+      <section className="relative z-20 mx-auto max-w-6xl px-5 pt-8 lg:px-8">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_8px_30px_rgba(15,45,65,.06)] sm:p-5">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h2 className="text-base font-bold text-[#102f47]">Search hotels</h2>
+              <p className="mt-0.5 text-xs text-slate-500">Search and refine available properties</p>
             </div>
-
-            <button
-              type="submit"
-              className="flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#0875b7] to-[#08a9da] hover:from-[#0983cc] hover:to-[#09b6e8] px-6 py-3.5 font-bold text-xs uppercase tracking-wider text-white shadow-md transition-all active:scale-95 shrink-0 cursor-pointer"
-            >
-              <Search className="size-4" />
-              <span>Search</span>
-            </button>
-          </form>
-
-          <div className="grid w-full gap-3 sm:grid-cols-2 lg:w-auto">
-            <label className="relative">
-              <span className="sr-only">Filter by location</span>
-              <MapPin className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-[#087dbd]" />
-              <select
-                value={locationFilter}
-                onChange={(event) => { setLocationFilter(event.target.value); setCurrentPage(1); }}
-                className="h-12 min-w-44 appearance-none rounded-2xl border border-black/10 bg-[#f8fafc] pl-10 pr-8 text-sm font-semibold text-[#344a5c] outline-none focus:border-[#087dbd] focus:ring-2 focus:ring-[#087dbd]/20"
-              >
-                <option value="All">All locations</option>
-                {locations.map((location) => <option key={location} value={location}>{location}</option>)}
-              </select>
-            </label>
-            <label className="relative">
-              <span className="sr-only">Filter by star rating</span>
-              <Star className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 fill-[#e7ad35] text-[#e7ad35]" />
-              <select
-                value={starFilter}
-                onChange={(event) => { setStarFilter(event.target.value); setCurrentPage(1); }}
-                className="h-12 min-w-40 appearance-none rounded-2xl border border-black/10 bg-[#f8fafc] pl-10 pr-8 text-sm font-semibold text-[#344a5c] outline-none focus:border-[#087dbd] focus:ring-2 focus:ring-[#087dbd]/20"
-              >
-                <option value="All">All star ratings</option>
-                {[5, 4, 3, 2, 1].map((stars) => <option key={stars} value={stars}>{stars} star</option>)}
-              </select>
-            </label>
+            <p className="rounded-full bg-slate-50 px-3 py-1.5 text-[11px] font-semibold text-slate-500">
+              <span className="font-bold text-[#087dbd]">{totalItems.toLocaleString("en-IN")}</span>{" "}
+              {totalItems === 1 ? "property" : "properties"}
+            </p>
           </div>
 
-          <button
-            type="button"
-            onClick={exportHotels}
-            disabled={filteredHotels.length === 0}
-            className="flex h-12 shrink-0 items-center justify-center gap-2 rounded-2xl border border-[#087dbd]/20 bg-[#edf8fd] px-5 text-xs font-bold uppercase tracking-wider text-[#087dbd] transition hover:border-[#087dbd]/40 hover:bg-[#dff3fb] disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            <Download className="size-4" />
-            Export Excel
-          </button>
-          
-          <div className="flex flex-wrap items-center gap-3 text-xs font-bold text-zinc-500 uppercase shrink-0">
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-12 lg:items-end">
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                setSearchTerm(searchInput.trim());
+                setCurrentPage(1);
+                setShowSuggestions(false);
+              }}
+              className="min-w-0 md:col-span-2 lg:col-span-4"
+            >
+              <label htmlFor="hotel-search" className="mb-1.5 block text-[10px] font-bold uppercase tracking-[.12em] text-slate-500">
+                Hotel or destination
+              </label>
+              <div className="relative z-30">
+                <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+                <input
+                  id="hotel-search"
+                  type="search"
+                  placeholder="Search hotel, city or destination"
+                  value={searchInput}
+                  onChange={(event) => {
+                    setSearchInput(event.target.value);
+                    setShowSuggestions(true);
+                  }}
+                  onFocus={() => setShowSuggestions(true)}
+                  onBlur={() => window.setTimeout(() => setShowSuggestions(false), 150)}
+                  autoComplete="off"
+                  spellCheck="true"
+                  autoCorrect="on"
+                  role="combobox"
+                  aria-expanded={showSuggestions}
+                  aria-controls="hotel-search-suggestions"
+                  className="h-10 w-full rounded-lg border border-slate-200 bg-white pl-10 pr-9 text-sm font-medium text-[#122b42] outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-[#087dbd] focus:ring-3 focus:ring-[#087dbd]/10"
+                />
+                {searchInput && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchInput("");
+                      setSearchTerm("");
+                      setCurrentPage(1);
+                    }}
+                    aria-label="Clear hotel search"
+                    className="absolute right-2.5 top-1/2 grid size-6 -translate-y-1/2 place-items-center rounded-md text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                )}
+
+                {showSuggestions && (
+                  <div id="hotel-search-suggestions" role="listbox" className="absolute left-0 right-0 top-[calc(100%+6px)] z-50 max-h-80 overflow-y-auto rounded-xl border border-slate-200 bg-white p-1.5 shadow-[0_16px_40px_rgba(15,45,65,.14)]">
+                    {spellingSuggestions.length > 0 && (
+                      <div className="mb-1 rounded-lg bg-amber-50 p-1.5">
+                        <p className="px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-amber-700">Did you mean?</p>
+                        {spellingSuggestions.map((suggestion) => (
+                          <button
+                            key={suggestion}
+                            type="button"
+                            role="option"
+                            aria-selected={false}
+                            onMouseDown={(event) => event.preventDefault()}
+                            onClick={() => {
+                              setSearchInput(suggestion);
+                              setSearchTerm(suggestion);
+                              setCurrentPage(1);
+                              setShowSuggestions(false);
+                            }}
+                            className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm font-semibold text-amber-900 hover:bg-white"
+                          >
+                            <Sparkles className="size-3.5 text-amber-500" />
+                            {suggestion}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {suggestions.length > 0 ? suggestions.map((hotel) => (
+                      <button
+                        key={hotel.id}
+                        type="button"
+                        role="option"
+                        aria-selected={false}
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={() => {
+                          setSearchInput(hotel.title);
+                          setSearchTerm(hotel.title);
+                          setCurrentPage(1);
+                          setShowSuggestions(false);
+                        }}
+                        className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition hover:bg-slate-50 focus:bg-slate-50 focus:outline-none"
+                      >
+                        <Building2 className="size-4 shrink-0 text-[#087dbd]" />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm font-semibold text-[#122b42]">{hotel.title}</span>
+                          <span className="block truncate text-[11px] text-slate-500">{hotel.location || hotel.city || "Location available on request"}</span>
+                        </span>
+                        {hotel.rating && <span className="shrink-0 text-[10px] font-semibold text-slate-500">{hotel.rating}</span>}
+                      </button>
+                    )) : spellingSuggestions.length === 0 ? (
+                      <p className="px-3 py-4 text-center text-xs text-slate-500">No matching hotels found</p>
+                    ) : null}
+                  </div>
+                )}
+              </div>
+            </form>
+
+            <label className="block min-w-0 lg:col-span-2">
+              <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-[.12em] text-slate-500">City</span>
+              <select
+                value={cityFilter}
+                onChange={(event) => {
+                  setCityFilter(event.target.value);
+                  setCurrentPage(1);
+                }}
+                className="h-10 w-full cursor-pointer rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-[#122b42] outline-none transition hover:border-slate-300 focus:border-[#087dbd] focus:ring-3 focus:ring-[#087dbd]/10"
+              >
+                <option value="">All cities</option>
+                {cityFilter && !cityOptions.includes(cityFilter) && <option value={cityFilter}>{cityFilter}</option>}
+                {cityOptions.map((city) => <option key={city} value={city}>{city}</option>)}
+              </select>
+            </label>
+
+            <label className="block min-w-0 lg:col-span-2">
+              <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-[.12em] text-slate-500">Location</span>
+              <select
+                value={locationFilter}
+                onChange={(event) => {
+                  setLocationFilter(event.target.value);
+                  setCurrentPage(1);
+                }}
+                className="h-10 w-full cursor-pointer rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-[#122b42] outline-none transition hover:border-slate-300 focus:border-[#087dbd] focus:ring-3 focus:ring-[#087dbd]/10"
+              >
+                <option value="">All locations</option>
+                {locationFilter && !locationOptions.includes(locationFilter) && <option value={locationFilter}>{locationFilter}</option>}
+                {locationOptions.map((location) => <option key={location} value={location}>{location}</option>)}
+              </select>
+            </label>
+
+            <label className="block min-w-0 lg:col-span-2">
+              <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-[.12em] text-slate-500">Rating</span>
+              <select
+                value={ratingFilter}
+                onChange={(event) => {
+                  setRatingFilter(event.target.value);
+                  setCurrentPage(1);
+                }}
+                className="h-10 w-full cursor-pointer rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-[#122b42] outline-none transition hover:border-slate-300 focus:border-[#087dbd] focus:ring-3 focus:ring-[#087dbd]/10"
+              >
+                <option value="">All ratings</option>
+                {ratingFilter && !ratingOptions.includes(ratingFilter) && <option value={ratingFilter}>{ratingFilter}</option>}
+                {ratingOptions.map((rating) => <option key={rating} value={rating}>{rating}</option>)}
+              </select>
+            </label>
+
+            <button
+              type="button"
+              onClick={exportHotels}
+              disabled={filteredHotels.length === 0}
+              className="flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-[11px] font-bold uppercase tracking-wider text-[#087dbd] transition hover:border-[#087dbd]/30 hover:bg-sky-50 disabled:cursor-not-allowed disabled:opacity-40 md:col-span-2 lg:col-span-2"
+            >
+              <Download className="size-3.5" />
+              Export
+            </button>
+          </div>
+
+          <div className="mt-3 flex min-h-7 flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
             {searchTerm && (
-              <span className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-sky-50 text-[#087dbd] border border-sky-100 font-extrabold shadow-sm">
-                Active filter: "{searchTerm}"
+              <span className="inline-flex items-center gap-1.5 rounded-md bg-sky-50 px-2.5 py-1 text-[11px] font-semibold text-[#087dbd]">
+                “{searchTerm}”
                 <button
                   type="button"
                   onClick={() => {
@@ -504,19 +630,38 @@ function HotelReservationsContent() {
                     setSearchTerm("");
                     setCurrentPage(1);
                   }}
-                  className="hover:text-red-600 transition cursor-pointer"
+                  aria-label="Remove search filter"
+                  className="hover:text-rose-600"
                 >
-                  <X className="size-3.5" />
+                  <X className="size-3" />
                 </button>
               </span>
             )}
-            <span>
-              Showing {startIndex + 1} - {Math.min(startIndex + pageSize, totalItems)} of {totalItems} properties
+            {cityFilter && <span className="rounded-md bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">{cityFilter}</span>}
+            {locationFilter && <span className="rounded-md bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">{locationFilter}</span>}
+            {ratingFilter && <span className="rounded-md bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">{ratingFilter}</span>}
+            {(searchTerm || cityFilter || locationFilter || ratingFilter) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchInput("");
+                  setSearchTerm("");
+                  setCityFilter("");
+                  setLocationFilter("");
+                  setRatingFilter("");
+                  setCurrentPage(1);
+                }}
+                className="text-[11px] font-semibold text-rose-600 transition hover:text-rose-700"
+              >
+                Clear all
+              </button>
+            )}
+            <span className="ml-auto text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              {totalItems ? startIndex + 1 : 0}–{Math.min(startIndex + pageSize, totalItems)} of {totalItems.toLocaleString("en-IN")}
             </span>
           </div>
         </div>
       </section>
-
       {/* Hotels Grid */}
       <section ref={gridRef} className="relative z-0 mx-auto max-w-7xl px-5 py-8 lg:px-8">
         {loading ? (
@@ -530,7 +675,7 @@ function HotelReservationsContent() {
             {paginatedHotels.map((hotel, index) => {
               const defaultImage = fallbackHotelImages[index % fallbackHotelImages.length];
               const hotelImage = hotel.image || defaultImage;
-              
+
               // Handle empty short description or description gracefully
               const hotelDesc = hotel.short_description || hotel.description || "Premium stay aligned to official travel entitlements & MoU policy.";
               const features = hotel.metadata?.features || ["MoU Entitlement", "Free Wifi", "Air Conditioning"];

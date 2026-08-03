@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowRight, Building2, Bus, ShieldCheck, HeartHandshake, Stethoscope, Landmark, Phone, ExternalLink } from "lucide-react";
 import { cmsService, type ChannelPartner } from "@/lib/api/cms";
+import PartnerLogo from "@/components/PartnerLogo";
 
 // Custom SVG brand logo components to match the brands recognized from the image
 const LogoGramin = () => (
@@ -255,12 +256,9 @@ export default function ChannelPartnersPage() {
       accentColor = "border-l-[#f97316]";
     }
 
-    // Render image or a fallback default icon
+    // Render API image with a resilient branded fallback.
     const LogoComponent = () => {
-      if (ap.image) {
-        return <img src={ap.image} alt={ap.title} className="max-h-16 max-w-[200px] object-contain mx-auto" />;
-      }
-      return <Building2 className="w-12 h-12 text-[#087dbd] mx-auto" />;
+      return <PartnerLogo image={ap.image} name={ap.title} />;
     };
 
     return {

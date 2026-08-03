@@ -24,6 +24,12 @@ type BannerListResponse = {
   data: Banner[];
 };
 
+export type HotelReservationFilters = {
+  cities: string[];
+  locations: string[];
+  ratings: string[];
+};
+
 export type OurClient = {
   id: number;
   category: number;
@@ -192,13 +198,43 @@ export const cmsService = {
       return null;
     }
   },
-  searchServiceItems: async (slug: string, query: string, page?: number, pageSize?: number) => {
+  getHotelReservationFilters: async (): Promise<HotelReservationFilters | null> => {
+    try {
+      const response = await fetch('https://bhli-backend.onrender.com/api/base/services/hotel-reservations/filters/', {
+        headers: { Accept: 'application/json' },
+        signal: AbortSignal.timeout(5000),
+        cache: 'no-store',
+      });
+      if (!response.ok) return null;
+      const payload = await response.json();
+      const data = payload?.data;
+      if (!data) return null;
+      return {
+        cities: Array.isArray(data.cities) ? data.cities : [],
+        locations: Array.isArray(data.locations) ? data.locations : [],
+        ratings: Array.isArray(data.ratings) ? data.ratings : [],
+      };
+    } catch {
+      return null;
+    }
+  },
+  searchServiceItems: async (
+    slug: string,
+    query: string,
+    page?: number,
+    pageSize?: number,
+    filters?: { city?: string; location?: string; rating?: string },
+  ) => {
     const params = new URLSearchParams();
     const trimmed = (query || '').trim();
     if (trimmed) params.set('q', trimmed);
+    if (filters?.city?.trim()) params.set('city', filters.city.trim());
+    if (filters?.location?.trim()) params.set('location', filters.location.trim());
+    if (filters?.rating?.trim()) params.set('rating', filters.rating.trim());
     if (page) params.set('page', String(page));
     if (pageSize) params.set('page_size', String(pageSize));
-    const endpoint = trimmed ? `${encodeURIComponent(slug)}/search/` : `${encodeURIComponent(slug)}/`;
+    const hasFilters = Boolean(filters?.city?.trim() || filters?.location?.trim() || filters?.rating?.trim());
+    const endpoint = trimmed || hasFilters ? `${encodeURIComponent(slug)}/search/` : `${encodeURIComponent(slug)}/`;
 
     try {
       const response = await fetch(`https://bhli-backend.onrender.com/api/base/services/${endpoint}?${params.toString()}`, {

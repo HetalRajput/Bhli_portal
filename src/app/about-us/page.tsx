@@ -12,8 +12,9 @@ import {
   Quote,
   Star,
 } from "lucide-react";
-import { cmsService, type Testimonial } from "@/lib/api/cms";
+import { cmsService, type GalleryAlbum, type GalleryCategory, type Testimonial } from "@/lib/api/cms";
 import TeamAvatar from "@/components/TeamAvatar";
+import AboutGallerySlider from "@/components/AboutGallerySlider";
 
 interface TeamMember {
   id: number;
@@ -66,6 +67,8 @@ const fallbackTeamMembers: TeamMember[] = [
 export default async function About() {
   let teamMembers: TeamMember[] = [];
   let testimonials: Testimonial[] = [];
+  let galleryAlbums: GalleryAlbum[] = [];
+  let galleryCategories: GalleryCategory[] = [];
   try {
     const res = await cmsService.getTeam();
     console.log("About Page - Team API Response:", res);
@@ -84,6 +87,17 @@ export default async function About() {
       .sort((a, b) => a.display_order - b.display_order);
   } catch (err) {
     console.error("Failed to fetch testimonials for About page:", err);
+  }
+
+  try {
+    [galleryAlbums, galleryCategories] = await Promise.all([
+      cmsService.getGallery(),
+      cmsService.getGalleryCategories(),
+    ]);
+    galleryAlbums = galleryAlbums.filter((album) => album.is_active).sort((a, b) => a.display_order - b.display_order);
+    galleryCategories = galleryCategories.filter((category) => category.is_active !== false).sort((a, b) => a.display_order - b.display_order);
+  } catch (err) {
+    console.error("Failed to fetch gallery for About page:", err);
   }
 
   const displayTeam = teamMembers.length > 0 ? teamMembers : fallbackTeamMembers;
@@ -212,6 +226,8 @@ export default async function About() {
           </div>
         </div>
       </section>
+
+      <AboutGallerySlider categories={galleryCategories} albums={galleryAlbums} />
 
       {/* Dynamic Team Section (Integrated from Team API) */}
       <section className="bg-white px-5 py-12 lg:px-8 border-t border-black/5 relative overflow-hidden">
