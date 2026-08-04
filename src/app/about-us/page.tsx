@@ -8,7 +8,6 @@ import {
   Target,
   Users,
   Mail,
-  Phone,
   Quote,
   Star,
 } from "lucide-react";
@@ -25,7 +24,6 @@ interface TeamMember {
   bio?: string;
   photo?: string | null;
   email?: string;
-  phone_number?: string;
   linkedin_url?: string;
 }
 
@@ -308,15 +306,6 @@ export default async function About() {
                         title="Send Email"
                       >
                         <Mail className="size-3.5" />
-                      </a>
-                    ) : null}
-                    {member.phone_number ? (
-                      <a
-                        href={`tel:${member.phone_number.replace(/\s/g, "")}`}
-                        className="p-2 rounded-full bg-white border border-black/5 text-[#087dbd] hover:bg-[#087dbd] hover:text-white transition-all shadow-xs"
-                        title="Call"
-                      >
-                        <Phone className="size-3.5" />
                       </a>
                     ) : null}
                   </div>

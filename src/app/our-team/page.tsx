@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { ArrowUpRight, BadgeCheck, Mail, Phone, Users, Search } from "lucide-react";
+import { ArrowUpRight, BadgeCheck, Mail, Users, Search } from "lucide-react";
 import { cmsService } from "@/lib/api/cms";
 import TeamAvatar from "@/components/TeamAvatar";
 
@@ -30,7 +30,6 @@ interface TeamMember {
   bio?: string;
   photo?: string | null;
   email?: string;
-  phone_number?: string;
   linkedin_url?: string;
 }
 
@@ -266,9 +265,8 @@ export default function OurTeamPage() {
                   </div>
                   <div className="mt-6 flex items-center gap-2 border-t border-[#e4edf2] pt-5">
                     {member.email && <a href={`mailto:${member.email}`} className="inline-flex min-w-0 flex-1 items-center justify-center gap-2 rounded-xl bg-[#062b50] px-4 py-3 text-xs font-bold text-white transition hover:bg-[#087dbd] focus:outline-none focus:ring-4 focus:ring-[#13a5d8]/20" aria-label={`Email ${member.name}`}><Mail className="size-4" /><span>Get in touch</span><ArrowUpRight className="size-3.5 opacity-70" /></a>}
-                    {member.phone_number && <a href={`tel:${member.phone_number.replace(/\s/g, "")}`} className="grid size-11 shrink-0 place-items-center rounded-xl border border-[#d8e8f0] bg-[#f2f8fb] text-[#087dbd] transition hover:border-[#087dbd] hover:bg-[#087dbd] hover:text-white focus:outline-none focus:ring-4 focus:ring-[#13a5d8]/20" aria-label={`Call ${member.name}`}><Phone className="size-4" /></a>}
                     {member.linkedin_url && <a href={member.linkedin_url} target="_blank" rel="noopener noreferrer" className="grid size-11 shrink-0 place-items-center rounded-xl border border-[#d8e8f0] bg-[#f2f8fb] text-[#087dbd] transition hover:border-[#087dbd] hover:bg-[#087dbd] hover:text-white focus:outline-none focus:ring-4 focus:ring-[#13a5d8]/20" aria-label={`View ${member.name} on LinkedIn`}><Linkedin className="size-4" /></a>}
-                    {!member.email && !member.phone_number && !member.linkedin_url && <p className="py-2 text-xs font-semibold text-[#7890a1]">BHLI team member</p>}
+                    {!member.email && !member.linkedin_url && <p className="py-2 text-xs font-semibold text-[#7890a1]">BHLI team member</p>}
                   </div>
                 </div>
               </div>
