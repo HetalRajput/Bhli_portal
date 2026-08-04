@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FormEvent, ReactNode, useState } from "react";
+import { FormEvent, ReactNode, useEffect, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -246,6 +246,9 @@ const formatMoney = (value: number) =>
     maximumFractionDigits: 0,
   }).format(value);
 
+const hasLoginSession = () =>
+  Boolean(window.localStorage.getItem("access_token") && window.localStorage.getItem("bhli-auth"));
+
 function makePassenger(type: PassengerType): PassengerForm {
   return {
     title: type === "A" ? "Mr" : "Master",
@@ -299,6 +302,12 @@ export default function FlightBookingFlow() {
   const [error, setError] = useState("");
   const [bookingResult, setBookingResult] = useState<JsonRecord | null>(null);
 
+  useEffect(() => {
+    if (!hasLoginSession()) {
+      router.replace(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
+    }
+  }, [router]);
+
   const updateForm = (key: keyof SearchForm, value: string) =>
     setForm((current) => ({ ...current, [key]: value }));
 
@@ -317,6 +326,10 @@ export default function FlightBookingFlow() {
 
   async function searchFlights(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!hasLoginSession()) {
+      router.push(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
+      return;
+    }
     const validation = validateSearch();
     if (validation) return setError(validation);
 
@@ -430,7 +443,7 @@ export default function FlightBookingFlow() {
     if (!searchContext || !selectedFare) return;
     const validation = validatePassengers();
     if (validation) return setError(validation);
-    if (!window.localStorage.getItem("access_token")) {
+    if (!hasLoginSession()) {
       router.push(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
       return;
     }
@@ -467,13 +480,13 @@ export default function FlightBookingFlow() {
     const ticket = stringValue(bookingResult, ["ticket_number", "ticketNumber"], "Will be shared shortly");
     const status = stringValue(bookingResult, ["status", "booking_status"], "confirmed");
     return (
-      <main className="grid min-h-screen place-items-center bg-[#edf5f9] px-5 py-16 text-[#122b42]">
-        <section className="w-full max-w-2xl rounded-[2rem] bg-white p-8 text-center shadow-[0_28px_90px_rgba(6,31,59,.16)] sm:p-12">
+      <main className="grid min-h-screen place-items-center bg-[#edf5f9] px-4 py-10 sm:px-5 sm:py-16 text-[#122b42]">
+        <section className="w-full max-w-2xl rounded-[1.5rem] bg-white p-6 text-center shadow-[0_28px_90px_rgba(6,31,59,.16)] sm:rounded-[2rem] sm:p-12">
           <span className="mx-auto grid size-20 place-items-center rounded-full bg-emerald-50 text-emerald-600">
             <CheckCircle2 className="size-10" />
           </span>
           <p className="mt-7 text-[11px] font-extrabold uppercase tracking-[.24em] text-[#087fbe]">Booking successful</p>
-          <h1 className="mt-3 font-serif text-4xl text-[#061f3b] sm:text-5xl">Your flight is booked</h1>
+          <h1 className="mt-3 font-serif text-3xl text-[#061f3b] sm:text-5xl">Your flight is booked</h1>
           <div className="mt-8 grid gap-3 sm:grid-cols-3">
             <ResultFact label="PNR" value={pnr} />
             <ResultFact label="Ticket" value={ticket} />
@@ -491,21 +504,21 @@ export default function FlightBookingFlow() {
   const verifiedPrice = selectedFare ? findPrice(selectedFare.priceDetails) : null;
 
   return (
-    <main className="min-h-screen bg-[#edf5f9] pb-20 text-[#122b42]">
-      <section className="relative isolate overflow-hidden bg-[#061f3b] px-5 pb-32 pt-9 text-white lg:px-8">
+    <main className="min-h-screen overflow-x-hidden bg-[#edf5f9] pb-14 text-[#122b42] sm:pb-20">
+      <section className="relative isolate overflow-hidden bg-[#061f3b] px-4 pb-28 pt-6 text-white sm:px-5 sm:pb-32 sm:pt-9 lg:px-8">
         <div className="absolute -left-20 top-14 -z-10 size-72 rounded-full bg-[#087fbe]/20 blur-3xl" />
         <div className="absolute -right-20 bottom-0 -z-10 size-80 rounded-full bg-[#13a5d8]/10 blur-3xl" />
         <div className="mx-auto max-w-7xl">
           <Link href="/services" className="inline-flex items-center gap-2 text-sm font-semibold text-white/65 hover:text-white">
             <ArrowLeft className="size-4" /> All services
           </Link>
-          <div className="mt-10 flex max-w-4xl items-start gap-5">
+          <div className="mt-8 flex max-w-4xl items-start gap-5 sm:mt-10">
             <span className="hidden size-16 shrink-0 place-items-center rounded-2xl border border-white/15 bg-white/10 text-[#43c8f1] sm:grid">
               <Plane className="size-8" />
             </span>
             <div>
               <p className="text-[11px] font-extrabold uppercase tracking-[.28em] text-[#13a5d8]">Live flight reservation</p>
-              <h1 className="mt-3 font-serif text-5xl leading-none sm:text-6xl lg:text-7xl">Find your next flight</h1>
+              <h1 className="mt-3 font-serif text-4xl leading-[.98] sm:text-6xl lg:text-7xl">Find your next flight</h1>
               <p className="mt-5 max-w-2xl text-sm leading-7 text-white/60">
                 Search live fares, verify the latest price and submit passenger details through our secure booking flow.
               </p>
@@ -514,9 +527,9 @@ export default function FlightBookingFlow() {
         </div>
       </section>
 
-      <section className="relative z-10 mx-auto -mt-20 max-w-7xl px-5 lg:px-8">
-        <div className="overflow-hidden rounded-[2rem] bg-white shadow-[0_28px_90px_rgba(6,31,59,.2)]">
-          <div className="border-b border-slate-100 bg-[#fbfdff] px-6 py-5 sm:px-8">
+      <section className="relative z-10 mx-auto -mt-16 max-w-7xl px-3 sm:-mt-20 sm:px-5 lg:px-8">
+        <div className="overflow-hidden rounded-[1.5rem] bg-white shadow-[0_28px_90px_rgba(6,31,59,.2)] sm:rounded-[2rem]">
+          <div className="border-b border-slate-100 bg-[#fbfdff] px-4 py-4 sm:px-8 sm:py-5">
             <div className="grid grid-cols-4 gap-2">
               {["Search", "Select fare", "Travellers", "Confirmation"].map((step, index) => {
                 const activeIndex = bookingResult ? 3 : selectedFare ? 2 : searchContext ? 1 : 0;
@@ -532,28 +545,28 @@ export default function FlightBookingFlow() {
             </div>
           </div>
 
-          <form onSubmit={searchFlights} className="p-5 sm:p-8" noValidate>
+          <form onSubmit={searchFlights} className="p-4 sm:p-8" noValidate>
             <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
               <div>
                 <div className="flex items-center gap-2">
                   <span className="grid size-7 place-items-center rounded-full bg-[#e5f5fb] text-[10px] font-extrabold text-[#087fbe]">01</span>
                   <p className="text-[10px] font-extrabold uppercase tracking-[.2em] text-[#087fbe]">Build your journey</p>
                 </div>
-                <h2 className="mt-2 font-serif text-3xl text-[#061f3b] sm:text-4xl">Where would you like to fly?</h2>
+                <h2 className="mt-2 font-serif text-2xl text-[#061f3b] sm:text-4xl">Where would you like to fly?</h2>
                 <p className="mt-2 text-sm text-slate-500">Compare live flight options and verified fares in one search.</p>
               </div>
 
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <div className="inline-flex rounded-2xl border border-slate-200 bg-[#f3f8fb] p-1.5">
+              <div className="flex w-full flex-col gap-3 sm:flex-row xl:w-auto">
+                <div className="grid w-full grid-cols-2 rounded-2xl border border-slate-200 bg-[#f3f8fb] p-1.5">
                   {(["0", "1"] as const).map((value) => (
-                    <button key={value} type="button" onClick={() => updateForm("trip_type", value)} className={`min-w-28 rounded-xl px-4 py-2.5 text-xs font-bold transition ${form.trip_type === value ? "bg-[#061f3b] text-white shadow-md" : "text-slate-500 hover:text-[#087fbe]"}`}>
+                    <button key={value} type="button" onClick={() => updateForm("trip_type", value)} className={`min-w-0 rounded-xl px-2 py-2.5 sm:px-4 text-xs font-bold transition ${form.trip_type === value ? "bg-[#061f3b] text-white shadow-md" : "text-slate-500 hover:text-[#087fbe]"}`}>
                       {value === "0" ? "One way" : "Round trip"}
                     </button>
                   ))}
                 </div>
-                <div className="inline-flex rounded-2xl border border-slate-200 bg-[#f3f8fb] p-1.5">
+                <div className="grid w-full grid-cols-2 rounded-2xl border border-slate-200 bg-[#f3f8fb] p-1.5">
                   {(["1", "2"] as const).map((value) => (
-                    <button key={value} type="button" onClick={() => updateForm("service_type", value)} className={`min-w-28 rounded-xl px-4 py-2.5 text-xs font-bold transition ${form.service_type === value ? "bg-white text-[#087fbe] shadow-md" : "text-slate-500 hover:text-[#087fbe]"}`}>
+                    <button key={value} type="button" onClick={() => updateForm("service_type", value)} className={`min-w-0 rounded-xl px-2 py-2.5 sm:px-4 text-xs font-bold transition ${form.service_type === value ? "bg-white text-[#087fbe] shadow-md" : "text-slate-500 hover:text-[#087fbe]"}`}>
                       {value === "1" ? "Domestic" : "International"}
                     </button>
                   ))}
@@ -561,7 +574,7 @@ export default function FlightBookingFlow() {
               </div>
             </div>
 
-            <section className="relative mt-7 rounded-[1.75rem] border border-[#087fbe]/15 bg-gradient-to-br from-[#f4fbfe] via-white to-[#f8f6ff] p-4 shadow-[inset_0_1px_0_white,0_16px_40px_rgba(6,64,105,.07)] sm:p-6">
+            <section className="relative mt-6 rounded-[1.5rem] border border-[#087fbe]/15 bg-gradient-to-br from-[#f4fbfe] via-white to-[#f8f6ff] p-3 shadow-[inset_0_1px_0_white,0_16px_40px_rgba(6,64,105,.07)] sm:mt-7 sm:rounded-[1.75rem] sm:p-6">
               <div className="mb-4">
                 <p className="text-[10px] font-extrabold uppercase tracking-[.18em] text-[#087fbe]">Flight route</p>
                 <p className="mt-1 text-xs text-slate-400">Search by city, airport name or IATA code</p>
@@ -569,7 +582,7 @@ export default function FlightBookingFlow() {
 
               <div className="grid items-end gap-3 lg:grid-cols-[1fr_54px_1fr]">
                 <AirportField label="Leaving from" value={form.dep_city} icon={<PlaneTakeoff className="size-5" />} onChange={(value) => updateForm("dep_city", value)} />
-                <button type="button" aria-label="Swap airports" onClick={() => setForm((current) => ({ ...current, dep_city: current.arr_city, arr_city: current.dep_city }))} className="relative z-20 mx-auto grid size-12 place-items-center rounded-full border-4 border-white bg-gradient-to-br from-[#0875b7] to-[#13a5d8] text-white shadow-[0_10px_24px_rgba(8,126,186,.3)] transition duration-300 hover:rotate-180 hover:scale-105 lg:mb-2">
+                <button type="button" aria-label="Swap airports" onClick={() => setForm((current) => ({ ...current, dep_city: current.arr_city, arr_city: current.dep_city }))} className="relative z-20 mx-auto grid size-12 place-items-center rounded-full border-4 border-white bg-gradient-to-br from-[#0875b7] to-[#13a5d8] text-white shadow-[0_10px_24px_rgba(8,126,186,.3)] rotate-90 transition duration-300 hover:scale-105 lg:mb-2 lg:rotate-0 lg:hover:rotate-180">
                   <ArrowRightLeft className="size-4" />
                 </button>
                 <AirportField label="Going to" value={form.arr_city} icon={<PlaneLanding className="size-5" />} onChange={(value) => updateForm("arr_city", value)} />
@@ -586,12 +599,12 @@ export default function FlightBookingFlow() {
             </section>
 
             <div className="mt-5 grid gap-5 xl:grid-cols-[1.08fr_.92fr]">
-              <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-[0_10px_30px_rgba(6,31,59,.05)]">
+              <section className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-[0_10px_30px_rgba(6,31,59,.05)] sm:p-5">
                 <div className="mb-5 flex items-center gap-3">
                   <span className="grid size-10 place-items-center rounded-xl bg-[#e5f5fb] text-[#087fbe]"><CalendarDays className="size-5" /></span>
                   <div><h3 className="text-sm font-extrabold text-[#061f3b]">Travel schedule</h3><p className="mt-0.5 text-[11px] text-slate-400">Choose your dates and preferred cabin</p></div>
                 </div>
-                <div className="grid gap-4 sm:grid-cols-3">
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   <InputField label="Departure" type="date" value={form.on_date} min={dateAfter(0)} onChange={(value) => updateForm("on_date", value)} />
                   {form.trip_type === "1" ? (
                     <InputField label="Return" type="date" value={form.re_date} min={form.on_date || dateAfter(0)} onChange={(value) => updateForm("re_date", value)} />
@@ -604,7 +617,7 @@ export default function FlightBookingFlow() {
                 </div>
               </section>
 
-              <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-[0_10px_30px_rgba(6,31,59,.05)]">
+              <section className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-[0_10px_30px_rgba(6,31,59,.05)] sm:p-5">
                 <div className="mb-5 flex items-center gap-3">
                   <span className="grid size-10 place-items-center rounded-xl bg-[#eee9ff] text-[#6846c7]"><Users className="size-5" /></span>
                   <div><h3 className="text-sm font-extrabold text-[#061f3b]">Travellers</h3><p className="mt-0.5 text-[11px] text-slate-400">Up to 9 passengers in one booking</p></div>
@@ -617,14 +630,14 @@ export default function FlightBookingFlow() {
               </section>
             </div>
 
-            <div className="mt-6 flex flex-col gap-5 rounded-[1.5rem] bg-[#061f3b] px-5 py-5 text-white sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <div className="mt-6 flex flex-col gap-5 rounded-[1.5rem] bg-[#061f3b] px-4 py-5 text-white sm:flex-row sm:items-center sm:justify-between sm:px-6">
               <div>
                 <p className="flex items-center gap-2 text-xs font-bold"><ShieldCheck className="size-4 text-[#13a5d8]" />Secure live flight search</p>
                 <p className="mt-1 text-[11px] text-white/45">
                   {form.trip_type === "0" ? "One way" : "Round trip"} · {form.service_type === "1" ? "Domestic" : "International"} · {Number(form.adults) + Number(form.children) + Number(form.infants)} traveller{Number(form.adults) + Number(form.children) + Number(form.infants) === 1 ? "" : "s"}
                 </p>
               </div>
-              <button disabled={loading === "search"} className="group inline-flex min-w-56 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#0875b7] to-[#13a5d8] px-7 py-4 text-sm font-bold text-white shadow-[0_12px_30px_rgba(8,126,186,.28)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_36px_rgba(8,126,186,.4)] disabled:opacity-60">
+              <button disabled={loading === "search"} className="group inline-flex w-full items-center justify-center sm:w-auto sm:min-w-56 gap-2 rounded-xl bg-gradient-to-r from-[#0875b7] to-[#13a5d8] px-7 py-4 text-sm font-bold text-white shadow-[0_12px_30px_rgba(8,126,186,.28)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_36px_rgba(8,126,186,.4)] disabled:opacity-60">
                 {loading === "search" ? <LoaderCircle className="size-4 animate-spin" /> : <Search className="size-4" />}
                 {loading === "search" ? "Searching live fares..." : "Search available flights"}
                 {loading !== "search" && <ArrowRight className="size-4 transition group-hover:translate-x-1" />}
@@ -641,11 +654,11 @@ export default function FlightBookingFlow() {
         )}
 
         {searchContext && !selectedFare && (
-          <section id="flight-results" className="scroll-mt-6 py-10">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <section id="flight-results" className="scroll-mt-6 py-8 sm:py-10">
+            <div className="flex w-full flex-col gap-3 sm:flex-row xl:w-auto sm:items-end sm:justify-between">
               <div>
                 <p className="text-[10px] font-extrabold uppercase tracking-[.2em] text-[#087fbe]">Step 02</p>
-                <h2 className="mt-1 font-serif text-3xl text-[#061f3b]">Select a flight</h2>
+                <h2 className="mt-1 font-serif text-2xl text-[#061f3b] sm:text-3xl">Select a flight</h2>
                 <p className="mt-2 text-sm text-slate-500">Reference {searchContext.refId}</p>
               </div>
               <button type="button" onClick={() => { setSearchContext(null); setError(""); }} className="inline-flex items-center gap-2 text-sm font-bold text-[#087fbe]"><RotateCcw className="size-4" />Change search</button>
@@ -657,14 +670,14 @@ export default function FlightBookingFlow() {
                   const summary = getFlightSummary(flight, index);
                   const resultFlightId = flightIdentity(flight, searchContext.fallbackFlightId);
                   return (
-                    <article key={`${resultFlightId}-${index}`} className="overflow-hidden rounded-[1.5rem] border border-white bg-white shadow-[0_16px_45px_rgba(6,31,59,.09)]">
-                      <div className="grid gap-5 p-5 sm:grid-cols-[1fr_auto] sm:items-center sm:p-6">
-                        <div className="grid gap-6 md:grid-cols-[220px_1fr] md:items-center">
+                    <article key={`${resultFlightId}-${index}`} className="overflow-hidden rounded-[1.25rem] border border-white bg-white sm:rounded-[1.5rem] shadow-[0_16px_45px_rgba(6,31,59,.09)]">
+                      <div className="grid gap-5 p-4 sm:grid-cols-[1fr_auto] sm:items-center sm:p-6">
+                        <div className="grid min-w-0 gap-5 md:grid-cols-[220px_1fr] md:items-center md:gap-6">
                           <div>
                             <div className="flex items-center gap-3">
                               <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-[#e5f5fb] text-[#087fbe]"><Plane className="size-5" /></span>
-                              <div>
-                                <p className="font-bold text-[#061f3b]">{summary.airline}</p>
+                              <div className="min-w-0">
+                                <p className="truncate font-bold text-[#061f3b]">{summary.airline}</p>
                                 <p className="mt-1 text-xs font-semibold text-slate-400">
                                   {summary.flightNumber}{summary.segmentCount > 1 ? ` · ${summary.segmentCount} flights` : ""}
                                 </p>
@@ -677,31 +690,31 @@ export default function FlightBookingFlow() {
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4">
+                          <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_64px_minmax(0,1fr)] items-center gap-2 sm:grid-cols-[1fr_auto_1fr] sm:gap-4">
                             <div>
-                              <p className="text-xl font-extrabold text-[#061f3b]">{summary.departure}</p>
+                              <p className="text-lg font-extrabold text-[#061f3b] sm:text-xl">{summary.departure}</p>
                               <p className="mt-1 text-xs font-bold text-slate-600">{summary.from}</p>
                               <p className="mt-1 text-[10px] text-slate-400">{summary.departureDate}</p>
                             </div>
-                            <div className="min-w-28 text-center">
+                            <div className="min-w-0 text-center sm:min-w-28">
                               <p className="text-[10px] font-bold text-slate-400">{summary.duration || "Flight"}</p>
                               <div className="mt-2 flex items-center"><span className="size-1.5 rounded-full bg-[#087fbe]" /><span className="h-px flex-1 bg-slate-200" /><Plane className="size-3.5 rotate-90 text-[#087fbe]" /><span className="h-px flex-1 bg-slate-200" /><span className="size-1.5 rounded-full bg-[#087fbe]" /></div>
                             </div>
                             <div className="text-right">
-                              <p className="text-xl font-extrabold text-[#061f3b]">{summary.arrival}</p>
+                              <p className="text-lg font-extrabold text-[#061f3b] sm:text-xl">{summary.arrival}</p>
                               <p className="mt-1 text-xs font-bold text-slate-600">{summary.to}</p>
                               <p className="mt-1 text-[10px] text-slate-400">{summary.arrivalDate}</p>
                             </div>
                           </div>
                         </div>
 
-                        <div className="flex items-center justify-between gap-5 border-t border-slate-100 pt-4 sm:block sm:min-w-44 sm:border-l sm:border-t-0 sm:pl-6 sm:pt-0 sm:text-right">
+                        <div className="flex flex-col items-stretch gap-3 border-t border-slate-100 pt-4 sm:block sm:min-w-44 sm:border-l sm:border-t-0 sm:pl-6 sm:pt-0 sm:text-right">
                           <div>
                             {summary.price && <p className="text-2xl font-extrabold text-[#061f3b]">{formatMoney(Number(summary.price))}</p>}
                             <p className="mt-1 text-[10px] text-slate-400">Total fare</p>
                             {summary.refundability && <p className={`mt-2 text-[10px] font-bold ${summary.refundability === "Non-refundable" ? "text-amber-600" : "text-emerald-600"}`}>{summary.refundability}</p>}
                           </div>
-                          <button type="button" disabled={Boolean(loadingFareId)} onClick={() => selectFlight(flight, index)} className="mt-3 inline-flex items-center gap-2 rounded-xl bg-[#061f3b] px-5 py-3 text-xs font-bold text-white transition hover:bg-[#087fbe] disabled:opacity-60">
+                          <button type="button" disabled={Boolean(loadingFareId)} onClick={() => selectFlight(flight, index)} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#061f3b] sm:mt-3 sm:w-auto px-5 py-3 text-xs font-bold text-white transition hover:bg-[#087fbe] disabled:opacity-60">
                             {loadingFareId === resultFlightId ? <LoaderCircle className="size-4 animate-spin" /> : null}
                             Select fare
                             <ArrowRight className="size-4" />
@@ -721,32 +734,32 @@ export default function FlightBookingFlow() {
         )}
 
         {searchContext && selectedFare && (
-          <form id="traveller-details" onSubmit={bookFlight} className="scroll-mt-6 py-10" noValidate>
-            <div className="mb-6 flex flex-col gap-4 rounded-[1.5rem] bg-[#061f3b] p-6 text-white sm:flex-row sm:items-center sm:justify-between">
+          <form id="traveller-details" onSubmit={bookFlight} className="scroll-mt-6 py-8 sm:py-10" noValidate>
+            <div className="mb-6 flex flex-col gap-4 rounded-[1.5rem] bg-[#061f3b] p-4 sm:p-6 text-white sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-[10px] font-extrabold uppercase tracking-[.2em] text-[#13a5d8]">Fare verified</p>
-                <h2 className="mt-2 font-serif text-3xl">{getFlightSummary(selectedFare.flight, 0).airline}</h2>
-                <p className="mt-2 text-xs text-white/50">Booking flight ID: {selectedFare.bookingFlightId}</p>
+                <h2 className="mt-2 break-words font-serif text-2xl sm:text-3xl">{getFlightSummary(selectedFare.flight, 0).airline}</h2>
+                <p className="mt-2 break-all text-xs text-white/50">Booking flight ID: {selectedFare.bookingFlightId}</p>
               </div>
-              <div className="flex items-center gap-5">
-                <div className="text-right"><p className="text-[10px] uppercase tracking-wider text-white/45">Verified total</p><p className="mt-1 text-2xl font-extrabold">{verifiedPrice ? formatMoney(verifiedPrice) : "Confirmed by provider"}</p></div>
+              <div className="flex w-full items-center justify-between gap-3 sm:w-auto sm:gap-5">
+                <div className="text-right"><p className="text-[10px] uppercase tracking-wider text-white/45">Verified total</p><p className="mt-1 text-xl font-extrabold sm:text-2xl">{verifiedPrice ? formatMoney(verifiedPrice) : "Confirmed by provider"}</p></div>
                 <button type="button" onClick={() => setSelectedFare(null)} className="grid size-11 place-items-center rounded-full border border-white/15 bg-white/10" aria-label="Choose another flight"><RotateCcw className="size-4" /></button>
               </div>
             </div>
 
-            <section className="overflow-hidden rounded-[2rem] bg-white shadow-[0_22px_70px_rgba(6,31,59,.12)]">
-              <header className="border-b border-slate-100 px-6 py-6 sm:px-8">
+            <section className="overflow-hidden rounded-[1.5rem] bg-white shadow-[0_22px_70px_rgba(6,31,59,.12)] sm:rounded-[2rem]">
+              <header className="border-b border-slate-100 px-4 py-5 sm:px-8 sm:py-6">
                 <p className="text-[10px] font-extrabold uppercase tracking-[.2em] text-[#087fbe]">Step 03</p>
-                <h2 className="mt-1 font-serif text-3xl text-[#061f3b]">Passenger details</h2>
+                <h2 className="mt-1 font-serif text-2xl text-[#061f3b] sm:text-3xl">Passenger details</h2>
                 <p className="mt-2 text-sm text-slate-500">Enter details exactly as shown on the traveller ID or passport.</p>
               </header>
 
-              <div className="space-y-5 p-6 sm:p-8">
+              <div className="space-y-5 p-4 sm:p-8">
                 {passengers.map((passenger, index) => (
                   <PassengerCard key={`${passenger.passenger_type}-${index}`} passenger={passenger} index={index} international={form.service_type === "2"} update={updatePassenger} />
                 ))}
 
-                <section className="rounded-2xl border border-slate-200 bg-[#fbfdff] p-5">
+                <section className="rounded-2xl border border-slate-200 bg-[#fbfdff] p-4 sm:p-5">
                   <div className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-xl bg-[#e5f5fb] text-[#087fbe]"><UserRound className="size-5" /></span><div><h3 className="font-bold text-[#061f3b]">Contact & billing</h3><p className="mt-0.5 text-xs text-slate-400">Optional if already available in your profile</p></div></div>
                   <div className="mt-5 grid gap-4 sm:grid-cols-2">
                     <InputField label="Mobile" type="tel" value={mobile} placeholder="10–15 digit number" onChange={setMobile} />
@@ -765,16 +778,16 @@ export default function FlightBookingFlow() {
                 </section>
 
                 {selectedFare.fareRules && (
-                  <details className="group rounded-2xl border border-slate-200 bg-white p-5">
+                  <details className="group rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
                     <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-bold text-[#061f3b]">Fare rules and policy<ChevronDown className="size-4 transition group-open:rotate-180" /></summary>
                     <pre className="mt-4 max-h-72 overflow-auto whitespace-pre-wrap rounded-xl bg-slate-50 p-4 text-xs leading-6 text-slate-600">{JSON.stringify(selectedFare.fareRules, null, 2)}</pre>
                   </details>
                 )}
               </div>
 
-              <footer className="flex flex-col gap-4 border-t border-slate-100 bg-[#fbfdff] px-6 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+              <footer className="flex flex-col gap-4 border-t border-slate-100 bg-[#fbfdff] px-4 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-8">
                 <p className="flex items-center gap-2 text-xs text-slate-500"><ShieldCheck className="size-4 text-[#087fbe]" />The backend verifies the price again before final booking.</p>
-                <button disabled={loading === "book"} className="inline-flex min-w-52 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#0875b7] to-[#13a5d8] px-6 py-3.5 text-sm font-bold text-white shadow-lg disabled:opacity-60">
+                <button disabled={loading === "book"} className="inline-flex w-full items-center justify-center sm:w-auto sm:min-w-52 gap-2 rounded-xl bg-gradient-to-r from-[#0875b7] to-[#13a5d8] px-6 py-3.5 text-sm font-bold text-white shadow-lg disabled:opacity-60">
                   {loading === "book" ? <LoaderCircle className="size-4 animate-spin" /> : <Plane className="size-4" />}
                   {loading === "book" ? "Booking..." : "Confirm flight booking"}
                 </button>
@@ -845,7 +858,7 @@ function AirportField({ label, value, icon, onChange }: { label: string; value: 
       </span>
 
       {open && (
-        <div id={listId} role="listbox" className="absolute inset-x-0 top-[calc(100%+.45rem)] z-50 max-h-80 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_22px_55px_rgba(6,31,59,.18)]">
+        <div id={listId} role="listbox" className="absolute inset-x-0 top-[calc(100%+.45rem)] z-50 max-h-64 overflow-y-auto sm:max-h-80 rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_22px_55px_rgba(6,31,59,.18)]">
           {suggestions.length ? suggestions.map(([code, city, airport]) => (
             <button
               key={code}
@@ -875,11 +888,11 @@ function AirportField({ label, value, icon, onChange }: { label: string; value: 
 }
 function InputField({ label, value, onChange, type = "text", min, placeholder, icon }: { label: string; value: string; onChange: (value: string) => void; type?: string; min?: string; placeholder?: string; icon?: ReactNode }) {
   return (
-    <label>
+    <label className="min-w-0">
       <span className="mb-2 block text-xs font-bold text-[#456078]">{label}</span>
       <span className="flex h-12 items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 text-slate-400 transition focus-within:border-[#13a5d8] focus-within:ring-4 focus-within:ring-[#13a5d8]/10">
         {icon}
-        <input type={type} min={min} value={value} placeholder={placeholder} onChange={(event) => onChange(event.target.value)} className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-[#122b42] outline-none" />
+        <input type={type} min={min} value={value} placeholder={placeholder} onChange={(event) => onChange(event.target.value)} className="min-w-0 w-full flex-1 bg-transparent text-sm font-semibold text-[#122b42] outline-none" />
       </span>
     </label>
   );
@@ -887,9 +900,9 @@ function InputField({ label, value, onChange, type = "text", min, placeholder, i
 
 function SelectField({ label, value, onChange, options }: { label: string; value: string; onChange: (value: string) => void; options: ReadonlyArray<readonly [string, string]> }) {
   return (
-    <label>
+    <label className="min-w-0">
       <span className="mb-2 block text-xs font-bold text-[#456078]">{label}</span>
-      <select value={value} onChange={(event) => onChange(event.target.value)} className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-[#122b42] outline-none transition focus:border-[#13a5d8] focus:ring-4 focus:ring-[#13a5d8]/10">
+      <select value={value} onChange={(event) => onChange(event.target.value)} className="h-12 min-w-0 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-[#122b42] outline-none transition focus:border-[#13a5d8] focus:ring-4 focus:ring-[#13a5d8]/10">
         {options.map(([optionValue, labelText]) => <option key={optionValue} value={optionValue}>{labelText}</option>)}
       </select>
     </label>
@@ -898,11 +911,11 @@ function SelectField({ label, value, onChange, options }: { label: string; value
 
 function CountField({ label, hint, value, min, onChange }: { label: string; hint: string; value: string; min: number; onChange: (value: string) => void }) {
   return (
-    <label>
+    <label className="min-w-0">
       <span className="mb-2 flex items-center justify-between text-xs font-bold text-[#456078]"><span>{label}</span><span className="font-normal text-slate-400">{hint}</span></span>
       <span className="flex h-12 items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 text-[#087fbe] focus-within:border-[#13a5d8]">
         <Users className="size-4" />
-        <input type="number" min={min} max={9} value={value} onChange={(event) => onChange(event.target.value)} className="min-w-0 flex-1 bg-transparent text-sm font-bold text-[#122b42] outline-none" />
+        <input type="number" min={min} max={9} value={value} onChange={(event) => onChange(event.target.value)} className="min-w-0 w-full flex-1 bg-transparent text-sm font-bold text-[#122b42] outline-none" />
       </span>
     </label>
   );
@@ -911,7 +924,7 @@ function CountField({ label, hint, value, min, onChange }: { label: string; hint
 function PassengerCard({ passenger, index, international, update }: { passenger: PassengerForm; index: number; international: boolean; update: (index: number, key: keyof PassengerForm, value: string | null) => void }) {
   const typeLabel = passenger.passenger_type === "A" ? "Adult" : passenger.passenger_type === "C" ? "Child" : "Infant";
   return (
-    <article className="rounded-2xl border border-slate-200 bg-[#fbfdff] p-5">
+    <article className="rounded-2xl border border-slate-200 bg-[#fbfdff] p-4 sm:p-5">
       <div className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-xl bg-[#e5f5fb] text-sm font-extrabold text-[#087fbe]">{index + 1}</span><div><h3 className="font-bold text-[#061f3b]">Passenger {index + 1}</h3><p className="mt-0.5 text-xs text-slate-400">{typeLabel}</p></div></div>
       <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <SelectField label="Title" value={passenger.title} onChange={(value) => update(index, "title", value)} options={[["Mr", "Mr"], ["Ms", "Ms"], ["Mrs", "Mrs"], ["Master", "Master"]]} />
