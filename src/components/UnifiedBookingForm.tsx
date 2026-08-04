@@ -5,6 +5,7 @@ import { ArrowLeft, ArrowRight, CalendarDays, CheckCircle2, Clock3, CirclePlus, 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import BookingSuccessModal from "@/components/BookingSuccessModal";
+import CruiseSearchPanel from "@/components/CruiseSearchPanel";
 import { documentedBookingConfigs } from "@/components/DocumentedBookingForm";
 import { apiClient, getErrorMessage } from "@/lib/api/client";
 import { cmsService } from "@/lib/api/cms";
@@ -19,9 +20,22 @@ type ServiceMeta = { id?: number; name?: string; title?: string; banner_image?: 
 const fallbackBanner = "https://images.pexels.com/photos/3769138/pexels-photo-3769138.jpeg?auto=compress&cs=tinysrgb&w=1600";
 const newGuest = (): Guest => ({ name: "", age: "18", gender: "male" });
 const today = () => { const value = new Date(); value.setMinutes(value.getMinutes() - value.getTimezoneOffset()); return value.toISOString().slice(0, 10); };
+const addDays = (value: string, days: number) => {
+  const [year, month, day] = value.split("-").map(Number);
+  if (!year || !month || !day) return "";
+  const date = new Date(Date.UTC(year, month - 1, day));
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+};
+const lastDayOfMonth = (value: string) => {
+  const [year, month] = value.split("-").map(Number);
+  if (!year || !month) return undefined;
+  return `${value}-${String(new Date(year, month, 0).getDate()).padStart(2, "0")}`;
+};
 
 export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: string }) {
   const config = documentedBookingConfigs[serviceSlug] as BookingConfig;
+  const isCruiseBooking = serviceSlug === "cruise-booking";
   const params = useSearchParams();
   const pathname = usePathname();
   const router = useRouter();
@@ -40,6 +54,8 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
   const [error, setError] = useState("");
   const [reference, setReference] = useState("");
   const [dateMinimum] = useState(today);
+  const [cruiseMonth, setCruiseMonth] = useState("");
+  const [cruiseNights, setCruiseNights] = useState<number | null>(null);
   const successChime = useSuccessChime();
   const formId = `booking-form-${serviceSlug}`;
 
@@ -56,7 +72,26 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
     return () => { active = false; };
   }, [initialServiceId, serviceSlug]);
 
-  const update = (key: string, value: string | boolean) => setValues((current) => ({ ...current, [key]: value }));
+  const update = (key: string, value: string | boolean) => setValues((current) => {
+    const next = { ...current, [key]: value };
+    if (isCruiseBooking && key === "departure_date") {
+      next.return_date = value && cruiseNights ? addDays(String(value), cruiseNights) : "";
+    }
+    return next;
+  });
+  const updateCruiseMonth = (value: string) => {
+    setCruiseMonth(value);
+    setValues((current) => value && String(current.departure_date || "").startsWith(value)
+      ? current
+      : { ...current, departure_date: "", return_date: "" });
+  };
+  const updateCruiseNights = (value: number | null) => {
+    setCruiseNights(value);
+    setValues((current) => ({
+      ...current,
+      return_date: value && current.departure_date ? addDays(String(current.departure_date), value) : "",
+    }));
+  };
   const updateGuest = (index: number, key: keyof Guest, value: string) => setGuests((current) => current.map((guest, guestIndex) => guestIndex === index ? { ...guest, [key]: value } : guest));
   const addGuest = () => setGuests((current) => current.length >= 8 ? current : [...current, newGuest()]);
   const removeGuest = (index: number) => setGuests((current) => current.length === 1 ? current : current.filter((_, guestIndex) => guestIndex !== index));
@@ -70,6 +105,8 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
     }
     if (!serviceId || !Number.isInteger(Number(serviceId))) return setError("This service is not available for booking right now.");
     if (serviceSlug === "hotel-reservations" && (!selectedItemId || !Number.isInteger(Number(selectedItemId)))) return setError("Please select a valid hotel before booking.");
+    if (isCruiseBooking && (!cruiseMonth || !cruiseNights)) return setError("Please select the travel month and number of nights in the cruise search above.");
+    if (isCruiseBooking && values.departure_date && !String(values.departure_date).startsWith(cruiseMonth)) return setError("The sailing date must be inside your selected travel month.");
     const missingField = config.fields.find((field) => field.required && (values[field.key] === "" || values[field.key] === undefined));
     if (missingField) return setError(`Please complete ${missingField.label.toLowerCase()}.`);
     if (guests.some((guest) => guest.name.trim().length < 2 || Number(guest.age) < 1 || Number(guest.age) > 120)) return setError("Enter a valid name and age for every guest.");
@@ -91,6 +128,7 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
       if (value === "" || value === undefined) return;
       payload[field.key] = field.kind === "number" ? Number(value) : value;
     });
+    if (isCruiseBooking) payload.number_of_passengers = guests.length;
 
     successChime.arm();
     setSubmitting(true);
@@ -110,6 +148,11 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
   const serviceTitle = serviceMeta?.name || serviceMeta?.title || config.title;
   const selectedTitle = selectedItemName || serviceTitle;
   const banner = selectedImage || serviceMeta?.banner_image || fallbackBanner;
+  const visibleFields = isCruiseBooking
+    ? config.fields.filter((field) => !["destination", "departure_port", "return_date", "number_of_passengers"].includes(field.key))
+    : config.fields;
+  const cruiseDateMinimum = cruiseMonth && cruiseMonth > dateMinimum.slice(0, 7) ? `${cruiseMonth}-01` : dateMinimum;
+  const cruiseDateMaximum = cruiseMonth ? lastDayOfMonth(cruiseMonth) : undefined;
 
   if (reference) return (
     <BookingSuccessModal
@@ -136,7 +179,18 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
       </section>
 
       <main className="relative z-10 mx-auto -mt-20 max-w-[1360px] px-5 lg:px-8">
-        <div className="grid overflow-hidden rounded-[2rem] bg-white shadow-[0_28px_90px_rgba(6,31,59,.22)] lg:grid-cols-[.72fr_1.28fr]">
+        {isCruiseBooking && <CruiseSearchPanel
+          destination={String(values.destination || "")}
+          departurePort={String(values.departure_port || "")}
+          travelMonth={cruiseMonth}
+          nights={cruiseNights}
+          onDestinationChange={(value) => update("destination", value)}
+          onDeparturePortChange={(value) => update("departure_port", value)}
+          onTravelMonthChange={updateCruiseMonth}
+          onNightsChange={updateCruiseNights}
+          onSearch={() => document.getElementById("cruise-booking-details")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+        />}
+        <div id={isCruiseBooking ? "cruise-booking-details" : undefined} className={`grid overflow-hidden rounded-[2rem] bg-white shadow-[0_28px_90px_rgba(6,31,59,.22)] lg:grid-cols-[.72fr_1.28fr] ${isCruiseBooking ? "mt-6 scroll-mt-24" : ""}`}>
           <aside className="relative hidden overflow-hidden bg-[#061f3b] p-9 text-white lg:flex lg:min-h-[850px] lg:flex-col">
             <div className="absolute -bottom-24 -left-24 size-64 rounded-full border border-white/5 shadow-[0_0_0_45px_rgba(255,255,255,.025),0_0_0_90px_rgba(255,255,255,.018)]" />
             <span className="grid size-14 place-items-center rounded-2xl bg-white/10 text-[#13a5d8]"><Send className="size-7" /></span>
@@ -161,7 +215,7 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
             <form id={formId} onSubmit={submit} className="flex-1 px-6 py-7 md:px-9" noValidate>
               <FormSection number="01" title="Service details" description="Provide the information required for this booking.">
                 <div className="grid gap-4 sm:grid-cols-2">
-                  {config.fields.map((field) => <DynamicField key={field.key} field={field} value={values[field.key]} update={update} minDate={dateMinimum} />)}
+                  {visibleFields.map((field) => <DynamicField key={field.key} field={field} value={values[field.key]} update={update} minDate={isCruiseBooking && field.key === "departure_date" ? cruiseDateMinimum : dateMinimum} maxDate={isCruiseBooking && field.key === "departure_date" ? cruiseDateMaximum : undefined} />)}
                 </div>
               </FormSection>
 
@@ -213,7 +267,7 @@ function fieldIcon(field: BookingField) {
   return <MapPin className="size-4" />;
 }
 
-function DynamicField({ field, value, update, minDate }: { field: BookingField; value: string | boolean; update: (key: string, value: string | boolean) => void; minDate: string }) {
+function DynamicField({ field, value, update, minDate, maxDate }: { field: BookingField; value: string | boolean; update: (key: string, value: string | boolean) => void; minDate: string; maxDate?: string }) {
   const control = "h-12 min-w-0 flex-1 bg-transparent text-sm font-semibold text-[#122b42] outline-none";
   if (field.kind === "checkbox") return <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 text-sm font-semibold text-[#456078] transition hover:border-[#74bddb] sm:col-span-2"><input type="checkbox" checked={Boolean(value)} onChange={(event) => update(field.key, event.target.checked)} className="size-4 accent-[#087fbe]" />{field.label}</label>;
   if (field.kind === "textarea") return <label className="sm:col-span-2"><span className="mb-2 block text-xs font-bold text-[#456078]">{field.label}{field.required ? " *" : ""}</span><textarea required={field.required} rows={4} value={String(value)} onChange={(event) => update(field.key, event.target.value)} placeholder={field.placeholder} className="w-full resize-none rounded-xl border border-slate-200 bg-white p-3 text-sm outline-none transition focus:border-[#13a5d8] focus:ring-4 focus:ring-[#13a5d8]/10" /></label>;
@@ -222,7 +276,7 @@ function DynamicField({ field, value, update, minDate }: { field: BookingField; 
       <span className="mb-2 block text-xs font-bold text-[#456078]">{field.label}{field.required ? " *" : ""}</span>
       <span className="flex h-12 items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 text-slate-400 transition focus-within:border-[#13a5d8] focus-within:ring-4 focus-within:ring-[#13a5d8]/10">
         {fieldIcon(field)}
-        {field.kind === "select" ? <select required={field.required} value={String(value)} onChange={(event) => update(field.key, event.target.value)} className={control}><option value="">Select {field.label.toLowerCase()}</option>{field.options?.map(([optionValue, label]) => <option key={optionValue} value={optionValue}>{label}</option>)}</select> : <input required={field.required} type={field.kind === "decimal" || field.kind === "number" ? "number" : field.kind || "text"} min={field.kind === "date" ? minDate : field.min} step={field.kind === "decimal" ? "0.01" : undefined} value={String(value)} onChange={(event) => update(field.key, event.target.value)} placeholder={field.placeholder} className={control} />}
+        {field.kind === "select" ? <select required={field.required} value={String(value)} onChange={(event) => update(field.key, event.target.value)} className={control}><option value="">Select {field.label.toLowerCase()}</option>{field.options?.map(([optionValue, label]) => <option key={optionValue} value={optionValue}>{label}</option>)}</select> : <input required={field.required} type={field.kind === "decimal" || field.kind === "number" ? "number" : field.kind || "text"} min={field.kind === "date" ? minDate : field.min} max={field.kind === "date" ? maxDate : undefined} step={field.kind === "decimal" ? "0.01" : undefined} value={String(value)} onChange={(event) => update(field.key, event.target.value)} placeholder={field.placeholder} className={control} />}
       </span>
     </label>
   );

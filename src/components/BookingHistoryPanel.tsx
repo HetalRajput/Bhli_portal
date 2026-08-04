@@ -1,9 +1,10 @@
 "use client";
 
-import { AlertCircle, ArrowLeft, Ban, CalendarDays, Clock3, Hash, LoaderCircle, MapPin, RefreshCw, ShieldCheck, Ticket, UsersRound } from "lucide-react";
+import { AlertCircle, ArrowLeft, Ban, CalendarDays, Clock3, Hash, LoaderCircle, MapPin, Plane, RefreshCw, ShieldCheck, Ticket, UsersRound } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { bookingService, type BookingRequest } from "@/lib/api/bookings";
+import { flightService } from "@/lib/api/flights";
 import { getErrorMessage } from "@/lib/api/client";
 
 type BookingHistoryPanelProps = {
@@ -44,6 +45,10 @@ function getStatus(status?: string) {
   return statusDesign[normalized] || { label: formatLabel(normalized), chip: "border-slate-200 bg-slate-50 text-slate-700", dot: "bg-slate-500" };
 }
 
+const isFlightBooking = (booking: BookingRequest) =>
+  booking.service_slug === "flight-booking" ||
+  String(booking.service_name || "").toLowerCase() === "flight booking";
+
 function unwrapBooking(response: unknown): BookingRequest {
   const value = response as { data?: BookingRequest | { booking?: BookingRequest } };
   if (value?.data && "booking" in value.data) {
@@ -73,7 +78,23 @@ export default function BookingHistoryPanel({ bookings, loading, error, onBookin
     setCancelReason("");
     try {
       const response = await bookingService.getBookingById(id);
-      setSelectedBooking(unwrapBooking(response));
+      const listBooking = bookings.find((booking) => booking.id === id);
+      const detailedBooking = unwrapBooking(response);
+      setSelectedBooking({
+        ...listBooking,
+        ...detailedBooking,
+        ...(listBooking && isFlightBooking(listBooking) ? {
+          status: listBooking.status,
+          booking_status: listBooking.booking_status,
+          flight_booking_id: listBooking.flight_booking_id,
+          flight_id: listBooking.flight_id,
+          ref_id: listBooking.ref_id,
+          pnr: listBooking.pnr,
+          ticket_number: listBooking.ticket_number,
+          provider_status: listBooking.provider_status,
+          flight_passengers: listBooking.flight_passengers,
+        } : {}),
+      });
     } catch (requestError) {
       setDetailError(getErrorMessage(requestError));
     } finally {
@@ -87,14 +108,43 @@ export default function BookingHistoryPanel({ bookings, loading, error, onBookin
       setCancelError("Please briefly explain why you want to cancel this request.");
       return;
     }
+    const flightBooking = isFlightBooking(selectedBooking);
+    const flightBookingId = Number(selectedBooking.flight_booking_id);
+    if (flightBooking && (!Number.isInteger(flightBookingId) || flightBookingId < 1)) {
+      setCancelError("The flight booking ID is unavailable. Refresh your booking history and try again.");
+      return;
+    }
+
     setCancelError("");
     setCancelling(true);
     try {
-      const response = await bookingService.cancelBooking(selectedBooking.id, cancelReason);
-      const responseData = response?.data || response;
-      const updated = { ...selectedBooking, ...responseData, status: responseData?.status || "cancelled", remarks: responseData?.remarks || cancelReason.trim() } as BookingRequest;
-      setSelectedBooking(updated);
-      onBookingUpdated(updated);
+      if (flightBooking) {
+        const response = await flightService.cancel({
+          booking_id: flightBookingId,
+          pax_id: "",
+          pax_id_return: "",
+          cancel_mode: 5,
+          cancel_remarks: cancelReason.trim(),
+        });
+        if (!response.success) throw new Error(response.message || "Flight cancellation failed.");
+        const responseData = response.data && !Array.isArray(response.data) ? response.data : {};
+        const updated: BookingRequest = {
+          ...selectedBooking,
+          status: String(responseData.status || "cancelled"),
+          booking_status: "cancelled",
+          provider_status: responseData.provider_status || "Cancelled",
+          flight_booking_id: responseData.id || flightBookingId,
+          remarks: cancelReason.trim(),
+        };
+        setSelectedBooking(updated);
+        onBookingUpdated(updated);
+      } else {
+        const response = await bookingService.cancelBooking(selectedBooking.id, cancelReason);
+        const responseData = response?.data || response;
+        const updated = { ...selectedBooking, ...responseData, status: responseData?.status || "cancelled", remarks: responseData?.remarks || cancelReason.trim() } as BookingRequest;
+        setSelectedBooking(updated);
+        onBookingUpdated(updated);
+      }
       setShowCancelForm(false);
     } catch (requestError) {
       setCancelError(getErrorMessage(requestError));
@@ -102,7 +152,6 @@ export default function BookingHistoryPanel({ bookings, loading, error, onBookin
       setCancelling(false);
     }
   }
-
   if (loading) return (
     <div className="space-y-4" aria-label="Loading booking history">
       {[1, 2, 3].map((item) => <div key={item} className="h-40 animate-pulse rounded-2xl border border-slate-100 bg-gradient-to-r from-slate-50 to-slate-100" />)}
@@ -183,9 +232,16 @@ export default function BookingHistoryPanel({ bookings, loading, error, onBookin
 
 function BookingDetailPanel({ booking, showCancelForm, cancelReason, cancelError, cancelling, setCancelReason, setShowCancelForm, cancelBooking, close }: { booking: BookingRequest; showCancelForm: boolean; cancelReason: string; cancelError: string; cancelling: boolean; setCancelReason: (value: string) => void; setShowCancelForm: (value: boolean) => void; cancelBooking: () => void; close: () => void }) {
   const status = getStatus(booking.status);
-  const canCancel = ["new", "pending", "processing"].includes(String(booking.status).toLowerCase());
-  const excludedKeys = new Set(["id", "user", "service", "service_name", "service_slug", "service_item", "service_item_title", "service_item_city", "service_item_location", "number_of_guests", "message", "consent_to_contact", "status", "remarks", "admin_notes", "guests", "created", "updated", "details"]);
+  const flightBooking = isFlightBooking(booking);
+  const normalizedStatus = String(booking.status).toLowerCase();
+  const canCancel = flightBooking
+    ? Boolean(booking.flight_booking_id) && !["cancelled", "refunded", "failed"].includes(normalizedStatus)
+    : ["new", "pending", "processing"].includes(normalizedStatus);
+  const excludedKeys = new Set(["id", "user", "service", "service_name", "service_slug", "service_item", "service_item_title", "service_item_city", "service_item_location", "number_of_guests", "message", "consent_to_contact", "status", "remarks", "admin_notes", "guests", "created", "updated", "details", "booking_status", "flight_booking_id", "flight_id", "ref_id", "pnr", "ticket_number", "provider_status", "flight_passengers"]);
   const serviceFields = Object.entries(booking).filter(([key, value]) => !excludedKeys.has(key) && value !== null && value !== undefined && value !== "" && typeof value !== "object");
+  const flightPassengers = Array.isArray(booking.flight_passengers)
+    ? booking.flight_passengers.filter((passenger): passenger is Record<string, unknown> => Boolean(passenger) && typeof passenger === "object")
+    : [];
   const backToHistory = () => { setShowCancelForm(false); close(); };
 
   return (
@@ -202,6 +258,18 @@ function BookingDetailPanel({ booking, showCancelForm, cancelReason, cancelError
             {[['Selected item', booking.service_item_title], ['City', booking.service_item_city], ['Location', booking.service_item_location], ['Number of guests', booking.number_of_guests ?? booking.guests?.length], ['Consent to contact', booking.consent_to_contact], ['Last updated', formatDate(booking.updated, true)]].filter(([, value]) => value !== undefined && value !== null && value !== "").map(([label, value]) => <DetailValue key={String(label)} label={String(label)} value={value} />)}
           </div>
 
+          {flightBooking && <section className="mt-4 rounded-xl border border-[#0879b7]/15 bg-gradient-to-br from-white to-[#f2faff] p-4 shadow-sm">
+            <h3 className="flex items-center gap-2.5 text-[11px] font-extrabold uppercase tracking-[.14em] text-[#07152d]"><span className="grid size-7 place-items-center rounded-full bg-[#e5f5fb] text-[#0879b7]"><Plane className="size-3.5" /></span>Flight reservation</h3>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              <DetailValue label="PNR" value={booking.pnr} accent />
+              <DetailValue label="Ticket number" value={booking.ticket_number} accent />
+              <DetailValue label="Provider status" value={booking.provider_status || booking.status} accent />
+              <DetailValue label="FTD reference" value={booking.ref_id} />
+              <DetailValue label="Flight ID" value={booking.flight_id} />
+              <DetailValue label="Flight booking ID" value={booking.flight_booking_id} />
+            </div>
+            {flightPassengers.length > 0 && <div className="mt-4 border-t border-[#0879b7]/10 pt-4"><p className="text-[9px] font-extrabold uppercase tracking-[.14em] text-[#0879b7]">Ticketed passengers</p><div className="mt-2 grid gap-2 sm:grid-cols-2">{flightPassengers.map((passenger, index) => <div key={String(passenger.id || index)} className="rounded-lg border border-slate-100 bg-white px-3 py-2.5"><p className="text-xs font-bold text-[#07152d]">{[passenger.title, passenger.first_name, passenger.last_name].filter(Boolean).join(" ") || `Passenger ${index + 1}`}</p><p className="mt-1 text-[10px] uppercase tracking-wider text-slate-400">{formatValue(passenger.passenger_type)}</p></div>)}</div></div>}
+          </section>}
           {serviceFields.length > 0 && <section className="mt-4 rounded-xl border border-slate-100 bg-white p-4 shadow-sm"><h3 className="flex items-center gap-2.5 text-[11px] font-extrabold uppercase tracking-[.14em] text-[#07152d]"><span className="size-2 rounded-full bg-[#14a6d8]" />Service details</h3><div className="mt-3 grid gap-2 sm:grid-cols-2">{serviceFields.map(([key, value]) => <DetailValue key={key} label={formatLabel(key)} value={key.includes("date") ? formatDate(value) : value} />)}</div></section>}
           {booking.details && Object.keys(booking.details).length > 0 && <section className="mt-4 rounded-xl border border-[#0879b7]/10 bg-white p-4 shadow-sm"><h3 className="flex items-center gap-2.5 text-[11px] font-extrabold uppercase tracking-[.14em] text-[#07152d]"><span className="size-2 rounded-full bg-[#0879b7]" />Preferences and budget</h3><div className="mt-3 grid gap-2 sm:grid-cols-2">{Object.entries(booking.details).map(([key, value]) => <DetailValue key={key} label={formatLabel(key)} value={value} accent />)}</div></section>}
           {booking.guests?.length > 0 && <section className="mt-4 rounded-xl border border-slate-100 bg-white p-4 shadow-sm"><h3 className="flex items-center gap-2.5 text-[11px] font-extrabold uppercase tracking-[.14em] text-[#07152d]"><span className="size-2 rounded-full bg-emerald-500" />Guests</h3><div className="mt-3 grid gap-2 sm:grid-cols-2">{booking.guests.map((guest, index) => <div key={guest.id || `${guest.name}-${index}`} className="flex items-center justify-between gap-2.5 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2.5 text-xs"><span className="grid size-7 shrink-0 place-items-center rounded-full bg-white font-extrabold text-[#0879b7] shadow-sm">{index + 1}</span><b className="min-w-0 flex-1 truncate text-[#07152d]">{guest.name}</b><span className="shrink-0 capitalize text-[11px] text-slate-500">{guest.age} yrs · {guest.gender}</span></div>)}</div></section>}
@@ -209,7 +277,7 @@ function BookingDetailPanel({ booking, showCancelForm, cancelReason, cancelError
           {(booking.remarks || booking.admin_notes) && <section className="mt-5 grid gap-3 sm:grid-cols-2">{booking.remarks && <DetailValue label="Remarks" value={booking.remarks} accent />}{booking.admin_notes && <DetailValue label="Reservation desk notes" value={booking.admin_notes} accent />}</section>}
 
           {canCancel && <div className="mt-4 rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm sm:p-4">
-            {!showCancelForm ? <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-sm font-bold text-[#07152d]">Need to change your plans?</p><p className="mt-1 text-xs leading-5 text-slate-500">You can cancel while the reservation team is still reviewing this request.</p></div><button type="button" onClick={() => setShowCancelForm(true)} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-bold text-rose-700 transition hover:-translate-y-0.5 hover:bg-rose-100"><Ban className="size-4" />Cancel request</button></div> : <div className="rounded-xl border border-rose-200 bg-rose-50/70 p-4 sm:p-5"><p className="flex items-center gap-2 text-sm font-bold text-rose-800"><AlertCircle className="size-4" />Confirm cancellation</p><p className="mt-2 text-xs leading-5 text-rose-700/75">The reservation team will be notified and this request cannot be restored from the website.</p><textarea value={cancelReason} onChange={(event) => setCancelReason(event.target.value)} rows={3} maxLength={500} placeholder="Tell us why you are cancelling" className="mt-4 w-full resize-none rounded-xl border border-rose-200 bg-white p-3 text-sm outline-none transition focus:border-rose-400 focus:ring-4 focus:ring-rose-100" />{cancelError && <p role="alert" className="mt-2 text-xs font-semibold text-rose-700">{cancelError}</p>}<div className="mt-4 flex flex-col gap-3 sm:flex-row"><button type="button" onClick={cancelBooking} disabled={cancelling} className="inline-flex items-center justify-center gap-2 rounded-xl bg-rose-600 px-4 py-3 text-xs font-bold text-white shadow-sm transition hover:bg-rose-700 disabled:opacity-60">{cancelling ? <LoaderCircle className="size-4 animate-spin" /> : <Ban className="size-4" />}Confirm cancellation</button><button type="button" onClick={() => setShowCancelForm(false)} className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs font-bold text-slate-600 transition hover:bg-slate-50">Keep request</button></div></div>}
+            {!showCancelForm ? <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-sm font-bold text-[#07152d]">Need to change your plans?</p><p className="mt-1 text-xs leading-5 text-slate-500">{flightBooking ? "This will send a cancellation request to the flight provider for this confirmed booking." : "You can cancel while the reservation team is still reviewing this request."}</p></div><button type="button" onClick={() => setShowCancelForm(true)} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-bold text-rose-700 transition hover:-translate-y-0.5 hover:bg-rose-100"><Ban className="size-4" />{flightBooking ? "Cancel flight" : "Cancel request"}</button></div> : <div className="rounded-xl border border-rose-200 bg-rose-50/70 p-4 sm:p-5"><p className="flex items-center gap-2 text-sm font-bold text-rose-800"><AlertCircle className="size-4" />{flightBooking ? "Confirm flight cancellation" : "Confirm cancellation"}</p><p className="mt-2 text-xs leading-5 text-rose-700/75">{flightBooking ? "The flight provider will process this cancellation. Applicable airline charges may apply." : "The reservation team will be notified and this request cannot be restored from the website."}</p><textarea value={cancelReason} onChange={(event) => setCancelReason(event.target.value)} rows={3} maxLength={500} placeholder="Tell us why you are cancelling" className="mt-4 w-full resize-none rounded-xl border border-rose-200 bg-white p-3 text-sm outline-none transition focus:border-rose-400 focus:ring-4 focus:ring-rose-100" />{cancelError && <p role="alert" className="mt-2 text-xs font-semibold text-rose-700">{cancelError}</p>}<div className="mt-4 flex flex-col gap-3 sm:flex-row"><button type="button" onClick={cancelBooking} disabled={cancelling} className="inline-flex items-center justify-center gap-2 rounded-xl bg-rose-600 px-4 py-3 text-xs font-bold text-white shadow-sm transition hover:bg-rose-700 disabled:opacity-60">{cancelling ? <LoaderCircle className="size-4 animate-spin" /> : <Ban className="size-4" />}{flightBooking ? "Confirm flight cancellation" : "Confirm cancellation"}</button><button type="button" onClick={() => setShowCancelForm(false)} className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs font-bold text-slate-600 transition hover:bg-slate-50">Keep request</button></div></div>}
           </div>}
 
           {!canCancel && <p className="mt-4 flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 text-[11px] font-semibold text-slate-500 shadow-sm"><span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#edf8fd]"><ShieldCheck className="size-3.5 text-[#0879b7]" /></span>This request is {status.label.toLowerCase()} and can no longer be cancelled online.</p>}

@@ -59,13 +59,22 @@ export default async function Services() {
     return Hotel;
   };
 
+  const isHolidayPackage = (service: any) => {
+    const identity = [service.slug, service.service_type, service.name, service.title]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+
+    return identity.includes("holiday") && identity.includes("package");
+  };
+
   // Use API data if available, otherwise use fallback data mapped to the same structure
   const displayServices = apiServices.length > 0 
     ? apiServices.map(s => ({
         title: s.name || s.title || "",
         description: s.short_description || s.description || "",
         Icon: getIcon(s.slug, s.service_type),
-        link: `/services/${s.slug}`,
+        link: isHolidayPackage(s) ? "/services/holiday-packages" : `/services/${s.slug}`,
         image: s.banner_image || s.image || fallbackItems[0][4]
       }))
     : fallbackItems.map(item => ({

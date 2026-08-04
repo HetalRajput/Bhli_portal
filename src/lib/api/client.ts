@@ -63,7 +63,14 @@ apiClient.interceptors.response.use(
       error.response?.status >= 500 &&
       error.config?.url?.startsWith('/api/base/services/');
 
-    if (!isEmptySearchPage && !isHandledServiceFailure) {
+    // Logging out is idempotent: an expired/revoked refresh token means there is
+    // no server session left to invalidate, so this is an expected response.
+    const isInactiveLogoutSession =
+      error.config?.method?.toLowerCase() === 'post' &&
+      error.response?.status === 400 &&
+      error.config?.url?.includes('/api/accounts/auth/logout/');
+
+    if (!isEmptySearchPage && !isHandledServiceFailure && !isInactiveLogoutSession) {
       console.warn(
       `❌ [API Response Error] ${error.config?.method?.toUpperCase()} ${fullUrl} ${status}`,
       error.response?.data || error.message

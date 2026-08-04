@@ -32,10 +32,12 @@ function UnifiedServiceEnquiryInner({ serviceSlug }: { serviceSlug?: string }) {
   const router = useRouter();
   const slug = serviceSlug || params.slug || "";
   const destination = searchParams.get("destination") || "";
+  const holidayPackageType = searchParams.get("type");
+  const holidayPackageLabel = holidayPackageType === "domestic" ? "Domestic holiday package" : holidayPackageType === "international" ? "International holiday package" : "";
   const initialTitle = displaySlug(slug) || "Service Booking";
   const [service, setService] = useState<ServiceData | null>(null);
   const [loadingService, setLoadingService] = useState(true);
-  const [form, setForm] = useState({ message: destination ? `${initialTitle} requirement for: ${destination}` : "", fromCity: "", toCity: destination, travelDate: "" });
+  const [form, setForm] = useState({ message: holidayPackageLabel ? `${holidayPackageLabel} enquiry. Please share availability, itinerary and pricing.` : destination ? `${initialTitle} requirement for: ${destination}` : "", fromCity: "", toCity: destination, travelDate: "" });
   const [consent, setConsent] = useState(false);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);

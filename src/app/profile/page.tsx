@@ -31,6 +31,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { bookingService, type BookingRequest } from "@/lib/api/bookings";
+import { flightService } from "@/lib/api/flights";
 import { authService } from "@/lib/api/auth";
 import { getErrorMessage } from "@/lib/api/client";
 import { baseService } from "@/lib/api/base";
@@ -157,8 +158,36 @@ export default function ProfilePage() {
       const fetchBookingsList = async () => {
         setBookingsError("");
         try {
-          const res = await bookingService.listBookings();
-          setBookings(res?.success && Array.isArray(res.data) ? res.data : []);
+          const [bookingResponse, flightHistoryResponse] = await Promise.all([
+            bookingService.listBookings(),
+            flightService.history().catch(() => null),
+          ]);
+          const commonBookings = bookingResponse?.success && Array.isArray(bookingResponse.data)
+            ? bookingResponse.data
+            : [];
+          const flightHistory = flightHistoryResponse && Array.isArray(flightHistoryResponse.data)
+            ? flightHistoryResponse.data.filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object")
+            : [];
+          const flightsByCommonBooking = new Map(
+            flightHistory.map((flight) => [Number(flight.booking), flight]),
+          );
+          setBookings(commonBookings.map((booking) => {
+            const flight = flightsByCommonBooking.get(Number(booking.id));
+            if (!flight) return booking;
+            const flightStatus = String(flight.status || flight.booking_status || booking.status);
+            return {
+              ...booking,
+              status: flightStatus,
+              booking_status: flight.booking_status,
+              flight_booking_id: flight.id,
+              flight_id: flight.flight_id,
+              ref_id: flight.ref_id,
+              pnr: flight.pnr,
+              ticket_number: flight.ticket_number,
+              provider_status: flight.provider_status,
+              flight_passengers: Array.isArray(flight.passengers) ? flight.passengers : [],
+            };
+          }));
         } catch (requestError) {
           setBookings([]);
           setBookingsError(getErrorMessage(requestError));

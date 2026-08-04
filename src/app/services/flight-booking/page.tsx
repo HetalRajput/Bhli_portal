@@ -1,10 +1,10 @@
-import GenericServiceEnquiry from "@/components/GenericServiceEnquiry";
 import { Suspense } from "react";
+import FlightBookingFlow from "@/components/FlightBookingFlow";
 
-export default function ServicePage() {
+export default function FlightBookingPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#061f3b]" />}>
-      <GenericServiceEnquiry serviceSlug="flight-booking" />
+    <Suspense fallback={<div className="min-h-screen bg-[#edf5f9]" />}>
+      <FlightBookingFlow />
     </Suspense>
   );
 }

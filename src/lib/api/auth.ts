@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { apiClient } from './client';
 
 export type SignupPayload = {
@@ -67,7 +68,15 @@ export const authService = {
     return response.data?.data ?? response.data;
   },
   logout: async (refresh: string) => {
-    const response = await apiClient.post('/api/accounts/auth/logout/', { refresh });
-    return response.data;
+    try {
+      const response = await apiClient.post('/api/accounts/auth/logout/', { refresh });
+      return response.data;
+    } catch (error) {
+      // A missing server-side session is already the desired logout state.
+      if (axios.isAxiosError(error) && error.response?.status === 400) {
+        return { success: true, alreadyLoggedOut: true };
+      }
+      throw error;
+    }
   }
 };
