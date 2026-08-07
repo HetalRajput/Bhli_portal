@@ -36,12 +36,12 @@ const catalogs = {
           "Choose the travel style that fits your family, season and preferred pace.",
         icon: Compass,
         items: [
-          { title: "Nature & hill retreats", description: "Refreshing breaks surrounded by mountains, forests, lakes and scenic valleys.", tags: ["Hill stations", "Nature stays", "Cool weather"] },
-          { title: "Heritage & culture", description: "Explore historic cities, forts, palaces, monuments and local traditions.", tags: ["Heritage", "Architecture", "Culture"] },
-          { title: "Beaches & islands", description: "Relax by the coast with laid-back stays, water activities and island experiences.", tags: ["Beaches", "Islands", "Leisure"] },
-          { title: "Wildlife & adventure", description: "Plan safaris, forest stays and outdoor activities for an active holiday.", tags: ["Wildlife", "Safari", "Adventure"] },
-          { title: "Pilgrimage journeys", description: "Comfortable, carefully planned visits to important spiritual destinations.", tags: ["Pilgrimage", "Temples", "Spiritual travel"] },
-          { title: "Snowfall escapes", description: "Winter itineraries designed around snow views, seasonal activities and cosy stays.", tags: ["Snow", "Winter", "Mountains"] },
+          { title: "Nature & hill retreats", description: "Refreshing breaks surrounded by mountains, forests, lakes and scenic valleys.", tags: ["Hill stations", "Nature stays", "Cool weather"], image: "https://images.pexels.com/photos/1666012/pexels-photo-1666012.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "Heritage & culture", description: "Explore historic cities, forts, palaces, monuments and local traditions.", tags: ["Heritage", "Architecture", "Culture"], image: "https://images.pexels.com/photos/1586298/pexels-photo-1586298.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "Beaches & islands", description: "Relax by the coast with laid-back stays, water activities and island experiences.", tags: ["Beaches", "Islands", "Leisure"], image: "https://images.pexels.com/photos/1450361/pexels-photo-1450361.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "Wildlife & adventure", description: "Plan safaris, forest stays and outdoor activities for an active holiday.", tags: ["Wildlife", "Safari", "Adventure"], image: "https://images.pexels.com/photos/2446702/pexels-photo-2446702.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "Pilgrimage journeys", description: "Comfortable, carefully planned visits to important spiritual destinations.", tags: ["Pilgrimage", "Temples", "Spiritual travel"], image: "https://images.pexels.com/photos/7178726/pexels-photo-7178726.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "Snowfall escapes", description: "Winter itineraries designed around snow views, seasonal activities and cosy stays.", tags: ["Snow", "Winter", "Mountains"], image: "https://images.pexels.com/photos/3408744/pexels-photo-3408744.jpeg?auto=compress&cs=tinysrgb&w=600" },
         ],
       },
       {
@@ -50,12 +50,12 @@ const catalogs = {
           "Compare package levels and let the travel desk confirm current inclusions, eligibility and pricing.",
         icon: Route,
         items: [
-          { title: "Silver package", description: "A practical package level focused on essential travel arrangements and value.", tags: ["Value focused", "Essential inclusions"] },
-          { title: "Gold package", description: "An upgraded option balancing added comfort, convenience and sightseeing.", tags: ["Enhanced comfort", "Popular choice"] },
-          { title: "Platinum package", description: "A premium package level for travellers seeking elevated stays and services.", tags: ["Premium stays", "Added comfort"] },
-          { title: "Package inclusions", description: "Accommodation, transfers, sightseeing and meals are reviewed for the selected itinerary.", tags: ["Stay", "Transfers", "Sightseeing"] },
-          { title: "LTC planning support", description: "Get assistance with suitable routing, package selection and required travel information.", tags: ["LTC guidance", "Route planning"] },
-          { title: "Flexible customisation", description: "Adjust the destination, duration, hotel preference and guest requirements before confirmation.", tags: ["Custom itinerary", "Family friendly"] },
+          { title: "Silver package", description: "A practical package level focused on essential travel arrangements and value.", tags: ["Value focused", "Essential inclusions"], image: "https://images.pexels.com/photos/4006143/pexels-photo-4006143.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "Gold package", description: "An upgraded option balancing added comfort, convenience and sightseeing.", tags: ["Enhanced comfort", "Popular choice"], image: "https://images.pexels.com/photos/3155666/pexels-photo-3155666.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "Platinum package", description: "A premium package level for travellers seeking elevated stays and services.", tags: ["Premium stays", "Added comfort"], image: "https://images.pexels.com/photos/258154/pexels-photo-258154.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "Package inclusions", description: "Accommodation, transfers, sightseeing and meals are reviewed for the selected itinerary.", tags: ["Stay", "Transfers", "Sightseeing"], image: "https://images.pexels.com/photos/338504/pexels-photo-338504.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "LTC planning support", description: "Get assistance with suitable routing, package selection and required travel information.", tags: ["LTC guidance", "Route planning"], image: "https://images.pexels.com/photos/3183150/pexels-photo-3183150.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "Flexible customisation", description: "Adjust the destination, duration, hotel preference and guest requirements before confirmation.", tags: ["Custom itinerary", "Family friendly"], image: "https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=600" },
         ],
       },
     ],
@@ -75,12 +75,12 @@ const catalogs = {
         description: "Start with the holiday style that best matches your plans.",
         icon: Plane,
         items: [
-          { title: "Popular favourites", description: "High-demand destinations with a broad choice of attractions and experiences.", tags: ["Best sellers", "First-time travellers"] },
-          { title: "Budget-friendly tours", description: "Value-conscious international journeys with memorable culture and sightseeing.", tags: ["Great value", "Short-haul options"] },
-          { title: "Beach & honeymoon", description: "Romantic island escapes, tropical resorts and relaxed coastal itineraries.", tags: ["Couples", "Beaches", "Resorts"] },
-          { title: "Luxury & Europe", description: "Premium stays, scenic routes and iconic European city experiences.", tags: ["Luxury", "Europe", "Premium stays"] },
-          { title: "Trending destinations", description: "Emerging travel choices for guests looking for something fresh and distinctive.", tags: ["Trending", "New experiences"] },
-          { title: "Custom journeys", description: "Combine destinations, hotel preferences and sightseeing into a personalised plan.", tags: ["Tailor-made", "Flexible duration"] },
+          { title: "Popular favourites", description: "High-demand destinations with a broad choice of attractions and experiences.", tags: ["Best sellers", "First-time travellers"], image: "https://images.pexels.com/photos/3769138/pexels-photo-3769138.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "Budget-friendly tours", description: "Value-conscious international journeys with memorable culture and sightseeing.", tags: ["Great value", "Short-haul options"], image: "https://images.pexels.com/photos/2104152/pexels-photo-2104152.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "Beach & honeymoon", description: "Romantic island escapes, tropical resorts and relaxed coastal itineraries.", tags: ["Couples", "Beaches", "Resorts"], image: "https://images.pexels.com/photos/1024984/pexels-photo-1024984.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "Luxury & Europe", description: "Premium stays, scenic routes and iconic European city experiences.", tags: ["Luxury", "Europe", "Premium stays"], image: "https://images.pexels.com/photos/1125212/pexels-photo-1125212.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "Trending destinations", description: "Emerging travel choices for guests looking for something fresh and distinctive.", tags: ["Trending", "New experiences"], image: "https://images.pexels.com/photos/2087391/pexels-photo-2087391.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "Custom journeys", description: "Combine destinations, hotel preferences and sightseeing into a personalised plan.", tags: ["Tailor-made", "Flexible duration"], image: "https://images.pexels.com/photos/2450296/pexels-photo-2450296.jpeg?auto=compress&cs=tinysrgb&w=600" },
         ],
       },
       {
@@ -88,9 +88,9 @@ const catalogs = {
         description: "Three versatile favourites for shopping, family attractions and vibrant city experiences.",
         icon: Landmark,
         items: [
-          { title: "UAE", description: "Modern city experiences, desert activities, iconic architecture and premium shopping.", tags: ["Dubai", "City break", "Desert"] },
-          { title: "Singapore", description: "Family-friendly attractions, waterfront landmarks, gardens and excellent connectivity.", tags: ["Family", "Attractions", "City"] },
-          { title: "Thailand", description: "A flexible mix of beaches, nightlife, temples, shopping and island excursions.", tags: ["Bangkok", "Phuket", "Beaches"] },
+          { title: "UAE", description: "Modern city experiences, desert activities, iconic architecture and premium shopping.", tags: ["Dubai", "City break", "Desert"], image: "https://images.pexels.com/photos/3152124/pexels-photo-3152124.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "Singapore", description: "Family-friendly attractions, waterfront landmarks, gardens and excellent connectivity.", tags: ["Family", "Attractions", "City"], image: "https://images.pexels.com/photos/1682748/pexels-photo-1682748.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "Thailand", description: "A flexible mix of beaches, nightlife, temples, shopping and island excursions.", tags: ["Bangkok", "Phuket", "Beaches"], image: "https://images.pexels.com/photos/3058827/pexels-photo-3058827.jpeg?auto=compress&cs=tinysrgb&w=600" },
         ],
       },
       {
@@ -98,9 +98,9 @@ const catalogs = {
         description: "Value-led journeys with culture, scenery and comfortable short-haul travel options.",
         icon: MapPin,
         items: [
-          { title: "Nepal", description: "Mountain scenery, spiritual landmarks and relaxed cultural experiences close to home.", tags: ["Mountains", "Culture", "Value"] },
-          { title: "Vietnam", description: "Historic cities, beautiful bays, local food and varied landscapes at excellent value.", tags: ["Culture", "Food", "Scenery"] },
-          { title: "Sri Lanka", description: "Beaches, wildlife, tea country and heritage locations in one compact itinerary.", tags: ["Beaches", "Wildlife", "Heritage"] },
+          { title: "Nepal", description: "Mountain scenery, spiritual landmarks and relaxed cultural experiences close to home.", tags: ["Mountains", "Culture", "Value"], image: "https://images.pexels.com/photos/4038869/pexels-photo-4038869.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "Vietnam", description: "Historic cities, beautiful bays, local food and varied landscapes at excellent value.", tags: ["Culture", "Food", "Scenery"], image: "https://images.pexels.com/photos/1483053/pexels-photo-1483053.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "Sri Lanka", description: "Beaches, wildlife, tea country and heritage locations in one compact itinerary.", tags: ["Beaches", "Wildlife", "Heritage"], image: "https://images.pexels.com/photos/2166559/pexels-photo-2166559.jpeg?auto=compress&cs=tinysrgb&w=600" },
         ],
       },
       {
@@ -108,9 +108,9 @@ const catalogs = {
         description: "Romantic tropical holidays designed around privacy, resorts and memorable experiences.",
         icon: Heart,
         items: [
-          { title: "Maldives", description: "Private island resorts, turquoise lagoons and peaceful overwater stays.", tags: ["Honeymoon", "Island resort", "Luxury"] },
-          { title: "Bali", description: "Romantic villas, temples, beaches, wellness and scenic day trips.", tags: ["Villas", "Culture", "Wellness"] },
-          { title: "Mauritius", description: "Beautiful beaches, resort experiences and activities for couples and families.", tags: ["Resorts", "Beaches", "Couples"] },
+          { title: "Maldives", description: "Private island resorts, turquoise lagoons and peaceful overwater stays.", tags: ["Honeymoon", "Island resort", "Luxury"], image: "https://images.pexels.com/photos/700871/pexels-photo-700871.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "Bali", description: "Romantic villas, temples, beaches, wellness and scenic day trips.", tags: ["Villas", "Culture", "Wellness"], image: "https://images.pexels.com/photos/1797161/pexels-photo-1797161.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "Mauritius", description: "Beautiful beaches, resort experiences and activities for couples and families.", tags: ["Resorts", "Beaches", "Couples"], image: "https://images.pexels.com/photos/3636151/pexels-photo-3636151.jpeg?auto=compress&cs=tinysrgb&w=600" },
         ],
       },
       {
@@ -118,9 +118,9 @@ const catalogs = {
         description: "Iconic cities, scenic routes and premium European experiences.",
         icon: Crown,
         items: [
-          { title: "France", description: "Paris landmarks, art, dining and elegant city experiences.", tags: ["Paris", "Culture", "Luxury"] },
-          { title: "Switzerland", description: "Alpine landscapes, panoramic train journeys and picture-perfect towns.", tags: ["Alps", "Scenic trains", "Nature"] },
-          { title: "Italy", description: "Historic cities, celebrated cuisine, architecture and romantic routes.", tags: ["Rome", "Venice", "Cuisine"] },
+          { title: "France", description: "Paris landmarks, art, dining and elegant city experiences.", tags: ["Paris", "Culture", "Luxury"], image: "https://images.pexels.com/photos/1162607/pexels-photo-1162607.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "Switzerland", description: "Alpine landscapes, panoramic train journeys and picture-perfect towns.", tags: ["Alps", "Scenic trains", "Nature"], image: "https://images.pexels.com/photos/3184339/pexels-photo-3184339.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "Italy", description: "Historic cities, celebrated cuisine, architecture and romantic routes.", tags: ["Rome", "Venice", "Cuisine"], image: "https://images.pexels.com/photos/1595385/pexels-photo-1595385.jpeg?auto=compress&cs=tinysrgb&w=600" },
         ],
       },
       {
@@ -128,9 +128,9 @@ const catalogs = {
         description: "Distinctive experiences beyond the usual international holiday circuit.",
         icon: Sparkles,
         items: [
-          { title: "Georgia", description: "Mountain landscapes, old towns, regional cuisine and excellent seasonal variety.", tags: ["Mountains", "Old towns", "Trending"] },
-          { title: "Philippines", description: "Island hopping, clear waters and laid-back tropical experiences.", tags: ["Islands", "Beaches", "Adventure"] },
-          { title: "Cambodia", description: "Ancient temples, cultural landmarks and welcoming city experiences.", tags: ["Temples", "Heritage", "Culture"] },
+          { title: "Georgia", description: "Mountain landscapes, old towns, regional cuisine and excellent seasonal variety.", tags: ["Mountains", "Old towns", "Trending"], image: "https://images.pexels.com/photos/3282133/pexels-photo-3282133.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "Philippines", description: "Island hopping, clear waters and laid-back tropical experiences.", tags: ["Islands", "Beaches", "Adventure"], image: "https://images.pexels.com/photos/1666012/pexels-photo-1666012.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "Cambodia", description: "Ancient temples, cultural landmarks and welcoming city experiences.", tags: ["Temples", "Heritage", "Culture"], image: "https://images.pexels.com/photos/1586298/pexels-photo-1586298.jpeg?auto=compress&cs=tinysrgb&w=600" },
         ],
       },
       {
@@ -138,10 +138,10 @@ const catalogs = {
         description: "Select a package style, then personalise the duration, stays and activities.",
         icon: UsersRound,
         items: [
-          { title: "Family holidays", description: "Balanced itineraries with comfortable stays and activities for different age groups.", tags: ["Family", "Flexible pace"] },
-          { title: "Honeymoon escapes", description: "Romantic destinations, special stays and memorable couple experiences.", tags: ["Couples", "Romantic"] },
-          { title: "Group journeys", description: "Coordinated travel plans for friends, colleagues and larger families.", tags: ["Groups", "Coordinated travel"] },
-          { title: "Premium experiences", description: "Luxury stays, private arrangements and carefully curated activities.", tags: ["Premium", "Private options"] },
+          { title: "Family holidays", description: "Balanced itineraries with comfortable stays and activities for different age groups.", tags: ["Family", "Flexible pace"], image: "https://images.pexels.com/photos/1450361/pexels-photo-1450361.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "Honeymoon escapes", description: "Romantic destinations, special stays and memorable couple experiences.", tags: ["Couples", "Romantic"], image: "https://images.pexels.com/photos/2446702/pexels-photo-2446702.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "Group journeys", description: "Coordinated travel plans for friends, colleagues and larger families.", tags: ["Groups", "Coordinated travel"], image: "https://images.pexels.com/photos/7178726/pexels-photo-7178726.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "Premium experiences", description: "Luxury stays, private arrangements and carefully curated activities.", tags: ["Premium", "Private options"], image: "https://images.pexels.com/photos/3408744/pexels-photo-3408744.jpeg?auto=compress&cs=tinysrgb&w=600" },
         ],
       },
       {
@@ -149,10 +149,10 @@ const catalogs = {
         description: "Personal support from initial ideas through final travel planning.",
         icon: ShieldCheck,
         items: [
-          { title: "Personalised planning", description: "Recommendations are shaped around your dates, guests, budget and interests.", tags: ["Tailored advice"] },
-          { title: "Verified options", description: "The travel desk reviews availability, inclusions and suitable service options.", tags: ["Reviewed choices"] },
-          { title: "Clear assistance", description: "Receive guidance on itinerary, documentation and the next booking steps.", tags: ["End-to-end support"] },
-          { title: "Flexible enquiries", description: "Share preferences first and confirm only after reviewing the proposed plan.", tags: ["No instant charge"] },
+          { title: "Personalised planning", description: "Recommendations are shaped around your dates, guests, budget and interests.", tags: ["Tailored advice"], image: "https://images.pexels.com/photos/4006143/pexels-photo-4006143.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "Verified options", description: "The travel desk reviews availability, inclusions and suitable service options.", tags: ["Reviewed choices"], image: "https://images.pexels.com/photos/3155666/pexels-photo-3155666.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "Clear assistance", description: "Receive guidance on itinerary, documentation and the next booking steps.", tags: ["End-to-end support"], image: "https://images.pexels.com/photos/258154/pexels-photo-258154.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "Flexible enquiries", description: "Share preferences first and confirm only after reviewing the proposed plan.", tags: ["No instant charge"], image: "https://images.pexels.com/photos/338504/pexels-photo-338504.jpeg?auto=compress&cs=tinysrgb&w=600" },
         ],
       },
     ],
@@ -234,11 +234,31 @@ export default function HolidayPackageDetail({
 
                 <div className="grid gap-4 p-5 sm:grid-cols-2 sm:p-7 lg:grid-cols-3">
                   {section.items.map((item) => (
-                    <section key={item.title} className="rounded-2xl border border-slate-200 bg-white p-5 transition hover:-translate-y-1 hover:border-[#13a5d8]/50 hover:shadow-[0_14px_35px_rgba(6,31,59,.09)]">
-                      <span className="grid size-10 place-items-center rounded-xl bg-[#edf9fd] text-[#087fbe]"><CheckCircle2 className="size-5" /></span>
-                      <h4 className="mt-4 text-base font-extrabold text-[#061f3b]">{item.title}</h4>
-                      <p className="mt-2 text-sm leading-6 text-slate-500">{item.description}</p>
-                      <div className="mt-4 flex flex-wrap gap-2">{item.tags.map((tag) => <span key={tag} className="rounded-full bg-slate-100 px-3 py-1.5 text-[10px] font-bold text-slate-600">{tag}</span>)}</div>
+                    <section key={item.title} className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white transition-all duration-300 hover:-translate-y-1 hover:border-[#13a5d8]/50 hover:shadow-[0_14px_35px_rgba(6,31,59,.09)]">
+                      {'image' in item && item.image && (
+                        <div className="relative h-48 w-full overflow-hidden border-b border-slate-100 bg-slate-50">
+                          <img src={item.image as string} alt={item.title} className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                          <div className="absolute left-4 top-4 grid size-10 place-items-center rounded-xl bg-white/95 text-[#087fbe] shadow-sm backdrop-blur">
+                            <CheckCircle2 className="size-5" />
+                          </div>
+                        </div>
+                      )}
+                      
+                      <div className="flex flex-grow flex-col p-5">
+                        {!('image' in item && item.image) && (
+                          <span className="mb-4 grid size-10 place-items-center rounded-xl bg-[#edf9fd] text-[#087fbe]"><CheckCircle2 className="size-5" /></span>
+                        )}
+                        <h4 className="text-base font-extrabold text-[#061f3b]">{item.title}</h4>
+                        <p className="mt-2 text-sm leading-6 text-slate-500">{item.description}</p>
+                        <div className="mt-auto pt-5">
+                          <div className="flex flex-wrap gap-2">
+                            {item.tags.map((tag) => (
+                              <span key={tag} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[10px] font-bold text-slate-600">{tag}</span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
                     </section>
                   ))}
                 </div>

@@ -48,11 +48,28 @@ export const baseService = {
       return await response.json();
     } catch { return null; }
   },
-  // The backend currently has no enquiry-types resource. Empty data keeps the
-  // forms on their local options without requesting known 404 endpoints.
-  getEnquiryTypes: async (): Promise<{ success: boolean; count: number; data: Array<{ id: number; name: string; slug: string }> }> => (
-    { success: true, count: 0, data: [] }
-  ),
+  // Fetch active services from backend to populate enquiry types
+  getEnquiryTypes: async (): Promise<{ success: boolean; count: number; data: Array<{ id: number; name: string; slug: string }> }> => {
+    try {
+      const response = await apiClient.get('/api/base/services/');
+      const services = Array.isArray(response.data) ? response.data : response.data?.data;
+      if (Array.isArray(services)) {
+        return {
+          success: true,
+          count: services.length,
+          data: services.map((s: any) => ({
+            id: s.id,
+            name: s.name,
+            slug: s.slug || ''
+          }))
+        };
+      }
+      return { success: true, count: 0, data: [] };
+    } catch (err) {
+      console.warn("Failed to fetch services for enquiry types:", err);
+      return { success: true, count: 0, data: [] };
+    }
+  },
   getEnquiryTypeDetail: async (slug: string) => {
     void slug;
     return null;

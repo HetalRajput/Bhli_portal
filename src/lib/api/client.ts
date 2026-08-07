@@ -32,6 +32,7 @@ apiClient.interceptors.request.use(
       }
     );
 
+    if (typeof window !== 'undefined') window.dispatchEvent(new Event('bhli:network-start'));
     return config;
   },
   (error) => {
@@ -48,9 +49,11 @@ apiClient.interceptors.response.use(
       `✅ [API Response] ${response.config.method?.toUpperCase()} ${fullUrl} [Status: ${response.status}]`,
       response.data
     );
+    if (typeof window !== 'undefined') window.dispatchEvent(new Event('bhli:network-end'));
     return response;
   },
   async (error) => {
+    if (typeof window !== 'undefined') window.dispatchEvent(new Event('bhli:network-end'));
     const fullUrl = error.config ? `${error.config.baseURL || ''}${error.config.url || ''}` : 'Unknown URL';
     const status = error.response?.status ? `[Status: ${error.response.status}]` : '[Network Error]';
     const responseData = error.response?.data;
