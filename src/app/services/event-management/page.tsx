@@ -1,5 +1,10 @@
-import GenericServiceEnquiry from "@/components/GenericServiceEnquiry";
+import EventManagementFlow from "@/components/EventManagementFlow";
+import { Suspense } from "react";
 
 export default function ServicePage() {
-  return <GenericServiceEnquiry serviceSlug="event-management" />;
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#f4f8fb]" />}>
+      <EventManagementFlow />
+    </Suspense>
+  );
 }

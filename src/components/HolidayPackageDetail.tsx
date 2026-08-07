@@ -16,6 +16,8 @@ import {
   Sparkles,
   UsersRound,
 } from "lucide-react";
+import DomesticPricingTable from "./DomesticPricingTable";
+import InternationalPricingTable from "./InternationalPricingTable";
 
 export type HolidayPackageType = "domestic" | "international";
 
@@ -23,39 +25,72 @@ const catalogs = {
   domestic: {
     eyebrow: "Explore India",
     title: "Incredible India",
-    subtitle: "Diverse destinations for every traveller",
-    description:
-      "Discover hill stations, heritage cities, beaches, wildlife, pilgrimage destinations and snowfall escapes across India.",
+    subtitle: "Diverse Destinations for Every Traveler",
+    description: "Discover hill stations, heritage cities, beaches, wildlife, pilgrimage destinations and snowfall escapes across India.",
     icon: MapPinned,
     accent: "from-[#0875b7] to-[#13a5d8]",
-    summary: ["India-wide journeys", "LTC package options", "Personal travel assistance"],
+    summary: ["Silver: From ₹9,999", "Gold: From ₹13,999", "Platinum: From ₹24,999"],
+    pricingCards: [
+      { title: "Silver Package", price: "₹9,999", subtitle: "Budget Hotel & Resort" },
+      { title: "Gold Package", price: "₹13,999", subtitle: "3-Star Hotel & Resort" },
+      { title: "Platinum Package", price: "₹24,999", subtitle: "4/5-Star Luxury Hotels" }
+    ],
     sections: [
       {
-        title: "Destinations across India",
-        description:
-          "Choose the travel style that fits your family, season and preferred pace.",
+        title: "Hill Stations & Nature Retreats",
+        description: "Refreshing breaks surrounded by mountains, forests, lakes and scenic valleys.",
         icon: Compass,
         items: [
-          { title: "Nature & hill retreats", description: "Refreshing breaks surrounded by mountains, forests, lakes and scenic valleys.", tags: ["Hill stations", "Nature stays", "Cool weather"], image: "https://images.pexels.com/photos/1666012/pexels-photo-1666012.jpeg?auto=compress&cs=tinysrgb&w=600" },
-          { title: "Heritage & culture", description: "Explore historic cities, forts, palaces, monuments and local traditions.", tags: ["Heritage", "Architecture", "Culture"], image: "https://images.pexels.com/photos/1586298/pexels-photo-1586298.jpeg?auto=compress&cs=tinysrgb&w=600" },
-          { title: "Beaches & islands", description: "Relax by the coast with laid-back stays, water activities and island experiences.", tags: ["Beaches", "Islands", "Leisure"], image: "https://images.pexels.com/photos/1450361/pexels-photo-1450361.jpeg?auto=compress&cs=tinysrgb&w=600" },
-          { title: "Wildlife & adventure", description: "Plan safaris, forest stays and outdoor activities for an active holiday.", tags: ["Wildlife", "Safari", "Adventure"], image: "https://images.pexels.com/photos/2446702/pexels-photo-2446702.jpeg?auto=compress&cs=tinysrgb&w=600" },
-          { title: "Pilgrimage journeys", description: "Comfortable, carefully planned visits to important spiritual destinations.", tags: ["Pilgrimage", "Temples", "Spiritual travel"], image: "https://images.pexels.com/photos/7178726/pexels-photo-7178726.jpeg?auto=compress&cs=tinysrgb&w=600" },
-          { title: "Snowfall escapes", description: "Winter itineraries designed around snow views, seasonal activities and cosy stays.", tags: ["Snow", "Winter", "Mountains"], image: "https://images.pexels.com/photos/3408744/pexels-photo-3408744.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "South India", description: "Yercaud, Ooty, Munnar, Coorg, Kodaikanal, Chikmagalur, Wayanad, Sakleshpur.", tags: ["Ooty", "Munnar", "Coorg"], image: "https://images.pexels.com/photos/1666012/pexels-photo-1666012.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "North India", description: "Mussoorie, Nainital, Auli, Kurseong, Dalhousie.", tags: ["Mussoorie", "Nainital", "Auli"], image: "https://images.pexels.com/photos/3408744/pexels-photo-3408744.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "West & Central India", description: "Lonavala, Mahabaleshwar, Mount Abu.", tags: ["Lonavala", "Mount Abu"], image: "https://images.pexels.com/photos/1450361/pexels-photo-1450361.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "Northeast India", description: "Meghalaya, Mechuka, Shillong, Gangtok, Kalimpong, Sikkim.", tags: ["Shillong", "Gangtok"], image: "https://images.pexels.com/photos/3769138/pexels-photo-3769138.jpeg?auto=compress&cs=tinysrgb&w=600" },
         ],
       },
       {
-        title: "All-India Domestic LTC Packages",
-        description:
-          "Compare package levels and let the travel desk confirm current inclusions, eligibility and pricing.",
+        title: "Leisure & Historical Destinations",
+        description: "Explore historic cities, forts, palaces, monuments and local traditions.",
+        icon: Landmark,
+        items: [
+          { title: "Rajasthan & North", description: "Jaipur, Udaipur, Agra, Jaisalmer, Jodhpur, Delhi.", tags: ["Jaipur", "Udaipur", "Agra"], image: "https://images.pexels.com/photos/1586298/pexels-photo-1586298.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "Central & South", description: "Hampi, Mysuru, Hyderabad, Khajuraho, Gwalior, Madurai, Thanjavur.", tags: ["Hampi", "Mysuru"], image: "https://images.pexels.com/photos/2446702/pexels-photo-2446702.jpeg?auto=compress&cs=tinysrgb&w=600" },
+        ],
+      },
+      {
+        title: "Beaches & Island Destinations",
+        description: "Relax by the coast with laid-back stays, water activities and island experiences.",
+        icon: Plane,
+        items: [
+          { title: "West Coast", description: "Goa, Kovalam, Varkala, Gokarna, Mumbai, Mangalore, Kozhikode, Daman.", tags: ["Goa", "Gokarna", "Kovalam"], image: "https://images.pexels.com/photos/1024984/pexels-photo-1024984.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "East Coast & Islands", description: "Lakshadweep, Puri, Nellore, Chennai, Kanyakumari, Puducherry, Andaman and Nicobar.", tags: ["Andaman", "Lakshadweep"], image: "https://images.pexels.com/photos/1483053/pexels-photo-1483053.jpeg?auto=compress&cs=tinysrgb&w=600" },
+        ],
+      },
+      {
+        title: "National Parks & Wildlife Safaris",
+        description: "Plan safaris, forest stays and outdoor activities for an active holiday.",
         icon: Route,
         items: [
-          { title: "Silver package", description: "A practical package level focused on essential travel arrangements and value.", tags: ["Value focused", "Essential inclusions"], image: "https://images.pexels.com/photos/4006143/pexels-photo-4006143.jpeg?auto=compress&cs=tinysrgb&w=600" },
-          { title: "Gold package", description: "An upgraded option balancing added comfort, convenience and sightseeing.", tags: ["Enhanced comfort", "Popular choice"], image: "https://images.pexels.com/photos/3155666/pexels-photo-3155666.jpeg?auto=compress&cs=tinysrgb&w=600" },
-          { title: "Platinum package", description: "A premium package level for travellers seeking elevated stays and services.", tags: ["Premium stays", "Added comfort"], image: "https://images.pexels.com/photos/258154/pexels-photo-258154.jpeg?auto=compress&cs=tinysrgb&w=600" },
-          { title: "Package inclusions", description: "Accommodation, transfers, sightseeing and meals are reviewed for the selected itinerary.", tags: ["Stay", "Transfers", "Sightseeing"], image: "https://images.pexels.com/photos/338504/pexels-photo-338504.jpeg?auto=compress&cs=tinysrgb&w=600" },
-          { title: "LTC planning support", description: "Get assistance with suitable routing, package selection and required travel information.", tags: ["LTC guidance", "Route planning"], image: "https://images.pexels.com/photos/3183150/pexels-photo-3183150.jpeg?auto=compress&cs=tinysrgb&w=600" },
-          { title: "Flexible customisation", description: "Adjust the destination, duration, hotel preference and guest requirements before confirmation.", tags: ["Custom itinerary", "Family friendly"], image: "https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "Wildlife Reserves", description: "Jim Corbett, Ranthambore, Kaziranga, Bandipur, Dandeli, Bekal.", tags: ["Jim Corbett", "Ranthambore", "Kaziranga"], image: "https://images.pexels.com/photos/4038869/pexels-photo-4038869.jpeg?auto=compress&cs=tinysrgb&w=600" },
+        ],
+      },
+      {
+        title: "Spiritual & Pilgrimage Tours",
+        description: "Comfortable, carefully planned visits to important spiritual destinations.",
+        icon: Heart,
+        items: [
+          { title: "North India Circuit", description: "Varanasi, Haridwar, Rishikesh, Prayagraj, Badrinath, Pushkar, Ayodhya.", tags: ["Varanasi", "Rishikesh"], image: "https://images.pexels.com/photos/7178726/pexels-photo-7178726.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "Himalayan & Buddhist", description: "Spiti Valley, Dharamshala, Leh.", tags: ["Spiti Valley", "Leh"], image: "https://images.pexels.com/photos/3636151/pexels-photo-3636151.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "South India Circuit", description: "Tirupati, Rameswaram, Tiruvannamalai, Nellore.", tags: ["Tirupati", "Rameswaram"], image: "https://images.pexels.com/photos/3152124/pexels-photo-3152124.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "Multi-Faith Destinations", description: "Amritsar, Ajmer, Mumbai.", tags: ["Amritsar", "Ajmer"], image: "https://images.pexels.com/photos/2087391/pexels-photo-2087391.jpeg?auto=compress&cs=tinysrgb&w=600" },
+        ],
+      },
+      {
+        title: "Top Snowfall Destinations",
+        description: "Winter itineraries designed around snow views, seasonal activities and cosy stays.",
+        icon: Sparkles,
+        items: [
+          { title: "Kashmir & Himachal", description: "Kashmir, Gulmarg, Pahalgam, Manali, Shimla, Spiti Valley, Kasol.", tags: ["Gulmarg", "Manali", "Shimla"], image: "https://images.pexels.com/photos/700871/pexels-photo-700871.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "Uttarakhand & Northeast", description: "Auli, Sikkim, Lachung, Darjeeling, Tawang.", tags: ["Auli", "Sikkim", "Darjeeling"], image: "https://images.pexels.com/photos/1125212/pexels-photo-1125212.jpeg?auto=compress&cs=tinysrgb&w=600" },
         ],
       },
     ],
@@ -63,101 +98,70 @@ const catalogs = {
   international: {
     eyebrow: "Explore the world",
     title: "Top International Destinations",
-    subtitle: "One world. Endless possibilities.",
-    description:
-      "Browse popular, budget-friendly, honeymoon, luxury, European and emerging international holiday ideas.",
+    subtitle: "Premium Travel Packages | Best Deals | Trusted Service",
+    description: "Explore the world with us through popular, budget-friendly, honeymoon, luxury, European and emerging international holiday ideas.",
     icon: Globe2,
     accent: "from-[#061f3b] to-[#13a5d8]",
-    summary: ["Worldwide destinations", "Honeymoon and family tours", "Tailored travel planning"],
+    summary: ["Budget: ₹50K - ₹90K", "Mid-Range: ₹90K - ₹1.5L", "Premium: ₹2L - ₹5L+"],
+    pricingCards: [
+      { title: "Budget Packages", price: "₹50K - ₹90K", subtitle: "Best Value Options" },
+      { title: "Mid-Range Packages", price: "₹90K - ₹1.5L", subtitle: "Standard Comfort" },
+      { title: "Premium Packages", price: "₹2L - ₹5L+", subtitle: "Luxury Experiences" }
+    ],
     sections: [
       {
-        title: "International holiday collection",
-        description: "Start with the holiday style that best matches your plans.",
-        icon: Plane,
-        items: [
-          { title: "Popular favourites", description: "High-demand destinations with a broad choice of attractions and experiences.", tags: ["Best sellers", "First-time travellers"], image: "https://images.pexels.com/photos/3769138/pexels-photo-3769138.jpeg?auto=compress&cs=tinysrgb&w=600" },
-          { title: "Budget-friendly tours", description: "Value-conscious international journeys with memorable culture and sightseeing.", tags: ["Great value", "Short-haul options"], image: "https://images.pexels.com/photos/2104152/pexels-photo-2104152.jpeg?auto=compress&cs=tinysrgb&w=600" },
-          { title: "Beach & honeymoon", description: "Romantic island escapes, tropical resorts and relaxed coastal itineraries.", tags: ["Couples", "Beaches", "Resorts"], image: "https://images.pexels.com/photos/1024984/pexels-photo-1024984.jpeg?auto=compress&cs=tinysrgb&w=600" },
-          { title: "Luxury & Europe", description: "Premium stays, scenic routes and iconic European city experiences.", tags: ["Luxury", "Europe", "Premium stays"], image: "https://images.pexels.com/photos/1125212/pexels-photo-1125212.jpeg?auto=compress&cs=tinysrgb&w=600" },
-          { title: "Trending destinations", description: "Emerging travel choices for guests looking for something fresh and distinctive.", tags: ["Trending", "New experiences"], image: "https://images.pexels.com/photos/2087391/pexels-photo-2087391.jpeg?auto=compress&cs=tinysrgb&w=600" },
-          { title: "Custom journeys", description: "Combine destinations, hotel preferences and sightseeing into a personalised plan.", tags: ["Tailor-made", "Flexible duration"], image: "https://images.pexels.com/photos/2450296/pexels-photo-2450296.jpeg?auto=compress&cs=tinysrgb&w=600" },
-        ],
-      },
-      {
         title: "Most Popular & High-Demand Destinations",
-        description: "Three versatile favourites for shopping, family attractions and vibrant city experiences.",
+        description: "Amazing Places. Unforgettable Memories.",
         icon: Landmark,
         items: [
-          { title: "UAE", description: "Modern city experiences, desert activities, iconic architecture and premium shopping.", tags: ["Dubai", "City break", "Desert"], image: "https://images.pexels.com/photos/3152124/pexels-photo-3152124.jpeg?auto=compress&cs=tinysrgb&w=600" },
-          { title: "Singapore", description: "Family-friendly attractions, waterfront landmarks, gardens and excellent connectivity.", tags: ["Family", "Attractions", "City"], image: "https://images.pexels.com/photos/1682748/pexels-photo-1682748.jpeg?auto=compress&cs=tinysrgb&w=600" },
-          { title: "Thailand", description: "A flexible mix of beaches, nightlife, temples, shopping and island excursions.", tags: ["Bangkok", "Phuket", "Beaches"], image: "https://images.pexels.com/photos/3058827/pexels-photo-3058827.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "UAE (Dubai / Abu Dhabi)", description: "Experience luxury shopping, thrilling desert safaris, and the iconic Burj Khalifa.", tags: ["₹90K - ₹1.5L", "Luxury Shopping", "Desert Safari", "Burj Khalifa"], image: "https://images.pexels.com/photos/3769138/pexels-photo-3769138.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "Singapore", description: "World-class attractions including Universal Studios, Sentosa Island, and vibrant city experiences.", tags: ["₹90K - ₹1.5L", "Universal Studios", "Sentosa Island", "City Experience"], image: "https://images.pexels.com/photos/3152124/pexels-photo-3152124.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "Thailand", description: "Beautiful beaches in Phuket and Krabi, paired with the legendary Bangkok nightlife.", tags: ["₹50K - ₹90K", "Phuket", "Krabi", "Bangkok Nightlife"], image: "https://images.pexels.com/photos/1682748/pexels-photo-1682748.jpeg?auto=compress&cs=tinysrgb&w=600" },
         ],
       },
       {
         title: "Budget-Friendly International Packages",
-        description: "Value-led journeys with culture, scenery and comfortable short-haul travel options.",
+        description: "Perfect for LTC & Economical Travel. Best value for money.",
         icon: MapPin,
         items: [
-          { title: "Nepal", description: "Mountain scenery, spiritual landmarks and relaxed cultural experiences close to home.", tags: ["Mountains", "Culture", "Value"], image: "https://images.pexels.com/photos/4038869/pexels-photo-4038869.jpeg?auto=compress&cs=tinysrgb&w=600" },
-          { title: "Vietnam", description: "Historic cities, beautiful bays, local food and varied landscapes at excellent value.", tags: ["Culture", "Food", "Scenery"], image: "https://images.pexels.com/photos/1483053/pexels-photo-1483053.jpeg?auto=compress&cs=tinysrgb&w=600" },
-          { title: "Sri Lanka", description: "Beaches, wildlife, tea country and heritage locations in one compact itinerary.", tags: ["Beaches", "Wildlife", "Heritage"], image: "https://images.pexels.com/photos/2166559/pexels-photo-2166559.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "Nepal", description: "Explore Kathmandu, Pokhara, and witness the breathtaking Everest views.", tags: ["₹50K - ₹90K", "Kathmandu", "Pokhara", "Everest Views"], image: "https://images.pexels.com/photos/3408744/pexels-photo-3408744.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "Vietnam", description: "Cruise through Halong Bay, explore historic Hanoi, and relax on beautiful beaches.", tags: ["₹50K - ₹90K", "Halong Bay", "Hanoi", "Beaches"], image: "https://images.pexels.com/photos/3058827/pexels-photo-3058827.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "Sri Lanka", description: "A perfect blend of pristine beaches, ancient culture, and exotic wildlife.", tags: ["₹50K - ₹90K", "Beaches", "Culture", "Wildlife"], image: "https://images.pexels.com/photos/4038869/pexels-photo-4038869.jpeg?auto=compress&cs=tinysrgb&w=600" },
         ],
       },
       {
         title: "Beach & Honeymoon Destinations",
-        description: "Romantic tropical holidays designed around privacy, resorts and memorable experiences.",
+        description: "Perfect for Love & Memories. Create memories that last forever.",
         icon: Heart,
         items: [
-          { title: "Maldives", description: "Private island resorts, turquoise lagoons and peaceful overwater stays.", tags: ["Honeymoon", "Island resort", "Luxury"], image: "https://images.pexels.com/photos/700871/pexels-photo-700871.jpeg?auto=compress&cs=tinysrgb&w=600" },
-          { title: "Bali", description: "Romantic villas, temples, beaches, wellness and scenic day trips.", tags: ["Villas", "Culture", "Wellness"], image: "https://images.pexels.com/photos/1797161/pexels-photo-1797161.jpeg?auto=compress&cs=tinysrgb&w=600" },
-          { title: "Mauritius", description: "Beautiful beaches, resort experiences and activities for couples and families.", tags: ["Resorts", "Beaches", "Couples"], image: "https://images.pexels.com/photos/3636151/pexels-photo-3636151.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "Maldives", description: "Iconic water villas, luxury resorts, and the ultimate honeymoon paradise.", tags: ["₹2L - ₹5L+", "Water Villas", "Luxury Resorts", "Honeymoon"], image: "https://images.pexels.com/photos/1483053/pexels-photo-1483053.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "Bali (Indonesia)", description: "Stunning beautiful beaches, spiritual temples, and vibrant nightlife.", tags: ["₹90K - ₹1.5L", "Beautiful Beaches", "Spiritual Temples", "Vibrant Nightlife"], image: "https://images.pexels.com/photos/2166559/pexels-photo-2166559.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "Mauritius", description: "Ideal for family trips, destination weddings, and a premium luxury experience.", tags: ["₹90K - ₹1.5L", "Family Trips", "Destination Weddings", "Luxury"], image: "https://images.pexels.com/photos/1024984/pexels-photo-1024984.jpeg?auto=compress&cs=tinysrgb&w=600" },
         ],
       },
       {
         title: "Luxury & Europe Tour Packages",
-        description: "Iconic cities, scenic routes and premium European experiences.",
+        description: "Luxury Experience Starts Here. Europe calling, experience the best!",
         icon: Crown,
         items: [
-          { title: "France", description: "Paris landmarks, art, dining and elegant city experiences.", tags: ["Paris", "Culture", "Luxury"], image: "https://images.pexels.com/photos/1162607/pexels-photo-1162607.jpeg?auto=compress&cs=tinysrgb&w=600" },
-          { title: "Switzerland", description: "Alpine landscapes, panoramic train journeys and picture-perfect towns.", tags: ["Alps", "Scenic trains", "Nature"], image: "https://images.pexels.com/photos/3184339/pexels-photo-3184339.jpeg?auto=compress&cs=tinysrgb&w=600" },
-          { title: "Italy", description: "Historic cities, celebrated cuisine, architecture and romantic routes.", tags: ["Rome", "Venice", "Cuisine"], image: "https://images.pexels.com/photos/1595385/pexels-photo-1595385.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "France (Paris)", description: "Visit the iconic Eiffel Tower, enjoy world-class shopping, and experience pure romance.", tags: ["₹2L - ₹5L+", "Eiffel Tower", "Shopping", "Romance"], image: "https://images.pexels.com/photos/1125212/pexels-photo-1125212.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "Switzerland", description: "Breathtaking Alps, scenic train journeys, and unforgettable snow experiences.", tags: ["₹2L - ₹5L+", "Alps", "Scenic Trains", "Snow Experience"], image: "https://images.pexels.com/photos/700871/pexels-photo-700871.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "Italy", description: "Explore the ancient streets of Rome, romantic Venice canals, and rich cultural history.", tags: ["₹2L - ₹5L+", "Rome", "Venice", "Culture & History"], image: "https://images.pexels.com/photos/1797161/pexels-photo-1797161.jpeg?auto=compress&cs=tinysrgb&w=600" },
         ],
       },
       {
         title: "Trending & Emerging Destinations",
-        description: "Distinctive experiences beyond the usual international holiday circuit.",
+        description: "New Places, New Experiences. Explore more, live more!",
         icon: Sparkles,
         items: [
-          { title: "Georgia", description: "Mountain landscapes, old towns, regional cuisine and excellent seasonal variety.", tags: ["Mountains", "Old towns", "Trending"], image: "https://images.pexels.com/photos/3282133/pexels-photo-3282133.jpeg?auto=compress&cs=tinysrgb&w=600" },
-          { title: "Philippines", description: "Island hopping, clear waters and laid-back tropical experiences.", tags: ["Islands", "Beaches", "Adventure"], image: "https://images.pexels.com/photos/1666012/pexels-photo-1666012.jpeg?auto=compress&cs=tinysrgb&w=600" },
-          { title: "Cambodia", description: "Ancient temples, cultural landmarks and welcoming city experiences.", tags: ["Temples", "Heritage", "Culture"], image: "https://images.pexels.com/photos/1586298/pexels-photo-1586298.jpeg?auto=compress&cs=tinysrgb&w=600" },
-        ],
-      },
-      {
-        title: "Our Travel Packages",
-        description: "Select a package style, then personalise the duration, stays and activities.",
-        icon: UsersRound,
-        items: [
-          { title: "Family holidays", description: "Balanced itineraries with comfortable stays and activities for different age groups.", tags: ["Family", "Flexible pace"], image: "https://images.pexels.com/photos/1450361/pexels-photo-1450361.jpeg?auto=compress&cs=tinysrgb&w=600" },
-          { title: "Honeymoon escapes", description: "Romantic destinations, special stays and memorable couple experiences.", tags: ["Couples", "Romantic"], image: "https://images.pexels.com/photos/2446702/pexels-photo-2446702.jpeg?auto=compress&cs=tinysrgb&w=600" },
-          { title: "Group journeys", description: "Coordinated travel plans for friends, colleagues and larger families.", tags: ["Groups", "Coordinated travel"], image: "https://images.pexels.com/photos/7178726/pexels-photo-7178726.jpeg?auto=compress&cs=tinysrgb&w=600" },
-          { title: "Premium experiences", description: "Luxury stays, private arrangements and carefully curated activities.", tags: ["Premium", "Private options"], image: "https://images.pexels.com/photos/3408744/pexels-photo-3408744.jpeg?auto=compress&cs=tinysrgb&w=600" },
-        ],
-      },
-      {
-        title: "Why Choose Booking Hospitality?",
-        description: "Personal support from initial ideas through final travel planning.",
-        icon: ShieldCheck,
-        items: [
-          { title: "Personalised planning", description: "Recommendations are shaped around your dates, guests, budget and interests.", tags: ["Tailored advice"], image: "https://images.pexels.com/photos/4006143/pexels-photo-4006143.jpeg?auto=compress&cs=tinysrgb&w=600" },
-          { title: "Verified options", description: "The travel desk reviews availability, inclusions and suitable service options.", tags: ["Reviewed choices"], image: "https://images.pexels.com/photos/3155666/pexels-photo-3155666.jpeg?auto=compress&cs=tinysrgb&w=600" },
-          { title: "Clear assistance", description: "Receive guidance on itinerary, documentation and the next booking steps.", tags: ["End-to-end support"], image: "https://images.pexels.com/photos/258154/pexels-photo-258154.jpeg?auto=compress&cs=tinysrgb&w=600" },
-          { title: "Flexible enquiries", description: "Share preferences first and confirm only after reviewing the proposed plan.", tags: ["No instant charge"], image: "https://images.pexels.com/photos/338504/pexels-photo-338504.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "Georgia", description: "Stunning landscapes, rich culture, delicious wine, and perfect for explorers.", tags: ["Stunning Landscapes", "Rich Culture", "Delicious Wine"], image: "https://images.pexels.com/photos/3636151/pexels-photo-3636151.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "Philippines", description: "Endless island hopping, crystal clear beaches, adventure activities, and picture-perfect destinations.", tags: ["Island Hopping", "Crystal Clear Beaches", "Adventure"], image: "https://images.pexels.com/photos/2450296/pexels-photo-2450296.jpeg?auto=compress&cs=tinysrgb&w=600" },
+          { title: "Cambodia", description: "Explore ancient temples, enjoy relaxing getaways, uncover hidden gems, and experience rich culture.", tags: ["Ancient Temples", "Relaxing Getaways", "Hidden Gems"], image: "https://images.pexels.com/photos/2087391/pexels-photo-2087391.jpeg?auto=compress&cs=tinysrgb&w=600" },
         ],
       },
     ],
   },
-} as const;
+};
 
 export default function HolidayPackageDetail({
   packageType,
@@ -180,23 +184,40 @@ export default function HolidayPackageDetail({
             All holiday packages
           </Link>
 
-          <div className="mt-14 max-w-4xl">
-            <span className="grid size-16 place-items-center rounded-2xl border border-white/15 bg-white/10 text-[#36c5f0] shadow-xl backdrop-blur">
-              <Icon className="size-8" />
-            </span>
-            <p className="mt-7 text-[11px] font-extrabold uppercase tracking-[.28em] text-[#36c5f0]">{catalog.eyebrow}</p>
-            <h1 className="mt-3 font-serif text-4xl leading-tight sm:text-6xl lg:text-7xl">{catalog.title}</h1>
-            <p className="mt-4 text-lg font-semibold text-white/85">{catalog.subtitle}</p>
-            <p className="mt-4 max-w-2xl text-sm leading-7 text-white/60">{catalog.description}</p>
+          <div className="mt-14 grid gap-12 lg:grid-cols-[1fr_auto]">
+            <div className="max-w-2xl">
+              <span className="grid size-16 place-items-center rounded-2xl border border-white/15 bg-white/10 text-[#36c5f0] shadow-xl backdrop-blur">
+                <Icon className="size-8" />
+              </span>
+              <p className="mt-7 text-[11px] font-extrabold uppercase tracking-[.28em] text-[#36c5f0]">{catalog.eyebrow}</p>
+              <h1 className="mt-3 font-serif text-4xl leading-tight sm:text-6xl lg:text-7xl">{catalog.title}</h1>
+              <p className="mt-4 text-lg font-semibold text-white/85">{catalog.subtitle}</p>
+              <p className="mt-4 max-w-2xl text-sm leading-7 text-white/60">{catalog.description}</p>
 
-            <div className="mt-7 flex flex-wrap gap-2">
-              {catalog.summary.map((item) => <span key={item} className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-bold text-white/75"><CheckCircle2 className="size-3.5 text-[#36c5f0]" />{item}</span>)}
+              <Link href={`/services/holiday-packages?type=${packageType}&step=enquire`} className={`mt-10 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r ${catalog.accent} px-8 py-4 text-sm font-bold text-white shadow-lg transition hover:scale-105`}>
+                Plan this holiday
+                <ArrowRight className="size-4" />
+              </Link>
             </div>
 
-            <Link href={`/services/holiday-packages?type=${packageType}&step=enquire`} className={`mt-8 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r ${catalog.accent} px-6 py-3.5 text-sm font-bold text-white shadow-lg`}>
-              Plan this holiday
-              <ArrowRight className="size-4" />
-            </Link>
+            {/* Pricing Cards Column */}
+            {catalog.pricingCards && (
+              <div className="flex w-full flex-col gap-4 lg:w-[380px] lg:pt-8">
+                {catalog.pricingCards.map((card) => (
+                  <div key={card.title} className="group relative flex items-center justify-between overflow-hidden rounded-2xl border border-white/20 bg-white/10 p-6 shadow-2xl backdrop-blur-md transition hover:bg-white/15 hover:shadow-[#13a5d8]/20">
+                    <div className="absolute inset-0 -z-10 bg-gradient-to-r from-white/0 via-white/5 to-white/0 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+                    <div>
+                      <h3 className="font-serif text-xl font-semibold text-white">{card.title}</h3>
+                      <p className="mt-1 text-xs text-white/60">{card.subtitle}</p>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#36c5f0]">Starting from</span>
+                      <p className="font-serif text-2xl font-bold text-white">{card.price}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -281,6 +302,12 @@ export default function HolidayPackageDetail({
           </Link>
         </div>
       </section>
+
+      {/* Custom Section for Domestic Pricing Table */}
+      {packageType === "domestic" && <DomesticPricingTable />}
+
+      {/* Custom Section for International Pricing Table */}
+      {packageType === "international" && <InternationalPricingTable />}
     </main>
   );
 }

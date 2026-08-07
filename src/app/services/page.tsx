@@ -10,6 +10,7 @@ const fallbackItems = [
   ["Bus tickets", "Reliable intercity and group transport options.", Bus, "/services/bus-ticket-booking", "https://images.pexels.com/photos/1178448/pexels-photo-1178448.jpeg?auto=compress&cs=tinysrgb&w=900"],
   ["Taxi services", "Airport transfers, local travel and outstation cabs.", Car, "/services/taxi-services", "https://images.pexels.com/photos/116675/pexels-photo-116675.jpeg?auto=compress&cs=tinysrgb&w=900"],
   ["Holiday packages", "Curated family, group and individual escapes.", Map, "/services/holiday-packages", "https://images.pexels.com/photos/417074/pexels-photo-417074.jpeg?auto=compress&cs=tinysrgb&w=900"],
+  ["Event management", "Professional corporate events and thematic celebrations.", CalendarDays, "/services/event-management", "https://images.pexels.com/photos/1190298/pexels-photo-1190298.jpeg?auto=compress&cs=tinysrgb&w=900"],
 ];
 
 const iconMap: Record<string, any> = {
@@ -69,21 +70,34 @@ export default async function Services() {
   };
 
   // Use API data if available, otherwise use fallback data mapped to the same structure
-  const displayServices = apiServices.length > 0 
+  const displayServices = apiServices.length > 0
     ? apiServices.map(s => ({
-        title: s.name || s.title || "",
-        description: s.short_description || s.description || "",
-        Icon: getIcon(s.slug, s.service_type),
-        link: isHolidayPackage(s) ? "/services/holiday-packages" : `/services/${s.slug}`,
-        image: s.banner_image || s.image || fallbackItems[0][4]
-      }))
+      title: s.name || s.title || "",
+      description: s.short_description || s.description || "",
+      Icon: getIcon(s.slug, s.service_type),
+      link: isHolidayPackage(s) ? "/services/holiday-packages" : `/services/${s.slug}`,
+      image: s.banner_image || s.image || fallbackItems[0][4]
+    }))
     : fallbackItems.map(item => ({
-        title: item[0],
-        description: item[1],
-        Icon: item[2],
-        link: item[3],
-        image: item[4]
-      }));
+      title: item[0],
+      description: item[1],
+      Icon: item[2],
+      link: item[3],
+      image: item[4]
+    }));
+
+  if (apiServices.length > 0 && !displayServices.some(s => s.title.toLowerCase().includes("event"))) {
+    const eventFallback = fallbackItems.find(item => typeof item[0] === 'string' && item[0].toLowerCase().includes("event"));
+    if (eventFallback) {
+      displayServices.push({
+        title: eventFallback[0] as string,
+        description: eventFallback[1] as string,
+        Icon: eventFallback[2] as any,
+        link: eventFallback[3] as string,
+        image: eventFallback[4] as string
+      });
+    }
+  }
 
 
   return (

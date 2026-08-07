@@ -122,14 +122,13 @@ export default async function EventsPage() {
             return (
               <article key={event.title} className="group min-w-[280px] snap-start overflow-hidden rounded-3xl border border-black/[.07] bg-white p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl lg:min-w-0">
                 <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-4">
+                  {event.logo ? (
+                    <div className="flex h-16 w-32 items-center justify-start">
+                      <img src={event.logo} alt={`${event.title} logo`} className="max-h-full max-w-full object-contain mix-blend-multiply" />
+                    </div>
+                  ) : (
                     <span className={`grid size-12 place-items-center rounded-2xl ${event.accent} text-[#061f3b] shrink-0`}><Icon className="size-6" /></span>
-                    {event.logo && (
-                      <div className="flex h-12 w-20 items-center overflow-hidden">
-                        <img src={event.logo} alt={`${event.title} logo`} className="max-h-full max-w-full object-contain mix-blend-multiply" />
-                      </div>
-                    )}
-                  </div>
+                  )}
                   <span className="font-serif text-4xl text-[#062b50]/10 shrink-0">{event.number}</span>
                 </div>
                 <p className="mt-7 text-[10px] font-bold uppercase tracking-[.18em] text-[#087fbe]">{event.category}</p>

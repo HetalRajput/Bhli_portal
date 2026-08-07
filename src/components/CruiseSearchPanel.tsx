@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, Search, XCircle } from "lucide-react";
+import { ChevronDown, XCircle } from "lucide-react";
 import { useState } from "react";
 
 type CruiseField = "destination" | "port" | "month" | "nights";
@@ -116,8 +116,10 @@ export default function CruiseSearchPanel({
               </button>
             );
           })}
-          <div className="col-span-2 grid min-h-[92px] place-items-center bg-white sm:col-span-2 lg:col-span-1 lg:min-h-[102px]">
-            <button type="button" onClick={runSearch} aria-label="Continue with selected cruise preferences" className="grid size-[68px] place-items-center rounded-full bg-gradient-to-br from-[#0875b7] to-[#13a5d8] text-white shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl"><Search className="size-6" /></button>
+          <div className="col-span-2 flex items-center justify-center bg-white sm:col-span-2 lg:col-span-1 lg:min-h-[102px] px-4">
+            <button type="button" onClick={runSearch} aria-label="Continue with selected cruise preferences" className="w-full py-3 px-4 rounded-xl bg-gradient-to-br from-[#0875b7] to-[#13a5d8] text-white text-xs font-bold shadow-md transition hover:-translate-y-0.5 hover:shadow-lg">
+              Search
+            </button>
           </div>
         </div>
       </div>
