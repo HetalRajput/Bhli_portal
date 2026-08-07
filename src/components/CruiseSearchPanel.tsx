@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronDown, XCircle } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 type CruiseField = "destination" | "port" | "month" | "nights";
 
@@ -17,7 +17,7 @@ type CruiseSearchPanelProps = {
   onSearch: () => void;
 };
 
-const destinationGroups = [
+const initialDestinations = [
   { name: "India", options: ["Goa", "Mumbai", "Lakshadweep", "Chennai", "Kochi", "Puducherry", "Visakhapatnam"] },
   { name: "Indian Ocean", options: ["Hambantota", "Jaffna", "Trincomalee", "Colombo", "Malé"] },
   { name: "Southeast Asia", options: ["Phuket", "Langkawi", "Kuala Lumpur", "Singapore"] },
@@ -25,7 +25,7 @@ const destinationGroups = [
   { name: "Australia & Oceania", options: ["Sydney", "Brisbane", "Auckland"] },
 ];
 
-const portGroups = [
+const initialPorts = [
   { name: "India", options: ["Goa", "Mumbai", "Chennai", "Kochi", "Visakhapatnam"] },
   { name: "Southeast Asia", options: ["Singapore", "Phuket", "Port Klang"] },
   { name: "Middle East", options: ["Dubai", "Abu Dhabi", "Doha"] },
@@ -52,12 +52,50 @@ export default function CruiseSearchPanel({
   onNightsChange,
   onSearch,
 }: CruiseSearchPanelProps) {
+  const [destinationGroups, setDestinationGroups] = useState(initialDestinations);
+  const [portGroups, setPortGroups] = useState(initialPorts);
   const [openField, setOpenField] = useState<CruiseField | null>("destination");
   const [selectionError, setSelectionError] = useState("");
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth();
   const years = [currentYear, currentYear + 1, currentYear + 2];
+
+  useEffect(() => {
+    let active = true;
+    Promise.all([
+      fetch("https://bhli-backend.onrender.com/api/bookings/cruise/destinations/").then((r) => r.json()),
+      fetch("https://bhli-backend.onrender.com/api/bookings/cruise/ports/").then((r) => r.json())
+    ])
+      .then(([destRes, portRes]) => {
+        if (!active) return;
+        if (destRes?.success && Array.isArray(destRes.data)) {
+          const dests = destRes.data
+            .map((region: any) => ({
+              name: region.region_name,
+              options: region.destinations.map((d: any) => d.name),
+            }))
+            .filter((r: any) => r.options.length > 0);
+          setDestinationGroups(dests);
+        }
+        if (portRes?.success && Array.isArray(portRes.data)) {
+          const ports = portRes.data
+            .map((region: any) => ({
+              name: region.region_name,
+              options: region.ports.map((p: any) => p.name),
+            }))
+            .filter((r: any) => r.options.length > 0);
+          setPortGroups(ports);
+        }
+      })
+      .catch((err) => {
+        console.error("Error loading cruise destinations/ports:", err);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const fields: Array<{ key: CruiseField; eyebrow: string; placeholder: string; value: string }> = [
     { key: "destination", eyebrow: "Select Destination", placeholder: "Where to?", value: destination },

@@ -105,11 +105,26 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
     }
     if (!serviceId || !Number.isInteger(Number(serviceId))) return setError("This service is not available for booking right now.");
     if (serviceSlug === "hotel-reservations" && (!selectedItemId || !Number.isInteger(Number(selectedItemId)))) return setError("Please select a valid hotel before booking.");
-    if (isCruiseBooking && (!cruiseMonth || !cruiseNights)) return setError("Please select the travel month and number of nights in the cruise search above.");
-    if (isCruiseBooking && values.departure_date && !String(values.departure_date).startsWith(cruiseMonth)) return setError("The sailing date must be inside your selected travel month.");
-    const missingField = config.fields.find((field) => field.required && (values[field.key] === "" || values[field.key] === undefined));
-    if (missingField) return setError(`Please complete ${missingField.label.toLowerCase()}.`);
-    if (guests.some((guest) => guest.name.trim().length < 2 || Number(guest.age) < 1 || Number(guest.age) > 120)) return setError("Enter a valid name and age for every guest.");
+    
+    if (isCruiseBooking) {
+      if (!values.destination) return setError("Please select a cruise destination in the search panel above.");
+      if (!values.departure_port) return setError("Please select a departure port in the search panel above.");
+      if (!cruiseMonth) return setError("Please select a travel month in the search panel above.");
+    } else {
+      const missingField = config.fields.find((field) => field.required && (values[field.key] === "" || values[field.key] === undefined));
+      if (missingField) return setError(`Please complete ${missingField.label.toLowerCase()}.`);
+    }
+
+    for (let i = 0; i < guests.length; i++) {
+      const guest = guests[i];
+      if (guest.name.trim().length < 2) {
+        return setError(`Please enter a valid name (at least 2 characters) for Traveller ${i + 1}.`);
+      }
+      const ageVal = Number(guest.age);
+      if (isNaN(ageVal) || ageVal < 1 || ageVal > 120) {
+        return setError(`Please enter a valid age (1-120) for Traveller ${i + 1}.`);
+      }
+    }
     if (!consent) return setError("Please consent to contact before submitting the booking request.");
 
     const start = String(values.check_in_date || values.start_date || values.departure_date || values.travel_start_date || values.pickup_date || "");
@@ -123,12 +138,24 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
       consent_to_contact: consent,
     };
     if (selectedItemId) payload.service_item = Number(selectedItemId);
-    config.fields.forEach((field) => {
-      const value = values[field.key];
-      if (value === "" || value === undefined) return;
-      payload[field.key] = field.kind === "number" ? Number(value) : value;
-    });
-    if (isCruiseBooking) payload.number_of_passengers = guests.length;
+
+    if (isCruiseBooking) {
+      payload.destination = String(values.destination);
+      payload.departure_port = String(values.departure_port);
+      if (cruiseMonth && cruiseMonth.includes("-")) {
+        const [year, month] = cruiseMonth.split("-");
+        payload.departure_month = month;
+        payload.departure_year = year;
+      }
+      payload.number_of_passengers = guests.length;
+      if (cruiseNights) payload.nights = cruiseNights;
+    } else {
+      config.fields.forEach((field) => {
+        const value = values[field.key];
+        if (value === "" || value === undefined) return;
+        payload[field.key] = field.kind === "number" ? Number(value) : value;
+      });
+    }
 
     successChime.arm();
     setSubmitting(true);
@@ -159,7 +186,8 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
       reference={reference}
       serviceName={selectedTitle}
       itemLabel={selectedItemName ? "Selected hotel" : "Selected service"}
-      heading="Your booking request is on its way"
+      heading="Your booking request is successfully saved"
+      description="Our agent will contact you shortly, thank you!"
       backHref="/services"
       backLabel="Back to services"
     />
@@ -213,13 +241,15 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
             </header>
 
             <form id={formId} onSubmit={submit} className="flex-1 px-6 py-7 md:px-9" noValidate>
-              <FormSection number="01" title="Service details" description="Provide the information required for this booking.">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  {visibleFields.map((field) => <DynamicField key={field.key} field={field} value={values[field.key]} update={update} minDate={isCruiseBooking && field.key === "departure_date" ? cruiseDateMinimum : dateMinimum} maxDate={isCruiseBooking && field.key === "departure_date" ? cruiseDateMaximum : undefined} />)}
-                </div>
-              </FormSection>
+              {!isCruiseBooking && (
+                <FormSection number="01" title="Service details" description="Provide the information required for this booking.">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {visibleFields.map((field) => <DynamicField key={field.key} field={field} value={values[field.key]} update={update} minDate={dateMinimum} />)}
+                  </div>
+                </FormSection>
+              )}
 
-              <FormSection number="02" title="Traveller information" description="Add one row for every traveller included in the request.">
+              <FormSection number={isCruiseBooking ? "01" : "02"} title="Traveller information" description="Add one row for every traveller included in the request.">
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
                   <p className="text-xs font-semibold text-slate-500">{guests.length} traveller{guests.length === 1 ? "" : "s"} added</p>
                   <button type="button" onClick={addGuest} disabled={guests.length >= 8} className="inline-flex items-center gap-2 rounded-xl border border-[#087fbe]/20 bg-[#edf9fd] px-4 py-2 text-xs font-bold text-[#087fbe] transition hover:border-[#13a5d8] hover:bg-[#e3f5fb] disabled:cursor-not-allowed disabled:opacity-45"><CirclePlus className="size-4" />Add traveller</button>
@@ -236,7 +266,7 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
                 </div>
               </FormSection>
 
-              <FormSection number="03" title="Final details" description="Share preferences and confirm contact permission.">
+              <FormSection number={isCruiseBooking ? "02" : "03"} title="Final details" description="Share preferences and confirm contact permission.">
                 <label className="block"><span className="mb-2 block text-xs font-bold text-[#456078]">Additional message</span><span className="flex gap-3 rounded-xl border border-slate-200 bg-white p-3 transition focus-within:border-[#13a5d8] focus-within:ring-4 focus-within:ring-[#13a5d8]/10"><MessageSquareText className="mt-1 size-5 shrink-0 text-[#087fbe]" /><textarea maxLength={2000} rows={4} value={message} onChange={(event) => setMessage(event.target.value)} placeholder="Preferences or information our team should know" className="min-w-0 flex-1 resize-none text-sm outline-none" /></span></label>
                 <label className="mt-4 flex items-start gap-3 rounded-xl bg-[#f2f9fc] p-4 text-xs leading-5 text-slate-600"><input required type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} className="mt-0.5 size-4 accent-[#087fbe]" /><span>I consent to being contacted about this booking request.</span></label>
               </FormSection>

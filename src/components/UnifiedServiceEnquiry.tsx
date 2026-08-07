@@ -115,7 +115,7 @@ function UnifiedServiceEnquiryInner({ serviceSlug }: { serviceSlug?: string }) {
     }
   }
 
-  if (reference) return <BookingSuccessModal reference={reference} serviceName={title} heading="Your service request is on its way" />;
+  if (reference) return <BookingSuccessModal reference={reference} serviceName={title} heading="Your booking request is successfully saved" description="Our agent will contact you shortly, thank you!" />;
 
   return (
     <div className="min-h-screen bg-[#edf5f9] pb-10 text-[#122b42]">

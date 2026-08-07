@@ -20,8 +20,8 @@ export default function BookingSuccessModal({
   hotelName,
   serviceName,
   itemLabel,
-  heading = hotelName ? "Your stay is being arranged" : "Your request is being arranged",
-  description = "Our reservation team will verify availability and contact you with the next steps.",
+  heading = hotelName ? "Your stay is being arranged" : "Your booking request is successfully saved",
+  description = "Our agent will contact you shortly, thank you!",
   backHref = hotelName ? "/services/hotel-reservations" : "/services",
   backLabel = hotelName ? "Back to hotels" : "Back to services",
 }: BookingSuccessModalProps) {

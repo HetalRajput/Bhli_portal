@@ -94,7 +94,16 @@ export default function DocumentedBookingForm({ serviceSlug }: { serviceSlug: st
     }
     if (!serviceId || !Number.isInteger(Number(serviceId))) return setError("This service is not available for booking right now.");
     if (serviceSlug === "hotel-reservations" && (!selectedItemId || !Number.isInteger(Number(selectedItemId)))) return setError("Please select a valid hotel before booking.");
-    if (guests.some((guest) => guest.name.trim().length < 2 || Number(guest.age) < 1 || Number(guest.age) > 120)) return setError("Enter a valid name and age for every guest.");
+    for (let i = 0; i < guests.length; i++) {
+      const guest = guests[i];
+      if (guest.name.trim().length < 2) {
+        return setError(`Please enter a valid name (at least 2 characters) for Traveller ${i + 1}.`);
+      }
+      const ageVal = Number(guest.age);
+      if (isNaN(ageVal) || ageVal < 1 || ageVal > 120) {
+        return setError(`Please enter a valid age (1-120) for Traveller ${i + 1}.`);
+      }
+    }
     if (!consent) return setError("Please consent to contact before submitting the booking request.");
 
     const start = String(values.check_in_date || values.start_date || values.departure_date || values.travel_start_date || values.pickup_date || "");
