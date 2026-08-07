@@ -26,7 +26,7 @@ const events: EventCardData[] = [
     location: "Online Podcast",
     schedule: "Available Now",
     image: "/Asset/podcast-nimish-jain.jpg",
-    link: "#",
+    link: "https://youtu.be/FPdlfJR2BpQ?si=XSim67FPGKOaHJWa",
     icon: Mic,
   },
   {
@@ -138,6 +138,8 @@ export default function UpcomingEventCard() {
                       
                       <Link 
                         href={event.link} 
+                        target={event.link.startsWith("http") ? "_blank" : undefined}
+                        rel={event.link.startsWith("http") ? "noopener noreferrer" : undefined}
                         className={`mt-6 flex items-center justify-center gap-2 rounded-xl bg-[#13a5d8] px-5 py-3.5 text-sm font-bold text-[#061f3b] transition hover:bg-white ${
                           isActive ? "pointer-events-auto" : "pointer-events-none opacity-50"
                         }`}
