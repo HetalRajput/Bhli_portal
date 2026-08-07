@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertCircle, ArrowLeft, Ban, CalendarDays, Clock3, Hash, LoaderCircle, MapPin, Plane, RefreshCw, ShieldCheck, Ticket, UsersRound } from "lucide-react";
+import { AlertCircle, ArrowLeft, Ban, CalendarDays, Clock3, Hash, LoaderCircle, MapPin, Plane, RefreshCw, ShieldCheck, Ship, Ticket, UsersRound } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { bookingService, type BookingRequest } from "@/lib/api/bookings";
@@ -132,8 +132,8 @@ export default function BookingHistoryPanel({ bookings, loading, error, onBookin
           ...selectedBooking,
           status: String(responseData.status || "cancelled"),
           booking_status: "cancelled",
-          provider_status: responseData.provider_status || "Cancelled",
-          flight_booking_id: responseData.id || flightBookingId,
+          provider_status: String(responseData.provider_status || "Cancelled"),
+          flight_booking_id: (responseData.id as string | number | undefined) ?? flightBookingId,
           remarks: cancelReason.trim(),
         };
         setSelectedBooking(updated);
@@ -233,15 +233,29 @@ export default function BookingHistoryPanel({ bookings, loading, error, onBookin
 function BookingDetailPanel({ booking, showCancelForm, cancelReason, cancelError, cancelling, setCancelReason, setShowCancelForm, cancelBooking, close }: { booking: BookingRequest; showCancelForm: boolean; cancelReason: string; cancelError: string; cancelling: boolean; setCancelReason: (value: string) => void; setShowCancelForm: (value: boolean) => void; cancelBooking: () => void; close: () => void }) {
   const status = getStatus(booking.status);
   const flightBooking = isFlightBooking(booking);
+  const isCruiseBooking = String(booking.service_slug || "").includes("cruise");
   const normalizedStatus = String(booking.status).toLowerCase();
   const canCancel = flightBooking
     ? Boolean(booking.flight_booking_id) && !["cancelled", "refunded", "failed"].includes(normalizedStatus)
     : ["new", "pending", "processing"].includes(normalizedStatus);
-  const excludedKeys = new Set(["id", "user", "service", "service_name", "service_slug", "service_item", "service_item_title", "service_item_city", "service_item_location", "number_of_guests", "message", "consent_to_contact", "status", "remarks", "admin_notes", "guests", "created", "updated", "details", "booking_status", "flight_booking_id", "flight_id", "ref_id", "pnr", "ticket_number", "provider_status", "flight_passengers"]);
+  const cruiseExcludedKeys = new Set(["destination", "departure_port", "departure_month", "departure_year", "nights", "number_of_passengers"]);
+  const excludedKeys = new Set(["id", "user", "service", "service_name", "service_slug", "service_item", "service_item_title", "service_item_city", "service_item_location", "number_of_guests", "message", "consent_to_contact", "status", "remarks", "admin_notes", "guests", "created", "updated", "details", "booking_status", "flight_booking_id", "flight_id", "ref_id", "pnr", "ticket_number", "provider_status", "flight_passengers", ...(isCruiseBooking ? cruiseExcludedKeys : [])]);
   const serviceFields = Object.entries(booking).filter(([key, value]) => !excludedKeys.has(key) && value !== null && value !== undefined && value !== "" && typeof value !== "object");
   const flightPassengers = Array.isArray(booking.flight_passengers)
     ? booking.flight_passengers.filter((passenger): passenger is Record<string, unknown> => Boolean(passenger) && typeof passenger === "object")
     : [];
+  // Build cruise departure label e.g. "August 2025"
+  const cruiseDeparture = (() => {
+    const month = booking.departure_month as string | undefined;
+    const year = booking.departure_year as string | undefined;
+    if (!month && !year) return null;
+    if (month && year) {
+      const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+      const monthNum = parseInt(month, 10);
+      return `${monthNames[monthNum - 1] || month} ${year}`;
+    }
+    return [month, year].filter(Boolean).join(" ");
+  })();
   const backToHistory = () => { setShowCancelForm(false); close(); };
 
   return (
@@ -270,6 +284,23 @@ function BookingDetailPanel({ booking, showCancelForm, cancelReason, cancelError
             </div>
             {flightPassengers.length > 0 && <div className="mt-4 border-t border-[#0879b7]/10 pt-4"><p className="text-[9px] font-extrabold uppercase tracking-[.14em] text-[#0879b7]">Ticketed passengers</p><div className="mt-2 grid gap-2 sm:grid-cols-2">{flightPassengers.map((passenger, index) => <div key={String(passenger.id || index)} className="rounded-lg border border-slate-100 bg-white px-3 py-2.5"><p className="text-xs font-bold text-[#07152d]">{[passenger.title, passenger.first_name, passenger.last_name].filter(Boolean).join(" ") || `Passenger ${index + 1}`}</p><p className="mt-1 text-[10px] uppercase tracking-wider text-slate-400">{formatValue(passenger.passenger_type)}</p></div>)}</div></div>}
           </section>}
+
+          {isCruiseBooking && (booking.destination || booking.departure_port || cruiseDeparture || booking.nights || booking.number_of_passengers) && (
+            <section className="mt-4 rounded-xl border border-[#0a79bf]/15 bg-gradient-to-br from-white to-[#f0faff] p-4 shadow-sm">
+              <h3 className="flex items-center gap-2.5 text-[11px] font-extrabold uppercase tracking-[.14em] text-[#07152d]">
+                <span className="grid size-7 place-items-center rounded-full bg-[#ddf2fc] text-[#0879b7]"><Ship className="size-3.5" /></span>
+                Cruise details
+              </h3>
+              <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {booking.destination && <DetailValue label="Destination" value={String(booking.destination)} accent />}
+                {booking.departure_port && <DetailValue label="Departure port" value={String(booking.departure_port)} accent />}
+                {cruiseDeparture && <DetailValue label="Departure" value={String(cruiseDeparture)} accent />}
+                {booking.nights && <DetailValue label="Nights" value={`${String(booking.nights)} nights`} />}
+                {booking.number_of_passengers && <DetailValue label="Passengers" value={String(booking.number_of_passengers)} />}
+              </div>
+            </section>
+          )}
+
           {serviceFields.length > 0 && <section className="mt-4 rounded-xl border border-slate-100 bg-white p-4 shadow-sm"><h3 className="flex items-center gap-2.5 text-[11px] font-extrabold uppercase tracking-[.14em] text-[#07152d]"><span className="size-2 rounded-full bg-[#14a6d8]" />Service details</h3><div className="mt-3 grid gap-2 sm:grid-cols-2">{serviceFields.map(([key, value]) => <DetailValue key={key} label={formatLabel(key)} value={key.includes("date") ? formatDate(value) : value} />)}</div></section>}
           {booking.details && Object.keys(booking.details).length > 0 && <section className="mt-4 rounded-xl border border-[#0879b7]/10 bg-white p-4 shadow-sm"><h3 className="flex items-center gap-2.5 text-[11px] font-extrabold uppercase tracking-[.14em] text-[#07152d]"><span className="size-2 rounded-full bg-[#0879b7]" />Preferences and budget</h3><div className="mt-3 grid gap-2 sm:grid-cols-2">{Object.entries(booking.details).map(([key, value]) => <DetailValue key={key} label={formatLabel(key)} value={value} accent />)}</div></section>}
           {booking.guests?.length > 0 && <section className="mt-4 rounded-xl border border-slate-100 bg-white p-4 shadow-sm"><h3 className="flex items-center gap-2.5 text-[11px] font-extrabold uppercase tracking-[.14em] text-[#07152d]"><span className="size-2 rounded-full bg-emerald-500" />Guests</h3><div className="mt-3 grid gap-2 sm:grid-cols-2">{booking.guests.map((guest, index) => <div key={guest.id || `${guest.name}-${index}`} className="flex items-center justify-between gap-2.5 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2.5 text-xs"><span className="grid size-7 shrink-0 place-items-center rounded-full bg-white font-extrabold text-[#0879b7] shadow-sm">{index + 1}</span><b className="min-w-0 flex-1 truncate text-[#07152d]">{guest.name}</b><span className="shrink-0 capitalize text-[11px] text-slate-500">{guest.age} yrs · {guest.gender}</span></div>)}</div></section>}
@@ -279,8 +310,6 @@ function BookingDetailPanel({ booking, showCancelForm, cancelReason, cancelError
           {canCancel && <div className="mt-4 rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm sm:p-4">
             {!showCancelForm ? <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-sm font-bold text-[#07152d]">Need to change your plans?</p><p className="mt-1 text-xs leading-5 text-slate-500">{flightBooking ? "This will send a cancellation request to the flight provider for this confirmed booking." : "You can cancel while the reservation team is still reviewing this request."}</p></div><button type="button" onClick={() => setShowCancelForm(true)} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-bold text-rose-700 transition hover:-translate-y-0.5 hover:bg-rose-100"><Ban className="size-4" />{flightBooking ? "Cancel flight" : "Cancel request"}</button></div> : <div className="rounded-xl border border-rose-200 bg-rose-50/70 p-4 sm:p-5"><p className="flex items-center gap-2 text-sm font-bold text-rose-800"><AlertCircle className="size-4" />{flightBooking ? "Confirm flight cancellation" : "Confirm cancellation"}</p><p className="mt-2 text-xs leading-5 text-rose-700/75">{flightBooking ? "The flight provider will process this cancellation. Applicable airline charges may apply." : "The reservation team will be notified and this request cannot be restored from the website."}</p><textarea value={cancelReason} onChange={(event) => setCancelReason(event.target.value)} rows={3} maxLength={500} placeholder="Tell us why you are cancelling" className="mt-4 w-full resize-none rounded-xl border border-rose-200 bg-white p-3 text-sm outline-none transition focus:border-rose-400 focus:ring-4 focus:ring-rose-100" />{cancelError && <p role="alert" className="mt-2 text-xs font-semibold text-rose-700">{cancelError}</p>}<div className="mt-4 flex flex-col gap-3 sm:flex-row"><button type="button" onClick={cancelBooking} disabled={cancelling} className="inline-flex items-center justify-center gap-2 rounded-xl bg-rose-600 px-4 py-3 text-xs font-bold text-white shadow-sm transition hover:bg-rose-700 disabled:opacity-60">{cancelling ? <LoaderCircle className="size-4 animate-spin" /> : <Ban className="size-4" />}{flightBooking ? "Confirm flight cancellation" : "Confirm cancellation"}</button><button type="button" onClick={() => setShowCancelForm(false)} className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs font-bold text-slate-600 transition hover:bg-slate-50">Keep request</button></div></div>}
           </div>}
-
-          {!canCancel && <p className="mt-4 flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 text-[11px] font-semibold text-slate-500 shadow-sm"><span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#edf8fd]"><ShieldCheck className="size-3.5 text-[#0879b7]" /></span>This request is {status.label.toLowerCase()} and can no longer be cancelled online.</p>}
       </div>
     </section>
   );

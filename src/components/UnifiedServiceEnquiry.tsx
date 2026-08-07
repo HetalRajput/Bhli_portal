@@ -1,14 +1,25 @@
 "use client";
 
 import { FormEvent, Suspense, useEffect, useState } from "react";
-import { ArrowLeft, ArrowRight, CalendarDays, CheckCircle2, MapPin, MessageSquareText, Send, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, CalendarDays, CheckCircle2, ExternalLink, LoaderCircle, MapPin, MessageSquareText, Send, ShieldCheck, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import BookingSuccessModal from "@/components/BookingSuccessModal";
 import { bookingService } from "@/lib/api/bookings";
-import { getErrorMessage } from "@/lib/api/client";
+import { apiClient, getErrorMessage } from "@/lib/api/client";
 import { cmsService } from "@/lib/api/cms";
 import { useSuccessChime } from "@/hooks/useSuccessChime";
+
+type VendorLink = {
+  id?: number;
+  slug?: string;
+  title?: string;
+  vendor_name?: string;
+  tracking_url?: string;
+  service_name?: string;
+  service_slug?: string;
+  resolved_url?: string;
+};
 
 type ServiceData = {
   id?: number;
@@ -21,6 +32,10 @@ type ServiceData = {
   banner_image?: string | null;
   booking_mode?: "items" | "third_party" | "form";
   requires_service_item?: boolean;
+  vendor_links?: VendorLink[];
+  vendor_link?: string | null;
+  redirect_link?: string | null;
+  redirect_url?: string | null;
 };
 
 const fallbackBanner = "https://images.pexels.com/photos/3769138/pexels-photo-3769138.jpeg?auto=compress&cs=tinysrgb&w=1600";
@@ -48,11 +63,54 @@ function UnifiedServiceEnquiryInner({ serviceSlug }: { serviceSlug?: string }) {
 
   useEffect(() => {
     let active = true;
+
+    // Instant parallel fetch for catering services to redirect immediately without waiting for service detail API
+    if (slug === "catering-services" || slug.includes("catering")) {
+      apiClient.get("https://bhli-backend.onrender.com/api/base/vendors/catering/url/")
+        .then((res) => {
+          const finalUrl = res.data?.data?.url || res.data?.data?.redirect_url || res.data?.url || res.data?.redirect_url;
+          if (finalUrl && active) {
+            window.location.href = finalUrl;
+          }
+        })
+        .catch(() => {
+          // Fallback handled by main service detail load
+        });
+    }
+
     async function load() {
       try {
         const result = await cmsService.getServiceDetail(slug);
         if (result?.success && result.data) {
-          if (active) setService(result.data);
+          const serviceData: ServiceData = { ...result.data };
+          if (!serviceData.vendor_links && Array.isArray(result.vendor_links)) serviceData.vendor_links = result.vendor_links;
+          if (!serviceData.vendor_link) serviceData.vendor_link = result.vendor_link ?? result.redirect_link ?? result.redirect_url ?? null;
+          if (!serviceData.redirect_link) serviceData.redirect_link = result.redirect_link ?? null;
+          if (!serviceData.redirect_url) serviceData.redirect_url = result.redirect_url ?? null;
+          if (active) setService(serviceData);
+
+          // Pre-fetch tracking URLs in parallel as soon as service detail loads
+          if (Array.isArray(serviceData.vendor_links) && serviceData.vendor_links.length > 0) {
+            const updatedLinks = await Promise.all(
+              serviceData.vendor_links.map(async (v) => {
+                if (!v.tracking_url) return v;
+                try {
+                  const res = await apiClient.get(v.tracking_url);
+                  const finalUrl = res.data?.data?.url || res.data?.data?.redirect_url || res.data?.url || res.data?.redirect_url || v.tracking_url;
+                  return { ...v, resolved_url: finalUrl };
+                } catch {
+                  return v;
+                }
+              })
+            );
+            if (active) {
+              setService((prev) => (prev ? { ...prev, vendor_links: updatedLinks } : prev));
+            }
+          }
+          return;
+        }
+        if (result && (result.id || result.name || result.slug)) {
+          if (active) setService(result);
           return;
         }
         throw new Error("Service detail was not returned");
@@ -62,7 +120,7 @@ function UnifiedServiceEnquiryInner({ serviceSlug }: { serviceSlug?: string }) {
           const match = result?.data?.find((item: ServiceData) => item.slug === slug);
           if (active && match) setService(match);
         } catch {
-          // The fallback title keeps the enquiry usable if service metadata is unavailable.
+          // Fallback
         }
       } finally {
         if (active) setLoadingService(false);
@@ -83,6 +141,51 @@ function UnifiedServiceEnquiryInner({ serviceSlug }: { serviceSlug?: string }) {
   const bookingType = service?.service_type || serviceTypeMap[slug] || "service";
   const requiresJourney = ["flight", "bus", "train", "taxi"].includes(bookingType);
   const bookingMode = service?.booking_mode;
+  const vendorLinks: VendorLink[] = service?.vendor_links || [];
+  const isCatering = slug === "catering-services" || slug.includes("catering");
+  const [vendorLoading, setVendorLoading] = useState<number | null>(null);
+  const [vendorError, setVendorError] = useState("");
+
+  // Auto-redirect for catering services as soon as tracking URL resolves
+  useEffect(() => {
+    if (isCatering && vendorLinks.length > 0) {
+      const targetUrl = vendorLinks[0]?.resolved_url;
+      if (targetUrl) {
+        window.location.href = targetUrl;
+      }
+    }
+  }, [isCatering, vendorLinks]);
+
+  async function handleVendorRedirect(vendor: VendorLink, index: number) {
+    if (!vendor.tracking_url) return;
+    
+    // Open a new tab immediately to avoid popup blockers from async operations (do not pass 'noopener' so we retain window reference)
+    const newTab = window.open("about:blank", "_blank");
+    
+    setVendorLoading(index);
+    setVendorError("");
+    try {
+      const response = await apiClient.get(vendor.tracking_url);
+      const data = response.data;
+        
+      const finalUrl = data?.data?.url || data?.data?.redirect_url || data?.url || data?.redirect_url || data?.link || vendor.tracking_url;
+      
+      if (newTab && !newTab.closed) {
+        newTab.location.href = finalUrl;
+      } else {
+        window.open(finalUrl, "_blank", "noopener,noreferrer");
+      }
+    } catch {
+      // Fallback: use tracking_url directly
+      if (newTab && !newTab.closed) {
+        newTab.location.href = vendor.tracking_url;
+      } else {
+        window.open(vendor.tracking_url, "_blank", "noopener,noreferrer");
+      }
+    } finally {
+      setVendorLoading(null);
+    }
+  }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -116,6 +219,80 @@ function UnifiedServiceEnquiryInner({ serviceSlug }: { serviceSlug?: string }) {
   }
 
   if (reference) return <BookingSuccessModal reference={reference} serviceName={title} heading="Your booking request is successfully saved" description="Our agent will contact you shortly, thank you!" />;
+
+  // Catering Services handling — NEVER show enquiry form, always redirect or show loader
+  if (isCatering) {
+    const primaryVendor = vendorLinks[0];
+    const targetUrl = primaryVendor?.resolved_url;
+
+    return (
+      <div className="min-h-screen bg-[#edf5f9] pb-10 text-[#122b42]">
+        <section className="relative min-h-[390px] overflow-hidden bg-[#061f3b] px-5 pb-28 pt-8 text-white lg:px-8">
+          <img src={service?.banner_image || fallbackBanner} alt="" className="absolute inset-0 h-full w-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#061f3b]/95 via-[#061f3b]/76 to-[#061f3b]/25" />
+          <div className="relative mx-auto max-w-[1360px]">
+            <Link href="/services" className="inline-flex items-center gap-2 text-sm text-white/65 transition hover:text-white"><ArrowLeft className="size-4" /> All services</Link>
+            <p className="mt-8 text-[11px] font-extrabold uppercase tracking-[.28em] text-[#13a5d8]">Catering Services</p>
+            <h1 className="mt-3 max-w-4xl font-serif text-5xl leading-none md:text-7xl">{loadingService ? "Loading service..." : title}</h1>
+            <p className="mt-5 max-w-2xl text-sm leading-7 text-white/65">{description}</p>
+          </div>
+        </section>
+
+        <main className="relative z-10 mx-auto -mt-20 max-w-[860px] px-5 lg:px-8">
+          <div className="overflow-hidden rounded-[2rem] bg-white shadow-[0_28px_90px_rgba(6,31,59,.22)]">
+            <div className="relative overflow-hidden bg-gradient-to-br from-[#061f3b] to-[#0a4070] p-8 text-center text-white sm:p-12">
+              <div className="absolute -right-16 -top-16 size-56 rounded-full bg-[#13a5d8]/10 blur-3xl" />
+              <div className="absolute -bottom-16 -left-16 size-56 rounded-full bg-emerald-400/10 blur-3xl" />
+              <span className="relative mx-auto grid size-20 place-items-center rounded-2xl bg-white/10 text-[#13a5d8] backdrop-blur-sm">
+                <LoaderCircle className="size-9 animate-spin text-[#13a5d8]" />
+              </span>
+              <h2 className="relative mt-6 font-serif text-3xl sm:text-4xl">Redirecting to Catering Portal</h2>
+              <p className="relative mx-auto mt-3 max-w-md text-sm leading-6 text-white/65">
+                Our catering services are managed through our trusted vendor portal. Transferring you now...
+              </p>
+            </div>
+
+            <div className="p-8 text-center sm:p-12">
+              {vendorError && <p className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">{vendorError}</p>}
+              
+              <div className="my-4 flex flex-col items-center justify-center space-y-4">
+                <LoaderCircle className="size-10 animate-spin text-[#0879b7]" />
+                <p className="text-sm font-medium text-slate-600">Connecting to vendor website...</p>
+              </div>
+
+              {vendorLinks.map((vendor, index) => {
+                const url = vendor.resolved_url || vendor.tracking_url;
+                if (!url) return null;
+                return (
+                  <a
+                    key={vendor.id ?? index}
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => {
+                      if (!vendor.resolved_url) {
+                        e.preventDefault();
+                        handleVendorRedirect(vendor, index);
+                      }
+                    }}
+                    className="mt-6 inline-flex items-center gap-3 rounded-2xl bg-gradient-to-r from-[#0875b7] to-[#13a5d8] px-8 py-3.5 text-sm font-bold text-white shadow-lg shadow-[#087fbe]/20 transition hover:-translate-y-0.5"
+                  >
+                    <ExternalLink className="size-4" />
+                    Click here if you are not redirected automatically ({vendor.vendor_name || "Catering Vendor"})
+                  </a>
+                );
+              })}
+
+              <p className="mt-6 flex items-center justify-center gap-2 text-[11px] text-slate-400">
+                <ShieldCheck className="size-4 text-emerald-500" />
+                Secure external link · Transferring automatically
+              </p>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#edf5f9] pb-10 text-[#122b42]">

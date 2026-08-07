@@ -13,7 +13,8 @@ export default function ServicesTemplate({ children }: { children: ReactNode }) 
     routeSlug === "hotel-reservations" ||
     serviceSlug === "holiday-packages" ||
     serviceSlug === "event-management" ||
-    serviceSlug === "flight-booking";
+    serviceSlug === "flight-booking" ||
+    serviceSlug === "catering-services";
   const replaceWithUnifiedForm =
     pathname !== "/services" &&
     !usesCustomServicePage &&

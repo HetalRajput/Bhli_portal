@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, ReactNode, useEffect, useState } from "react";
-import { ArrowLeft, ArrowRight, CalendarDays, CheckCircle2, Clock3, CirclePlus, Hash, IndianRupee, MapPin, MessageSquareText, Send, ShieldCheck, Sparkles, Trash2, UserRound } from "lucide-react";
+import { ArrowLeft, ArrowRight, CalendarDays, Check, CheckCircle2, CheckSquare, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Clock3, CirclePlus, Hash, IndianRupee, MapPin, MessageSquareText, Search, Send, ShieldCheck, Sparkles, Trash2, UserRound, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import BookingSuccessModal from "@/components/BookingSuccessModal";
@@ -56,6 +56,7 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
   const [dateMinimum] = useState(today);
   const [cruiseMonth, setCruiseMonth] = useState("");
   const [cruiseNights, setCruiseNights] = useState<number | null>(null);
+  const [currentStep, setCurrentStep] = useState(1);
   const successChime = useSuccessChime();
   const formId = `booking-form-${serviceSlug}`;
 
@@ -96,6 +97,74 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
   const addGuest = () => setGuests((current) => current.length >= 8 ? current : [...current, newGuest()]);
   const removeGuest = (index: number) => setGuests((current) => current.length === 1 ? current : current.filter((_, guestIndex) => guestIndex !== index));
 
+  const visibleFields = isCruiseBooking
+    ? config.fields.filter((field) => !["destination", "departure_port", "return_date", "number_of_passengers"].includes(field.key))
+    : config.fields;
+
+  const validateStep = (step: number): boolean => {
+    setError("");
+    if (step === 1) {
+      if (isCruiseBooking) {
+        if (!values.destination) {
+          setError("Please select a cruise destination in the search panel above.");
+          return false;
+        }
+        if (!values.departure_port) {
+          setError("Please select a departure port in the search panel above.");
+          return false;
+        }
+        if (!cruiseMonth) {
+          setError("Please select a travel month in the search panel above.");
+          return false;
+        }
+      } else {
+        const missingField = visibleFields.find(
+          (field) => field.required && (values[field.key] === "" || values[field.key] === undefined)
+        );
+        if (missingField) {
+          setError(`Please complete ${missingField.label.toLowerCase()} in Step 1.`);
+          return false;
+        }
+      }
+      const start = String(values.check_in_date || values.start_date || values.departure_date || values.travel_start_date || values.pickup_date || "");
+      const end = String(values.check_out_date || values.end_date || values.return_date || values.travel_end_date || values.dropoff_date || "");
+      if (start && end && end < start) {
+        setError("The end or return date cannot be earlier than the start date.");
+        return false;
+      }
+      return true;
+    }
+
+    if (step === 2) {
+      for (let i = 0; i < guests.length; i++) {
+        const guest = guests[i];
+        if (guest.name.trim().length < 2) {
+          setError(`Please enter a valid name (at least 2 characters) for Traveller ${i + 1}.`);
+          return false;
+        }
+        const ageVal = Number(guest.age);
+        if (isNaN(ageVal) || ageVal < 1 || ageVal > 120) {
+          setError(`Please enter a valid age (1-120) for Traveller ${i + 1}.`);
+          return false;
+        }
+      }
+      return true;
+    }
+
+    return true;
+  };
+
+  const nextStep = () => {
+    if (validateStep(currentStep)) {
+      setCurrentStep((prev) => Math.min(prev + 1, 3));
+    }
+  };
+
+  const prevStep = () => {
+    setError("");
+    setCurrentStep((prev) => Math.max(prev - 1, 1));
+  };
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
@@ -105,31 +174,10 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
     }
     if (!serviceId || !Number.isInteger(Number(serviceId))) return setError("This service is not available for booking right now.");
     if (serviceSlug === "hotel-reservations" && (!selectedItemId || !Number.isInteger(Number(selectedItemId)))) return setError("Please select a valid hotel before booking.");
-    
-    if (isCruiseBooking) {
-      if (!values.destination) return setError("Please select a cruise destination in the search panel above.");
-      if (!values.departure_port) return setError("Please select a departure port in the search panel above.");
-      if (!cruiseMonth) return setError("Please select a travel month in the search panel above.");
-    } else {
-      const missingField = config.fields.find((field) => field.required && (values[field.key] === "" || values[field.key] === undefined));
-      if (missingField) return setError(`Please complete ${missingField.label.toLowerCase()}.`);
-    }
 
-    for (let i = 0; i < guests.length; i++) {
-      const guest = guests[i];
-      if (guest.name.trim().length < 2) {
-        return setError(`Please enter a valid name (at least 2 characters) for Traveller ${i + 1}.`);
-      }
-      const ageVal = Number(guest.age);
-      if (isNaN(ageVal) || ageVal < 1 || ageVal > 120) {
-        return setError(`Please enter a valid age (1-120) for Traveller ${i + 1}.`);
-      }
-    }
+    if (!validateStep(1) || !validateStep(2)) return;
+
     if (!consent) return setError("Please consent to contact before submitting the booking request.");
-
-    const start = String(values.check_in_date || values.start_date || values.departure_date || values.travel_start_date || values.pickup_date || "");
-    const end = String(values.check_out_date || values.end_date || values.return_date || values.travel_end_date || values.dropoff_date || "");
-    if (start && end && end < start) return setError("The end or return date cannot be earlier than the start date.");
 
     const payload: Record<string, unknown> = {
       service: Number(serviceId),
@@ -149,6 +197,61 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
       }
       payload.number_of_passengers = guests.length;
       if (cruiseNights) payload.nights = cruiseNights;
+    } else if (serviceSlug === "corporate-travel") {
+      const selectedServicesList = config.fields
+        .filter((field) => field.kind === "checkbox" && Boolean(values[field.key]))
+        .map((field) => field.label);
+
+      payload.services_required = selectedServicesList.join(", ");
+      payload.other_services_specified = String(values.other_services_specified || "");
+
+      payload.company_name = String(values.company_name || "");
+      payload.gst_number = String(values.gst_number || "");
+      payload.pan_number = String(values.pan_number || "");
+      payload.cin_number = String(values.cin_number || "");
+      payload.industry_type = String(values.industry_type || "");
+      payload.company_website = String(values.company_website || "");
+      payload.company_address = String(values.company_address || "");
+      payload.city = String(values.city || "");
+      payload.state = String(values.state || "");
+      payload.country = String(values.country || "");
+      payload.pin_code = String(values.pin_code || "");
+
+      payload.contact_person_name = String(values.contact_person_name || "");
+      payload.designation = String(values.designation || "");
+      payload.department = String(values.department || "");
+      payload.official_email = String(values.official_email || "");
+      payload.mobile_number = String(values.mobile_number || "");
+      payload.alternate_contact_number = String(values.alternate_contact_number || "");
+
+      if (values.travel_type) payload.travel_type = values.travel_type;
+      payload.travel_purpose = String(values.travel_purpose || "");
+      payload.from_city = String(values.from_city || "");
+      payload.to_city = String(values.to_city || "");
+      if (values.departure_date) payload.departure_date = String(values.departure_date);
+      if (values.return_date) payload.return_date = String(values.return_date);
+
+      if (values.number_of_adults !== "" && values.number_of_adults !== undefined) payload.number_of_adults = Number(values.number_of_adults);
+      if (values.number_of_children !== "" && values.number_of_children !== undefined) payload.number_of_children = Number(values.number_of_children);
+      if (values.number_of_infants !== "" && values.number_of_infants !== undefined) payload.number_of_infants = Number(values.number_of_infants);
+      if (values.number_of_travellers !== "" && values.number_of_travellers !== undefined) payload.number_of_travellers = Number(values.number_of_travellers);
+      if (values.number_of_rooms !== "" && values.number_of_rooms !== undefined) payload.number_of_rooms = Number(values.number_of_rooms);
+      if (values.number_of_vehicles !== "" && values.number_of_vehicles !== undefined) payload.number_of_vehicles = Number(values.number_of_vehicles);
+
+      payload.preferred_hotel_category = String(values.preferred_hotel_category || "");
+      payload.preferred_airline = String(values.preferred_airline || "");
+      payload.estimated_budget = String(values.estimated_budget || "");
+      payload.monthly_travel_volume = String(values.monthly_travel_volume || "");
+      payload.annual_travel_budget = String(values.annual_travel_budget || "");
+
+      payload.credit_facility_required = values.credit_facility_required === "true" || values.credit_facility_required === true;
+      payload.purchase_order_required = values.purchase_order_required === "true" || values.purchase_order_required === true;
+      payload.gst_invoice_required = values.gst_invoice_required === "true" || values.gst_invoice_required === true;
+      if (values.preferred_billing_cycle) payload.preferred_billing_cycle = values.preferred_billing_cycle;
+      payload.dedicated_account_manager_required = values.dedicated_account_manager_required === "true" || values.dedicated_account_manager_required === true;
+
+      payload.additional_requirements = message.trim() || String(values.additional_requirements || "");
+      payload.declaration_accepted = consent;
     } else {
       config.fields.forEach((field) => {
         const value = values[field.key];
@@ -175,11 +278,14 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
   const serviceTitle = serviceMeta?.name || serviceMeta?.title || config.title;
   const selectedTitle = selectedItemName || serviceTitle;
   const banner = selectedImage || serviceMeta?.banner_image || fallbackBanner;
-  const visibleFields = isCruiseBooking
-    ? config.fields.filter((field) => !["destination", "departure_port", "return_date", "number_of_passengers"].includes(field.key))
-    : config.fields;
   const cruiseDateMinimum = cruiseMonth && cruiseMonth > dateMinimum.slice(0, 7) ? `${cruiseMonth}-01` : dateMinimum;
   const cruiseDateMaximum = cruiseMonth ? lastDayOfMonth(cruiseMonth) : undefined;
+
+  const stepsList = [
+    { number: 1, title: isCruiseBooking ? "Cruise Search" : "Service Details", desc: "Requirements & specs" },
+    { number: 2, title: "Traveller Details", desc: "Guest names & ages" },
+    { number: 3, title: "Final Review", desc: "Preferences & submit" },
+  ];
 
   if (reference) return (
     <BookingSuccessModal
@@ -219,7 +325,7 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
           onSearch={() => document.getElementById("cruise-booking-details")?.scrollIntoView({ behavior: "smooth", block: "start" })}
         />}
         <div id={isCruiseBooking ? "cruise-booking-details" : undefined} className={`grid overflow-hidden rounded-[2rem] bg-white shadow-[0_28px_90px_rgba(6,31,59,.22)] lg:grid-cols-[.72fr_1.28fr] ${isCruiseBooking ? "mt-6 scroll-mt-24" : ""}`}>
-          <aside className="relative hidden overflow-hidden bg-[#061f3b] p-9 text-white lg:flex lg:min-h-[850px] lg:flex-col">
+          <aside className="relative hidden overflow-hidden bg-[#061f3b] p-9 text-white lg:flex lg:flex-col">
             <div className="absolute -bottom-24 -left-24 size-64 rounded-full border border-white/5 shadow-[0_0_0_45px_rgba(255,255,255,.025),0_0_0_90px_rgba(255,255,255,.018)]" />
             <span className="grid size-14 place-items-center rounded-2xl bg-white/10 text-[#13a5d8]"><Send className="size-7" /></span>
             <h2 className="mt-8 font-serif text-3xl">Complete your booking request</h2>
@@ -227,6 +333,14 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
             <div className="mt-8 space-y-4 text-sm text-white/75">
               {["Personal booking assistance", "Clear pricing review", "Verified service options"].map((item) => <p key={item} className="flex items-center gap-3"><CheckCircle2 className="size-4 text-[#13a5d8]" />{item}</p>)}
             </div>
+
+            {/* Side summary of filled details */}
+            <div className="mt-8 space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4 text-xs text-white/70">
+              <p className="font-bold text-[#13a5d8] uppercase tracking-wider text-[10px]">Form Summary</p>
+              <p className="flex justify-between"><span>Step:</span> <b className="text-white">Step {currentStep} of 3</b></p>
+              <p className="flex justify-between"><span>Travellers:</span> <b className="text-white">{guests.length} guest(s)</b></p>
+            </div>
+
             <div className="relative mt-auto rounded-2xl border border-white/10 bg-white/5 p-5">
               <p className="text-[10px] font-bold uppercase tracking-[.18em] text-[#13a5d8]">Selected service</p>
               <p className="mt-2 font-serif text-xl">{selectedTitle}</p>
@@ -240,43 +354,176 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
               <div className="hidden rounded-xl border border-[#087fbe]/15 bg-[#f2f9fc] px-4 py-2 text-right sm:block"><p className="text-[9px] font-bold uppercase tracking-wider text-[#087fbe]">Selected</p><p className="max-w-52 truncate text-xs font-bold text-[#061f3b]">{selectedTitle}</p></div>
             </header>
 
+            {/* Stepper Header Bar */}
+            <div className="border-b border-slate-100 bg-[#f8fcff] px-6 py-4 md:px-9">
+              <div className="flex flex-wrap items-center justify-between gap-3 sm:flex-nowrap">
+                {stepsList.map((step) => {
+                  const isActive = currentStep === step.number;
+                  const isCompleted = currentStep > step.number;
+                  return (
+                    <button
+                      key={step.number}
+                      type="button"
+                      onClick={() => {
+                        if (isCompleted || step.number < currentStep) {
+                          setCurrentStep(step.number);
+                        } else if (step.number === currentStep + 1 && validateStep(currentStep)) {
+                          setCurrentStep(step.number);
+                        }
+                      }}
+                      className={`flex flex-1 items-center gap-3 rounded-2xl p-2.5 text-left transition ${
+                        isActive
+                          ? "border border-[#087fbe]/30 bg-white shadow-md shadow-[#087fbe]/10"
+                          : isCompleted
+                          ? "bg-white/80 hover:bg-white"
+                          : "opacity-50"
+                      }`}
+                    >
+                      <span
+                        className={`grid size-8 shrink-0 place-items-center rounded-xl text-xs font-extrabold transition ${
+                          isCompleted
+                            ? "bg-emerald-500 text-white"
+                            : isActive
+                            ? "bg-[#087fbe] text-white"
+                            : "bg-slate-200 text-slate-600"
+                        }`}
+                      >
+                        {isCompleted ? <Check className="size-4" /> : step.number}
+                      </span>
+                      <div className="min-w-0">
+                        <p className={`truncate text-xs font-bold ${isActive ? "text-[#061f3b]" : "text-slate-600"}`}>
+                          {step.title}
+                        </p>
+                        <p className="hidden truncate text-[10px] font-medium text-slate-400 sm:block">
+                          {step.desc}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                <div
+                  className="h-full bg-gradient-to-r from-[#0875b7] to-[#13a5d8] transition-all duration-500"
+                  style={{ width: `${(currentStep / 3) * 100}%` }}
+                />
+              </div>
+            </div>
+
             <form id={formId} onSubmit={submit} className="flex-1 px-6 py-7 md:px-9" noValidate>
-              {!isCruiseBooking && (
-                <FormSection number="01" title="Service details" description="Provide the information required for this booking.">
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    {visibleFields.map((field) => <DynamicField key={field.key} field={field} value={values[field.key]} update={update} minDate={dateMinimum} />)}
+              {/* STEP 1: Service details */}
+              {currentStep === 1 && (
+                <FormSection number="01" title={isCruiseBooking ? "Cruise Selection" : "Service details"} description={isCruiseBooking ? "Confirm your cruise destination, departure port and travel month." : "Provide the information required for this booking."}>
+                  {isCruiseBooking ? (
+                    <div className="rounded-2xl border border-[#087fbe]/20 bg-[#f2f9fc] p-5 space-y-3">
+                      <p className="text-xs font-bold text-[#087fbe] uppercase tracking-wider">Selected Cruise Criteria</p>
+                      <div className="grid gap-3 sm:grid-cols-2 text-xs">
+                        <p>Destination: <b className="text-[#061f3b]">{String(values.destination || "Not selected")}</b></p>
+                        <p>Departure Port: <b className="text-[#061f3b]">{String(values.departure_port || "Not selected")}</b></p>
+                        <p>Travel Month: <b className="text-[#061f3b]">{cruiseMonth || "Not selected"}</b></p>
+                        <p>Duration: <b className="text-[#061f3b]">{cruiseNights ? `${cruiseNights} Nights` : "Flexible"}</b></p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      {(() => {
+                        const checkboxFields = visibleFields.filter((f) => f.kind === "checkbox");
+                        const standardFields = visibleFields.filter((f) => f.kind !== "checkbox");
+                        const hasMultipleCheckboxes = checkboxFields.length >= 3;
+
+                        if (hasMultipleCheckboxes) {
+                          return (
+                            <>
+                              {standardFields.map((field) => (
+                                <DynamicField key={field.key} field={field} value={values[field.key]} update={update} minDate={dateMinimum} maxDate={cruiseDateMaximum} />
+                              ))}
+                              <MultiSelectServicesDropdown fields={checkboxFields} values={values} update={update} />
+                            </>
+                          );
+                        }
+
+                        return visibleFields.map((field) => (
+                          <DynamicField key={field.key} field={field} value={values[field.key]} update={update} minDate={dateMinimum} maxDate={cruiseDateMaximum} />
+                        ));
+                      })()}
+                    </div>
+                  )}
+                </FormSection>
+              )}
+
+              {/* STEP 2: Traveller information */}
+              {currentStep === 2 && (
+                <FormSection number="02" title="Traveller information" description="Add one row for every traveller included in the request.">
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                    <p className="text-xs font-semibold text-slate-500">{guests.length} traveller{guests.length === 1 ? "" : "s"} added</p>
+                    <button type="button" onClick={addGuest} disabled={guests.length >= 8} className="inline-flex items-center gap-2 rounded-xl border border-[#087fbe]/20 bg-[#edf9fd] px-4 py-2 text-xs font-bold text-[#087fbe] transition hover:border-[#13a5d8] hover:bg-[#e3f5fb] disabled:cursor-not-allowed disabled:opacity-45"><CirclePlus className="size-4" />Add traveller</button>
+                  </div>
+                  <div className="space-y-3">
+                    {guests.map((guest, index) => (
+                      <div key={index} className="grid gap-3 rounded-2xl border border-slate-200 bg-[#fbfdff] p-3 sm:grid-cols-[1fr_88px_120px_44px]">
+                        <label className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 focus-within:border-[#13a5d8] focus-within:ring-4 focus-within:ring-[#13a5d8]/10"><UserRound className="size-4 text-[#087fbe]" /><input required minLength={2} value={guest.name} onChange={(event) => updateGuest(index, "name", event.target.value)} placeholder={`Traveller ${index + 1} full name`} className="h-11 min-w-0 flex-1 text-sm outline-none" /></label>
+                        <input required aria-label={`Traveller ${index + 1} age`} placeholder="Age" type="number" min="1" max="120" value={guest.age} onChange={(event) => updateGuest(index, "age", event.target.value)} className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-[#13a5d8]" />
+                        <select aria-label={`Traveller ${index + 1} gender`} value={guest.gender} onChange={(event) => updateGuest(index, "gender", event.target.value as Guest["gender"])} className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-[#13a5d8]"><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option></select>
+                        <button type="button" onClick={() => removeGuest(index)} disabled={guests.length === 1} aria-label={`Remove traveller ${index + 1}`} className="grid size-11 place-items-center rounded-xl border border-red-100 bg-white text-red-400 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-30"><Trash2 className="size-4" /></button>
+                      </div>
+                    ))}
                   </div>
                 </FormSection>
               )}
 
-              <FormSection number={isCruiseBooking ? "01" : "02"} title="Traveller information" description="Add one row for every traveller included in the request.">
-                <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-                  <p className="text-xs font-semibold text-slate-500">{guests.length} traveller{guests.length === 1 ? "" : "s"} added</p>
-                  <button type="button" onClick={addGuest} disabled={guests.length >= 8} className="inline-flex items-center gap-2 rounded-xl border border-[#087fbe]/20 bg-[#edf9fd] px-4 py-2 text-xs font-bold text-[#087fbe] transition hover:border-[#13a5d8] hover:bg-[#e3f5fb] disabled:cursor-not-allowed disabled:opacity-45"><CirclePlus className="size-4" />Add traveller</button>
-                </div>
-                <div className="space-y-3">
-                  {guests.map((guest, index) => (
-                    <div key={index} className="grid gap-3 rounded-2xl border border-slate-200 bg-[#fbfdff] p-3 sm:grid-cols-[1fr_88px_120px_44px]">
-                      <label className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 focus-within:border-[#13a5d8] focus-within:ring-4 focus-within:ring-[#13a5d8]/10"><UserRound className="size-4 text-[#087fbe]" /><input required minLength={2} value={guest.name} onChange={(event) => updateGuest(index, "name", event.target.value)} placeholder={`Traveller ${index + 1} full name`} className="h-11 min-w-0 flex-1 text-sm outline-none" /></label>
-                      <input required aria-label={`Traveller ${index + 1} age`} placeholder="Age" type="number" min="1" max="120" value={guest.age} onChange={(event) => updateGuest(index, "age", event.target.value)} className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-[#13a5d8]" />
-                      <select aria-label={`Traveller ${index + 1} gender`} value={guest.gender} onChange={(event) => updateGuest(index, "gender", event.target.value as Guest["gender"])} className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-[#13a5d8]"><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option></select>
-                      <button type="button" onClick={() => removeGuest(index)} disabled={guests.length === 1} aria-label={`Remove traveller ${index + 1}`} className="grid size-11 place-items-center rounded-xl border border-red-100 bg-white text-red-400 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-30"><Trash2 className="size-4" /></button>
+              {/* STEP 3: Final Review & Confirmation */}
+              {currentStep === 3 && (
+                <FormSection number="03" title="Final details & Confirmation" description="Share preferences, review details and confirm contact permission.">
+                  <div className="mb-6 rounded-2xl border border-slate-100 bg-[#f9fcfe] p-5 space-y-3">
+                    <p className="text-xs font-bold text-[#087fbe] uppercase tracking-wider">Request Review Summary</p>
+                    <div className="grid gap-2 sm:grid-cols-2 text-xs text-slate-600">
+                      <p>Service: <b className="text-[#061f3b]">{selectedTitle}</b></p>
+                      <p>Total Travellers: <b className="text-[#061f3b]">{guests.length} guest(s) ({guests[0]?.name || "Primary guest"})</b></p>
                     </div>
-                  ))}
-                </div>
-              </FormSection>
+                  </div>
 
-              <FormSection number={isCruiseBooking ? "02" : "03"} title="Final details" description="Share preferences and confirm contact permission.">
-                <label className="block"><span className="mb-2 block text-xs font-bold text-[#456078]">Additional message</span><span className="flex gap-3 rounded-xl border border-slate-200 bg-white p-3 transition focus-within:border-[#13a5d8] focus-within:ring-4 focus-within:ring-[#13a5d8]/10"><MessageSquareText className="mt-1 size-5 shrink-0 text-[#087fbe]" /><textarea maxLength={2000} rows={4} value={message} onChange={(event) => setMessage(event.target.value)} placeholder="Preferences or information our team should know" className="min-w-0 flex-1 resize-none text-sm outline-none" /></span></label>
-                <label className="mt-4 flex items-start gap-3 rounded-xl bg-[#f2f9fc] p-4 text-xs leading-5 text-slate-600"><input required type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} className="mt-0.5 size-4 accent-[#087fbe]" /><span>I consent to being contacted about this booking request.</span></label>
-              </FormSection>
+                  <label className="block"><span className="mb-2 block text-xs font-bold text-[#456078]">Additional message / Preferences</span><span className="flex gap-3 rounded-xl border border-slate-200 bg-white p-3 transition focus-within:border-[#13a5d8] focus-within:ring-4 focus-within:ring-[#13a5d8]/10"><MessageSquareText className="mt-1 size-5 shrink-0 text-[#087fbe]" /><textarea maxLength={2000} rows={4} value={message} onChange={(event) => setMessage(event.target.value)} placeholder="Preferences, special travel, accommodation, or billing requirements..." className="min-w-0 flex-1 resize-none text-sm outline-none" /></span></label>
+                  <label className="mt-4 flex items-start gap-3 rounded-xl bg-[#f2f9fc] p-4 text-xs leading-5 text-slate-600"><input required type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} className="mt-0.5 size-4 accent-[#087fbe]" /><span>I consent to being contacted about this booking request.</span></label>
+                </FormSection>
+              )}
 
               {error && <p role="alert" className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">{error}</p>}
             </form>
 
             <footer className="flex items-center justify-between gap-4 border-t border-slate-100 bg-white px-6 py-4 shadow-[0_-12px_30px_rgba(6,31,59,.06)] md:px-9">
-              <p className="hidden text-xs text-slate-400 sm:flex sm:items-center sm:gap-2"><Sparkles className="size-4 text-[#13a5d8]" />Reviewed by the BHLI reservation desk</p>
-              <button form={formId} disabled={submitting || loadingService} className="ml-auto inline-flex min-w-52 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#0875b7] to-[#13a5d8] px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-[#087fbe]/20 transition hover:-translate-y-0.5 disabled:opacity-60">{loadingService ? "Loading..." : submitting ? "Submitting..." : "Submit request"}<ArrowRight className="size-4" /></button>
+              {currentStep > 1 ? (
+                <button
+                  type="button"
+                  onClick={prevStep}
+                  className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-xs font-bold text-slate-600 transition hover:bg-slate-50"
+                >
+                  <ChevronLeft className="size-4" /> Back to Step {currentStep - 1}
+                </button>
+              ) : (
+                <p className="hidden text-xs text-slate-400 sm:flex sm:items-center sm:gap-2">
+                  <Sparkles className="size-4 text-[#13a5d8]" /> Step 1 of 3 · Booking details
+                </p>
+              )}
+
+              {currentStep < 3 ? (
+                <button
+                  type="button"
+                  onClick={nextStep}
+                  className="ml-auto inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#0875b7] to-[#13a5d8] px-6 py-3.5 text-xs font-bold text-white shadow-lg shadow-[#087fbe]/20 transition hover:-translate-y-0.5"
+                >
+                  Continue to Step {currentStep + 1} <ChevronRight className="size-4" />
+                </button>
+              ) : (
+                <button
+                  form={formId}
+                  type="submit"
+                  disabled={submitting || loadingService}
+                  className="ml-auto inline-flex min-w-52 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#0875b7] to-[#13a5d8] px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-[#087fbe]/20 transition hover:-translate-y-0.5 disabled:opacity-60"
+                >
+                  {loadingService ? "Loading..." : submitting ? "Submitting..." : "Submit request"}
+                  <ArrowRight className="size-4" />
+                </button>
+              )}
             </footer>
           </section>
         </div>
@@ -309,5 +556,171 @@ function DynamicField({ field, value, update, minDate, maxDate }: { field: Booki
         {field.kind === "select" ? <select required={field.required} value={String(value)} onChange={(event) => update(field.key, event.target.value)} className={control}><option value="">Select {field.label.toLowerCase()}</option>{field.options?.map(([optionValue, label]) => <option key={optionValue} value={optionValue}>{label}</option>)}</select> : <input required={field.required} type={field.kind === "decimal" || field.kind === "number" ? "number" : field.kind || "text"} min={field.kind === "date" ? minDate : field.min} max={field.kind === "date" ? maxDate : undefined} step={field.kind === "decimal" ? "0.01" : undefined} value={String(value)} onChange={(event) => update(field.key, event.target.value)} placeholder={field.placeholder} className={control} />}
       </span>
     </label>
+  );
+}
+
+function MultiSelectServicesDropdown({
+  fields,
+  values,
+  update,
+}: {
+  fields: BookingField[];
+  values: Record<string, string | boolean>;
+  update: (key: string, value: string | boolean) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const selectedFields = fields.filter((f) => Boolean(values[f.key]));
+  const filteredFields = fields.filter((f) =>
+    f.label.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const toggleAll = (select: boolean) => {
+    fields.forEach((f) => update(f.key, select));
+  };
+
+  return (
+    <div className="relative sm:col-span-2 my-2">
+      <span className="mb-2 block text-xs font-bold text-[#456078]">
+        Select Services Required ({fields.length} options available)
+      </span>
+
+      {/* Main Trigger Button */}
+      <button
+        type="button"
+        onClick={() => setIsOpen((prev) => !prev)}
+        className="flex min-h-[52px] w-full items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 text-left transition hover:border-[#087fbe] focus:border-[#13a5d8] focus:ring-4 focus:ring-[#13a5d8]/10"
+      >
+        <div className="flex flex-1 items-center gap-3 min-w-0">
+          <CheckSquare className="size-5 shrink-0 text-[#087fbe]" />
+          <div className="min-w-0 flex-1">
+            {selectedFields.length > 0 ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-md bg-[#e5f5fc] px-2 py-0.5 text-xs font-bold text-[#087fbe]">
+                  {selectedFields.length} selected
+                </span>
+                <p className="truncate text-xs text-slate-600 font-semibold">
+                  {selectedFields.map((f) => f.label).join(", ")}
+                </p>
+              </div>
+            ) : (
+              <span className="text-sm font-semibold text-slate-400">
+                Click to open service selection list ({fields.length} services available)...
+              </span>
+            )}
+          </div>
+        </div>
+        {isOpen ? <ChevronUp className="size-5 text-slate-400 shrink-0" /> : <ChevronDown className="size-5 text-slate-400 shrink-0" />}
+      </button>
+
+      {/* Selected Tags Chips Display */}
+      {selectedFields.length > 0 && (
+        <div className="mt-2.5 flex flex-wrap gap-1.5">
+          {selectedFields.map((f) => (
+            <span
+              key={f.key}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-[#087fbe]/20 bg-[#f0f9fd] px-2.5 py-1 text-xs font-semibold text-[#0879b7]"
+            >
+              {f.label}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  update(f.key, false);
+                }}
+                className="rounded-full p-0.5 hover:bg-[#087fbe]/20 text-[#0879b7]"
+                title="Remove"
+              >
+                <X className="size-3" />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Floating Dropdown Menu */}
+      {isOpen && (
+        <div className="absolute left-0 right-0 z-50 mt-2 max-h-[380px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-[#061f3b]/15">
+          {/* Header Bar inside Dropdown */}
+          <div className="border-b border-slate-100 bg-[#f8fcff] p-3 space-y-2">
+            <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2">
+              <Search className="size-4 text-slate-400 shrink-0" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search services..."
+                className="w-full text-xs font-semibold text-[#122b42] outline-none"
+              />
+              {searchTerm && (
+                <button type="button" onClick={() => setSearchTerm("")} className="text-slate-400 hover:text-slate-600">
+                  <X className="size-3.5" />
+                </button>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between text-[11px] font-bold">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => toggleAll(true)}
+                  className="text-[#087fbe] hover:underline"
+                >
+                  Select All
+                </button>
+                <span className="text-slate-300">|</span>
+                <button
+                  type="button"
+                  onClick={() => toggleAll(false)}
+                  className="text-slate-500 hover:underline"
+                >
+                  Clear All
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                className="rounded-lg bg-[#087fbe] px-3.5 py-1 text-white hover:bg-[#066497]"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+
+          {/* Scrollable Checkbox Items List */}
+          <div className="max-h-[260px] overflow-y-auto p-2 space-y-1">
+            {filteredFields.length > 0 ? (
+              filteredFields.map((field) => {
+                const isChecked = Boolean(values[field.key]);
+                return (
+                  <label
+                    key={field.key}
+                    className={`flex cursor-pointer items-center justify-between rounded-xl px-3 py-2.5 text-xs font-semibold transition ${
+                      isChecked
+                        ? "bg-[#edf8fd] text-[#0879b7]"
+                        : "text-slate-700 hover:bg-slate-50"
+                    }`}
+                  >
+                    <span className="flex items-center gap-2.5">
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={(e) => update(field.key, e.target.checked)}
+                        className="size-4 accent-[#087fbe] rounded"
+                      />
+                      {field.label}
+                    </span>
+                    {isChecked && <Check className="size-4 text-[#087fbe]" />}
+                  </label>
+                );
+              })
+            ) : (
+              <p className="p-4 text-center text-xs text-slate-400">No services match &quot;{searchTerm}&quot;</p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

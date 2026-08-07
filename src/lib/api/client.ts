@@ -21,7 +21,7 @@ apiClient.interceptors.request.use(
       }
     }
 
-    const fullUrl = `${config.baseURL || ''}${config.url || ''}`;
+    const fullUrl = config.url?.startsWith('http') ? config.url : `${config.baseURL || ''}${config.url || ''}`;
     const requestNumber = ++apiRequestSequence;
     console.log(`[API ${requestNumber}] ${config.method?.toUpperCase()} ${fullUrl}`);
     console.log(

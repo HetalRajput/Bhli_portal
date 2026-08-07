@@ -69,20 +69,50 @@ export default async function Services() {
     return identity.includes("holiday") && identity.includes("package");
   };
 
+  // Pre-fetch vendor URLs for any services with vendor_links (like Catering)
+  const resolvedVendorLinks: Record<string, string> = {};
+  await Promise.all(
+    apiServices.map(async (s) => {
+      const trackingUrl = s.vendor_links?.[0]?.tracking_url;
+      if (trackingUrl) {
+        try {
+          const res = await fetch(trackingUrl, { cache: "no-store" });
+          const json = await res.json();
+          const finalUrl = json?.data?.url || json?.data?.redirect_url || json?.url;
+          if (finalUrl) {
+            resolvedVendorLinks[s.slug] = finalUrl;
+          }
+        } catch {
+          // ignore
+        }
+      }
+    })
+  );
+
   // Use API data if available, otherwise use fallback data mapped to the same structure
   const displayServices = apiServices.length > 0
-    ? apiServices.map(s => ({
-      title: s.name || s.title || "",
-      description: s.short_description || s.description || "",
-      Icon: getIcon(s.slug, s.service_type),
-      link: isHolidayPackage(s) ? "/services/holiday-packages" : `/services/${s.slug}`,
-      image: s.banner_image || s.image || fallbackItems[0][4]
-    }))
+    ? apiServices.map(s => {
+      const vendorUrl = resolvedVendorLinks[s.slug];
+      const isCatering = s.slug === "catering-services" || s.slug?.includes("catering");
+      const targetLink = isCatering && vendorUrl
+        ? vendorUrl
+        : isHolidayPackage(s) ? "/services/holiday-packages" : `/services/${s.slug}`;
+
+      return {
+        title: s.name || s.title || "",
+        description: s.short_description || s.description || "",
+        Icon: getIcon(s.slug, s.service_type),
+        link: targetLink,
+        isExternal: isCatering && Boolean(vendorUrl),
+        image: s.banner_image || s.image || fallbackItems[0][4]
+      };
+    })
     : fallbackItems.map(item => ({
       title: item[0],
       description: item[1],
       Icon: item[2],
       link: item[3],
+      isExternal: false,
       image: item[4]
     }));
 
@@ -94,6 +124,7 @@ export default async function Services() {
         description: eventFallback[1] as string,
         Icon: eventFallback[2] as any,
         link: eventFallback[3] as string,
+        isExternal: false,
         image: eventFallback[4] as string
       });
     }
@@ -112,24 +143,46 @@ export default async function Services() {
       </section>
       <section className="mx-auto max-w-7xl px-5 py-10 sm:py-16 lg:px-8 lg:py-20">
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {displayServices.map((service, i) => (
-            <Link href={String(service.link)} key={i} className="service-list-card group block min-w-0 overflow-hidden rounded-3xl border border-black/10 bg-white">
-              <div className="relative h-44 overflow-hidden sm:h-48">
-                <img src={String(service.image)} alt={String(service.title)} className="h-full w-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#061f3b]/50 to-transparent" />
-                <span className="absolute bottom-4 left-5 grid size-12 place-items-center rounded-2xl bg-white/92 text-[#087fbe] shadow-lg backdrop-blur">
-                  <service.Icon className="size-6" />
-                </span>
-              </div>
-              <div className="p-5 sm:p-7">
-                <div className="flex items-start justify-between gap-4">
-                  <h2 className="font-serif text-2xl transition-colors group-hover:text-[#087fbe]">{String(service.title)}</h2>
-                  <ArrowRight className="size-5 shrink-0 text-black/25 transition group-hover:translate-x-1 group-hover:text-[#087fbe]" />
+          {displayServices.map((service, i) => {
+            const cardContent = (
+              <>
+                <div className="relative h-44 overflow-hidden sm:h-48">
+                  <img src={String(service.image)} alt={String(service.title)} className="h-full w-full object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#061f3b]/50 to-transparent" />
+                  <span className="absolute bottom-4 left-5 grid size-12 place-items-center rounded-2xl bg-white/92 text-[#087fbe] shadow-lg backdrop-blur">
+                    <service.Icon className="size-6" />
+                  </span>
                 </div>
-                <p className="mt-3 text-sm leading-7 text-black/55">{String(service.description)}</p>
-              </div>
-            </Link>
-          ))}
+                <div className="p-5 sm:p-7">
+                  <div className="flex items-start justify-between gap-4">
+                    <h2 className="font-serif text-2xl transition-colors group-hover:text-[#087fbe]">{String(service.title)}</h2>
+                    <ArrowRight className="size-5 shrink-0 text-black/25 transition group-hover:translate-x-1 group-hover:text-[#087fbe]" />
+                  </div>
+                  <p className="mt-3 text-sm leading-7 text-black/55">{String(service.description)}</p>
+                </div>
+              </>
+            );
+
+            return service.isExternal ? (
+              <a
+                key={i}
+                href={String(service.link)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="service-list-card group block min-w-0 overflow-hidden rounded-3xl border border-black/10 bg-white"
+              >
+                {cardContent}
+              </a>
+            ) : (
+              <Link
+                key={i}
+                href={String(service.link)}
+                className="service-list-card group block min-w-0 overflow-hidden rounded-3xl border border-black/10 bg-white"
+              >
+                {cardContent}
+              </Link>
+            );
+          })}
         </div>
       </section>
       <section className="mx-auto max-w-7xl px-5 pb-24 lg:px-8">

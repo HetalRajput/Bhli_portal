@@ -23,6 +23,13 @@ export type BookingRequest = {
   created: string;
   updated: string;
   details?: Record<string, unknown>;
+  // Cruise-specific fields (explicitly typed for type-safe JSX rendering)
+  destination?: string;
+  departure_port?: string;
+  departure_month?: string;
+  departure_year?: string;
+  nights?: number;
+  number_of_passengers?: number;
   [key: string]: unknown;
 };
 
@@ -46,6 +53,6 @@ export const bookingService = {
   listBookings: async (params?: { service?: number; service_slug?: string; status?: string }) => (
     await apiClient.get<BookingHistoryResponse>("/api/bookings/requests/history/", { params })
   ).data,
-  getBookingById: async (id: number) => (await apiClient.get(`/api/bookings/requests/${id}/`)).data,
+  getBookingById: async (id: number) => (await apiClient.get<BookingRequest>(`/api/bookings/requests/${id}/`)).data,
   cancelBooking: async (id: number, reason?: string) => (await apiClient.post(`/api/bookings/requests/${id}/cancel/`, { reason: reason?.trim() || "" })).data,
 };

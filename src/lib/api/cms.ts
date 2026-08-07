@@ -189,8 +189,9 @@ export const cmsService = {
       const payload = await response.json();
       console.log('[Service Detail API] ' + slug + ':', payload);
       if (slug === 'catering-services') {
-        console.log('[Service Detail API] Catering redirect link:', payload?.data?.redirect_link ?? payload?.redirect_link ?? payload?.data?.redirect_url ?? payload?.redirect_url ?? 'No redirect link returned');
-        console.log('[Service Detail API] Catering service:', payload?.data ?? payload);
+        const serviceData = payload?.data ?? payload;
+        console.log('[Service Detail API] Catering vendor links:', serviceData?.vendor_links ?? 'No vendor links returned');
+        console.log('[Service Detail API] Catering service:', serviceData);
       }
       return payload;
     } catch (error) {

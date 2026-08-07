@@ -18,6 +18,7 @@ const links = [
 
 export default function Header() {
   const path = usePathname();
+  const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
   const [hidden, setHidden] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -25,6 +26,15 @@ export default function Header() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [userImage, setUserImage] = useState<string | null>(null);
   const lastY = useRef(0);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const isLinkActive = (h: string) => {
+    if (!mounted || !path) return false;
+    return path === h || (h !== "/" && path.startsWith(h));
+  };
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -111,7 +121,7 @@ export default function Header() {
               key={h}
               href={h}
               className={`relative py-2 text-sm font-medium transition duration-300 after:absolute after:inset-x-0 after:-bottom-0.5 after:h-0.5 after:origin-left after:rounded-full after:bg-[#078ccf] after:transition-transform ${
-                path === h
+                isLinkActive(h)
                   ? "text-[#087dbd] after:scale-x-100"
                   : "text-[#344a5c] after:scale-x-0 hover:text-[#087dbd] hover:after:scale-x-100"
               }`}
@@ -174,7 +184,7 @@ export default function Header() {
                 href={h}
                 onClick={() => setOpen(false)}
                 className={`rounded-xl px-4 py-3 ${
-                  path === h ? "bg-[#e5f5fc] text-[#0879b7]" : "text-[#344a5c] hover:bg-[#f0f8fc]"
+                  isLinkActive(h) ? "bg-[#e5f5fc] text-[#0879b7]" : "text-[#344a5c] hover:bg-[#f0f8fc]"
                 }`}
               >
                 {l}
