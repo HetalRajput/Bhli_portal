@@ -222,6 +222,10 @@ export default function HolidayPackageDetail({
         </div>
       </section>
 
+      {/* Package information directly below the page header */}
+      {packageType === "domestic" && <DomesticPricingTable />}
+      {packageType === "international" && <InternationalPricingTable />}
+
       <section className="mx-auto max-w-7xl px-5 py-12 lg:px-8 lg:py-16">
         <div className="mb-9 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
@@ -303,11 +307,6 @@ export default function HolidayPackageDetail({
         </div>
       </section>
 
-      {/* Custom Section for Domestic Pricing Table */}
-      {packageType === "domestic" && <DomesticPricingTable />}
-
-      {/* Custom Section for International Pricing Table */}
-      {packageType === "international" && <InternationalPricingTable />}
     </main>
   );
 }

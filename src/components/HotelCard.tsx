@@ -97,7 +97,7 @@ export default function HotelCard({
             {displayLocation && (
               <div className="mt-1.5 space-y-0.5">
                 <p className="flex items-center gap-1.5 text-xs font-semibold text-zinc-700">
-                  <MapPin className="size-3.5 text-zinc-400 shrink-0" />
+                  <MapPin className="size-3 text-zinc-400 shrink-0" />
                   {displayLocation}
                 </p>
                 {showCityLine && (

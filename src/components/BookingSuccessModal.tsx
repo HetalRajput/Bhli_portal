@@ -20,8 +20,8 @@ export default function BookingSuccessModal({
   hotelName,
   serviceName,
   itemLabel,
-  heading = hotelName ? "Your stay is being arranged" : "Your booking request is successfully saved",
-  description = "Our agent will contact you shortly, thank you!",
+  heading = hotelName ? "Your stay is being arranged" : "Your response is recorded",
+  description = "Our sales representative will get in touch with a personalised response.",
   backHref = hotelName ? "/services/hotel-reservations" : "/services",
   backLabel = hotelName ? "Back to hotels" : "Back to services",
 }: BookingSuccessModalProps) {
@@ -88,6 +88,17 @@ export default function BookingSuccessModal({
               <p className="flex items-center gap-2 text-xs text-slate-500"><CalendarCheck2 className="size-4 text-emerald-600" />Reference <strong className="text-[#087fbe]">{reference}</strong></p>
               <p className="flex items-center gap-2 text-xs text-slate-500 sm:justify-end"><ShieldCheck className="size-4 text-emerald-600" />Secure request received</p>
             </div>
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-amber-200/70 bg-amber-50/70 p-4 text-left text-xs leading-5 text-[#72551d]">
+            <p className="font-bold uppercase tracking-[.14em] text-[10px] text-amber-700">Response guidance</p>
+            <ul className="mt-2 space-y-1.5">
+              <li>Requests within 24 hours are subject to availability.</li>
+              <li>For travel after 2–5 days, we aim to respond within 24 hours of submission.</li>
+              <li>For requests more than 5 days away, an associate will connect with you.</li>
+            </ul>
+            <p className="mt-3 font-semibold text-[#4b3b1a]">Booking Hospitality &amp; Leisure Infra</p>
+            <p className="mt-1 text-[#72551d]">+91 7204 518 641 · +91 9916 356 691 · +91 9945 123 211</p>
           </div>
 
           <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-center">

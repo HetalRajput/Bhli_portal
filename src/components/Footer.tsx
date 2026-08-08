@@ -4,6 +4,12 @@ import { ExternalLink, Mail, MapPin, Phone } from "lucide-react";
 const locationUrl = "https://www.google.com/maps/place/13.04072,77.539637";
 const locationEmbedUrl =
   "https://www.google.com/maps?q=13.04072,77.539637&z=16&output=embed";
+const socialLinks = [
+  ["Facebook", "f", "https://www.facebook.com/BookingHospitality"],
+  ["Instagram", "◎", "https://www.instagram.com/bookinghospitality"],
+  ["LinkedIn", "in", "https://in.linkedin.com/company/booking-hospitality"],
+  ["X (Twitter)", "𝕏", "https://x.com/BookingHospitality"],
+] as const;
 
 export default function Footer() {
   return (
@@ -15,6 +21,16 @@ export default function Footer() {
             Hospitality Beyond Borders. Complete travel management for defence,
             government, corporate and leisure travellers.
           </p>
+          <div className="mt-6">
+            <p className="text-xs font-bold uppercase tracking-[.16em] text-[#087dbd]">Follow us</p>
+            <div className="mt-3 flex items-center gap-2">
+              {socialLinks.map(([label, mark, href]) => (
+                <a key={label} href={href} target="_blank" rel="noopener noreferrer" aria-label={`Follow Booking Hospitality on ${label}`} title={label} className="grid size-9 place-items-center rounded-full border border-[#087dbd]/20 bg-[#f1f9fc] text-xs font-extrabold text-[#087dbd] transition hover:-translate-y-0.5 hover:border-[#087dbd] hover:bg-[#087dbd] hover:text-white">
+                  <span aria-hidden="true">{mark}</span>
+                </a>
+              ))}
+            </div>
+          </div>
         </div>
 
         <div>

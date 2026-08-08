@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, ReactNode, useEffect, useState } from "react";
-import { ArrowLeft, ArrowRight, CalendarDays, Check, CheckCircle2, CheckSquare, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Clock3, CirclePlus, Hash, IndianRupee, MapPin, MessageSquareText, Search, Send, ShieldCheck, Sparkles, Trash2, UserRound, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, BadgeInfo, Building2, CalendarDays, Check, CheckCircle2, CheckSquare, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Clock3, CirclePlus, Hash, IndianRupee, Landmark, Mail, MapPin, MessageSquareText, Phone, Search, Send, ShieldCheck, Sparkles, Trash2, UserRound, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import BookingSuccessModal from "@/components/BookingSuccessModal";
@@ -36,6 +36,7 @@ const lastDayOfMonth = (value: string) => {
 export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: string }) {
   const config = documentedBookingConfigs[serviceSlug] as BookingConfig;
   const isCruiseBooking = serviceSlug === "cruise-booking";
+  const isCorporateTravel = serviceSlug === "corporate-travel";
   const params = useSearchParams();
   const pathname = usePathname();
   const router = useRouter();
@@ -97,8 +98,12 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
   const addGuest = () => setGuests((current) => current.length >= 8 ? current : [...current, newGuest()]);
   const removeGuest = (index: number) => setGuests((current) => current.length === 1 ? current : current.filter((_, guestIndex) => guestIndex !== index));
 
+  const corporateProfileKeys = ["company_name", "gst_number", "industry_type", "company_website", "city", "contact_person_name", "designation", "official_email", "mobile_number"];
+  const corporatePlanningKeys = ["travel_type", "travel_purpose", "from_city", "to_city", "departure_date", "return_date", "number_of_travellers", "number_of_rooms", "preferred_hotel_category", "preferred_airline", "estimated_budget", "monthly_travel_volume", "annual_travel_budget", "credit_facility_required", "purchase_order_required", "gst_invoice_required", "preferred_billing_cycle", "dedicated_account_manager_required", "additional_requirements"];
   const visibleFields = isCruiseBooking
     ? config.fields.filter((field) => !["destination", "departure_port", "return_date", "number_of_passengers"].includes(field.key))
+    : isCorporateTravel
+    ? config.fields.filter((field) => corporateProfileKeys.includes(field.key))
     : config.fields;
 
   const validateStep = (step: number): boolean => {
@@ -136,6 +141,13 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
     }
 
     if (step === 2) {
+      if (isCorporateTravel) {
+        if (!config.fields.some((field) => field.kind === "checkbox" && Boolean(values[field.key]))) {
+          setError("Select at least one service your organisation needs.");
+          return false;
+        }
+        return true;
+      }
       for (let i = 0; i < guests.length; i++) {
         const guest = guests[i];
         if (guest.name.trim().length < 2) {
@@ -281,7 +293,11 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
   const cruiseDateMinimum = cruiseMonth && cruiseMonth > dateMinimum.slice(0, 7) ? `${cruiseMonth}-01` : dateMinimum;
   const cruiseDateMaximum = cruiseMonth ? lastDayOfMonth(cruiseMonth) : undefined;
 
-  const stepsList = [
+  const stepsList = isCorporateTravel ? [
+    { number: 1, title: "Company profile", desc: "Organisation & contact" },
+    { number: 2, title: "Services & planning", desc: "Choose your support" },
+    { number: 3, title: "Review & send", desc: "Confirm request" },
+  ] : [
     { number: 1, title: isCruiseBooking ? "Cruise Search" : "Service Details", desc: "Requirements & specs" },
     { number: 2, title: "Traveller Details", desc: "Guest names & ages" },
     { number: 3, title: "Final Review", desc: "Preferences & submit" },
@@ -292,8 +308,8 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
       reference={reference}
       serviceName={selectedTitle}
       itemLabel={selectedItemName ? "Selected hotel" : "Selected service"}
-      heading="Your booking request is successfully saved"
-      description="Our agent will contact you shortly, thank you!"
+      heading="Your response is recorded"
+      description="Our sales representative will get in touch with a personalised response."
       backHref="/services"
       backLabel="Back to services"
     />
@@ -328,17 +344,17 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
           <aside className="relative hidden overflow-hidden bg-[#061f3b] p-9 text-white lg:flex lg:flex-col">
             <div className="absolute -bottom-24 -left-24 size-64 rounded-full border border-white/5 shadow-[0_0_0_45px_rgba(255,255,255,.025),0_0_0_90px_rgba(255,255,255,.018)]" />
             <span className="grid size-14 place-items-center rounded-2xl bg-white/10 text-[#13a5d8]"><Send className="size-7" /></span>
-            <h2 className="mt-8 font-serif text-3xl">Complete your booking request</h2>
-            <p className="mt-4 text-sm leading-7 text-white/55">Share the journey and traveller details. Our team will verify availability, pricing and your special requirements.</p>
+            <h2 className="mt-8 font-serif text-3xl">{isCorporateTravel ? "Build your travel programme" : "Complete your booking request"}</h2>
+            <p className="mt-4 text-sm leading-7 text-white/55">{isCorporateTravel ? "Share the essentials first, then choose the services and preferences your organisation needs. Our team will prepare a tailored proposal." : "Share the journey and traveller details. Our team will verify availability, pricing and your special requirements."}</p>
             <div className="mt-8 space-y-4 text-sm text-white/75">
-              {["Personal booking assistance", "Clear pricing review", "Verified service options"].map((item) => <p key={item} className="flex items-center gap-3"><CheckCircle2 className="size-4 text-[#13a5d8]" />{item}</p>)}
+              {(isCorporateTravel ? ["One request for multiple services", "Tailored corporate proposal", "Dedicated travel support"] : ["Personal booking assistance", "Clear pricing review", "Verified service options"]).map((item) => <p key={item} className="flex items-center gap-3"><CheckCircle2 className="size-4 text-[#13a5d8]" />{item}</p>)}
             </div>
 
             {/* Side summary of filled details */}
             <div className="mt-8 space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4 text-xs text-white/70">
               <p className="font-bold text-[#13a5d8] uppercase tracking-wider text-[10px]">Form Summary</p>
               <p className="flex justify-between"><span>Step:</span> <b className="text-white">Step {currentStep} of 3</b></p>
-              <p className="flex justify-between"><span>Travellers:</span> <b className="text-white">{guests.length} guest(s)</b></p>
+              <p className="flex justify-between"><span>{isCorporateTravel ? "Services:" : "Travellers:"}</span> <b className="text-white">{isCorporateTravel ? `${config.fields.filter((field) => field.kind === "checkbox" && Boolean(values[field.key])).length} selected` : `${guests.length} guest(s)`}</b></p>
             </div>
 
             <div className="relative mt-auto rounded-2xl border border-white/10 bg-white/5 p-5">
@@ -413,7 +429,7 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
             <form id={formId} onSubmit={submit} className="flex-1 px-6 py-7 md:px-9" noValidate>
               {/* STEP 1: Service details */}
               {currentStep === 1 && (
-                <FormSection number="01" title={isCruiseBooking ? "Cruise Selection" : "Service details"} description={isCruiseBooking ? "Confirm your cruise destination, departure port and travel month." : "Provide the information required for this booking."}>
+                <FormSection number="01" title={isCorporateTravel ? "Tell us about your organisation" : isCruiseBooking ? "Cruise Selection" : "Service details"} description={isCorporateTravel ? "Start with the essentials. You can add detailed travel and billing preferences in the next step." : isCruiseBooking ? "Confirm your cruise destination, departure port and travel month." : "Provide the information required for this booking."}>
                   {isCruiseBooking ? (
                     <div className="rounded-2xl border border-[#087fbe]/20 bg-[#f2f9fc] p-5 space-y-3">
                       <p className="text-xs font-bold text-[#087fbe] uppercase tracking-wider">Selected Cruise Criteria</p>
@@ -426,6 +442,7 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
                     </div>
                   ) : (
                     <div className="grid gap-4 sm:grid-cols-2">
+                      {isCorporateTravel && <div className="sm:col-span-2 rounded-2xl border border-[#087fbe]/15 bg-[#f2f9fc] p-4 text-xs leading-5 text-[#456078]"><b className="text-[#087fbe]">Quick to complete:</b> only the key company and contact details are shown here. The rest is optional and comes next.</div>}
                       {(() => {
                         const checkboxFields = visibleFields.filter((f) => f.kind === "checkbox");
                         const standardFields = visibleFields.filter((f) => f.kind !== "checkbox");
@@ -453,7 +470,14 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
 
               {/* STEP 2: Traveller information */}
               {currentStep === 2 && (
-                <FormSection number="02" title="Traveller information" description="Add one row for every traveller included in the request.">
+                isCorporateTravel ? <FormSection number="02" title="Services and planning preferences" description="Choose the support you need. Planning and billing details are optional, but help us tailor your proposal.">
+                  <div className="rounded-2xl border border-slate-200 bg-[#fbfdff] p-4 md:p-5">
+                    <MultiSelectServicesDropdown fields={config.fields.filter((field) => field.kind === "checkbox")} values={values} update={update} />
+                  </div>
+                  <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                    {config.fields.filter((field) => corporatePlanningKeys.includes(field.key)).map((field) => <DynamicField key={field.key} field={field} value={values[field.key]} update={update} minDate={dateMinimum} />)}
+                  </div>
+                </FormSection> : <FormSection number="02" title="Traveller information" description="Add one row for every traveller included in the request.">
                   <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
                     <p className="text-xs font-semibold text-slate-500">{guests.length} traveller{guests.length === 1 ? "" : "s"} added</p>
                     <button type="button" onClick={addGuest} disabled={guests.length >= 8} className="inline-flex items-center gap-2 rounded-xl border border-[#087fbe]/20 bg-[#edf9fd] px-4 py-2 text-xs font-bold text-[#087fbe] transition hover:border-[#13a5d8] hover:bg-[#e3f5fb] disabled:cursor-not-allowed disabled:opacity-45"><CirclePlus className="size-4" />Add traveller</button>
@@ -478,7 +502,7 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
                     <p className="text-xs font-bold text-[#087fbe] uppercase tracking-wider">Request Review Summary</p>
                     <div className="grid gap-2 sm:grid-cols-2 text-xs text-slate-600">
                       <p>Service: <b className="text-[#061f3b]">{selectedTitle}</b></p>
-                      <p>Total Travellers: <b className="text-[#061f3b]">{guests.length} guest(s) ({guests[0]?.name || "Primary guest"})</b></p>
+                      {isCorporateTravel ? <><p>Company: <b className="text-[#061f3b]">{String(values.company_name || "Not provided")}</b></p><p>Services selected: <b className="text-[#061f3b]">{config.fields.filter((field) => field.kind === "checkbox" && Boolean(values[field.key])).length}</b></p><p>Contact: <b className="text-[#061f3b]">{String(values.contact_person_name || "Not provided")}</b></p></> : <p>Total Travellers: <b className="text-[#061f3b]">{guests.length} guest(s) ({guests[0]?.name || "Primary guest"})</b></p>}
                     </div>
                   </div>
 
@@ -537,6 +561,12 @@ function FormSection({ number, title, description, children }: { number: string;
 }
 
 function fieldIcon(field: BookingField) {
+  if (["company_name", "industry_type", "company_website", "company_address"].includes(field.key)) return <Building2 className="size-4" />;
+  if (["gst_number", "pan_number", "cin_number"].includes(field.key)) return <Landmark className="size-4" />;
+  if (["contact_person_name", "designation", "department"].includes(field.key)) return <UserRound className="size-4" />;
+  if (field.key === "official_email") return <Mail className="size-4" />;
+  if (["mobile_number", "alternate_contact_number"].includes(field.key)) return <Phone className="size-4" />;
+  if (["credit_facility_required", "purchase_order_required", "gst_invoice_required", "preferred_billing_cycle", "dedicated_account_manager_required"].includes(field.key)) return <BadgeInfo className="size-4" />;
   if (field.kind === "date") return <CalendarDays className="size-4" />;
   if (field.kind === "time") return <Clock3 className="size-4" />;
   if (field.kind === "number") return <Hash className="size-4" />;

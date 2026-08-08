@@ -47,6 +47,7 @@ export default function BankDetailsPage() {
             <span className="grid size-11 place-items-center rounded-xl bg-white/10 text-[#67d4f3]"><Building2 className="size-5" /></span>
             <h2 className="mt-5 font-serif text-2xl font-semibold">Contact the accounts team</h2>
             <p className="mt-3 text-sm leading-7 text-white/65">Request the current account or QR details using the official email below. Include your booking reference, if available.</p>
+            <a href="https://pages.razorpay.com/pl_PqPHewqyh9VNft/view" target="_blank" rel="noopener noreferrer" className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-white px-5 py-3.5 text-sm font-bold text-[#062d4c] transition hover:bg-slate-100"><ShieldCheck className="size-4" />Pay securely with Razorpay</a>
             <a href="mailto:accounts@bookinghospitality.com?subject=Request%20for%20verified%20payment%20details" className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#11a3d7] px-5 py-3.5 text-sm font-bold text-[#062d4c] transition hover:bg-[#67d4f3]"><Mail className="size-4" />Email accounts team</a>
             <p className="mt-4 break-all text-center text-xs text-white/55">accounts@bookinghospitality.com</p>
           </aside>

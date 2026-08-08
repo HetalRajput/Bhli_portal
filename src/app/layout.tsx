@@ -4,6 +4,7 @@ import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ScrollReveal from "@/components/ScrollReveal";
+import ScrollToTop from "@/components/ScrollToTop";
 import EnquiryWidget from "@/components/EnquiryWidget";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import SecurityGuards from "@/components/SecurityGuards";
@@ -36,6 +37,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col bg-background text-foreground selection:bg-accent/30">
         <SiteLoader />
         <SecurityGuards />
+        <ScrollToTop />
         <ScrollReveal />
         <Header />
         <main className="flex-1 flex flex-col">

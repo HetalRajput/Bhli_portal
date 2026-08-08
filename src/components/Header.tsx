@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, User } from "lucide-react";
+import { ChevronDown, Menu, X, User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { authService } from "@/lib/api/auth";
 
@@ -10,16 +10,16 @@ const links = [
   ["Home", "/"],
   ["Services", "/services"],
   ["Events", "/events"],
-  ["About us", "/about-us"],
   ["Clients", "/clients"],
   ["Help & opportunities", "/help-centre"],
-  ["Contact", "/contact-us"],
 ];
+const moreLinks = [["Gallery", "/gallery"], ["About us", "/about-us"], ["Channel Partners", "/channel-partners"], ["Contact", "/contact-us"]];
 
 export default function Header() {
   const path = usePathname();
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const [hidden, setHidden] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -129,6 +129,14 @@ export default function Header() {
               {l}
             </Link>
           ))}
+          <div className="relative">
+            <button type="button" onClick={() => setMoreOpen((current) => !current)} aria-expanded={moreOpen} aria-haspopup="menu" className={`inline-flex items-center gap-1 py-2 text-sm font-medium transition ${moreLinks.some(([, href]) => isLinkActive(href)) ? "text-[#087dbd]" : "text-[#344a5c] hover:text-[#087dbd]"}`}>
+              More <ChevronDown className={`size-4 transition-transform ${moreOpen ? "rotate-180" : ""}`} />
+            </button>
+            {moreOpen && <div role="menu" className="absolute left-1/2 top-[calc(100%+12px)] z-50 w-44 -translate-x-1/2 rounded-2xl border border-slate-100 bg-white p-2 shadow-[0_16px_40px_rgba(6,31,59,.16)]">
+              {moreLinks.map(([label, href]) => <Link key={href} role="menuitem" href={href} onClick={() => setMoreOpen(false)} className={`block rounded-xl px-3 py-2.5 text-sm font-semibold transition ${isLinkActive(href) ? "bg-[#e5f5fc] text-[#0879b7]" : "text-[#344a5c] hover:bg-[#f0f8fc] hover:text-[#0879b7]"}`}>{label}</Link>)}
+            </div>}
+          </div>
           <Link
             href="/defence-help-desk"
             className="rounded-full border border-[#0a86c8]/30 bg-[#edf8fd] px-4 py-2 text-sm text-[#0879b7] backdrop-blur transition hover:bg-[#dff3fb]"
@@ -190,6 +198,12 @@ export default function Header() {
                 {l}
               </Link>
             ))}
+            <div className="pt-1">
+              <button type="button" onClick={() => setMoreOpen((current) => !current)} aria-expanded={moreOpen} className="flex w-full items-center justify-between rounded-xl px-4 py-3 text-left text-[#344a5c] hover:bg-[#f0f8fc]">
+                More links <ChevronDown className={`size-4 transition-transform ${moreOpen ? "rotate-180" : ""}`} />
+              </button>
+              {moreOpen && <div className="ml-3 mt-1 border-l border-[#0a86c8]/20 pl-2">{moreLinks.map(([label, href]) => <Link key={href} href={href} onClick={() => { setOpen(false); setMoreOpen(false); }} className={`block rounded-xl px-4 py-2.5 text-sm ${isLinkActive(href) ? "bg-[#e5f5fc] font-semibold text-[#0879b7]" : "text-[#344a5c] hover:bg-[#f0f8fc]"}`}>{label}</Link>)}</div>}
+            </div>
             <Link
               href="/defence-help-desk"
               onClick={() => setOpen(false)}

@@ -7,7 +7,7 @@ export default function DomesticPricingTable() {
       <div className="overflow-hidden rounded-[2rem] border border-white/20 shadow-2xl shadow-[#061f3b]/10 bg-gradient-to-br from-[#d4e6fa] via-[#e5ecfb] to-[#d6c7eb] p-6 sm:p-10 relative isolate">
         
         <h2 className="text-center font-serif text-3xl font-bold text-[#061f3b] mb-8 md:text-4xl">
-          BHLI LLP All-India Domestic LTC Package
+          India Domestic Package
         </h2>
 
         {/* Pricing Table Grid */}
@@ -31,9 +31,9 @@ export default function DomesticPricingTable() {
 
             {/* Row 1: Guests */}
             <div className="hidden md:flex items-center gap-2 p-3 font-semibold text-[#061f3b] bg-white/30"><Users className="size-4" /> Guests</div>
-            <div className="p-3 text-center text-sm font-medium text-[#061f3b] bg-[#c3daf2]/40">Couple + 1 Child <br/><span className="font-normal text-xs">(Below 9 Years)</span></div>
-            <div className="p-3 text-center text-sm font-medium text-[#061f3b] bg-[#f2df9d]/40">Couple + 1 Child <br/><span className="font-normal text-xs">(Below 9 Years)</span></div>
-            <div className="p-3 text-center text-sm font-medium text-[#061f3b] bg-[#c3daf2]/40">Couple + 1 Child <br/><span className="font-normal text-xs">(Below 9 Years)</span></div>
+            <div className="p-3 text-center text-sm font-medium text-[#061f3b] bg-[#c3daf2]/40">Couple + 1 Child <br/><span className="font-normal text-xs">(Below 6 Years)</span></div>
+            <div className="p-3 text-center text-sm font-medium text-[#061f3b] bg-[#f2df9d]/40">Couple + 1 Child <br/><span className="font-normal text-xs">(Below 6 Years)</span></div>
+            <div className="p-3 text-center text-sm font-medium text-[#061f3b] bg-[#c3daf2]/40">Couple + 1 Child <br/><span className="font-normal text-xs">(Below 6 Years)</span></div>
 
             {/* Row 2: Hotel Category */}
             <div className="hidden md:flex items-center gap-2 p-3 font-semibold text-[#061f3b] bg-white/20"><Hotel className="size-4" /> Hotel Category</div>

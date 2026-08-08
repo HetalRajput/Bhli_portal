@@ -218,7 +218,7 @@ function UnifiedServiceEnquiryInner({ serviceSlug }: { serviceSlug?: string }) {
     }
   }
 
-  if (reference) return <BookingSuccessModal reference={reference} serviceName={title} heading="Your booking request is successfully saved" description="Our agent will contact you shortly, thank you!" />;
+  if (reference) return <BookingSuccessModal reference={reference} serviceName={title} heading="Your response is recorded" description="Our sales representative will get in touch with a personalised response." />;
 
   // Catering Services handling — NEVER show enquiry form, always redirect or show loader
   if (isCatering) {
