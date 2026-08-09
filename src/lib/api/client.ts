@@ -3,6 +3,50 @@ import axios from 'axios';
 const BASE_URL = 'https://bhli-backend.onrender.com';
 let apiRequestSequence = 0;
 
+export const API_ERROR_EVENT = 'bhli:api-error';
+
+export interface ApiErrorEventDetail {
+  message: string;
+  status: number;
+  title: string;
+}
+
+export function showApiError(error: unknown) {
+  if (typeof window === 'undefined' || axios.isCancel(error)) return;
+  const apiError = error as { response?: { status?: number } };
+  const status = Number(apiError.response?.status || 0);
+  const title = status === 0
+    ? 'Connection problem'
+    : status === 401
+      ? 'Session expired'
+      : status === 403
+        ? 'Permission denied'
+        : status === 404
+          ? 'Information not found'
+          : status === 429
+            ? 'Too many requests'
+            : status >= 500
+              ? 'Service temporarily unavailable'
+              : 'Please check your request';
+
+  window.dispatchEvent(new CustomEvent<ApiErrorEventDetail>(API_ERROR_EVENT, {
+    detail: { message: getErrorMessage(error), status, title },
+  }));
+}
+
+export async function showFetchError(response: Response) {
+  let data: unknown = null;
+  try {
+    data = await response.clone().json();
+  } catch {
+    try { data = await response.clone().text(); } catch { /* use the HTTP fallback below */ }
+  }
+  showApiError({
+    response: { status: response.status, data },
+    message: `Request failed with status ${response.status}.`,
+  });
+}
+
 export const apiClient = axios.create({
   baseURL: BASE_URL,
   headers: {
@@ -37,6 +81,7 @@ apiClient.interceptors.request.use(
   },
   (error) => {
     console.warn('[API Request Error]', error);
+    showApiError(error);
     return Promise.reject(error);
   }
 );
@@ -49,6 +94,9 @@ apiClient.interceptors.response.use(
       `✅ [API Response] ${response.config.method?.toUpperCase()} ${fullUrl} [Status: ${response.status}]`,
       response.data
     );
+    if (response.data && typeof response.data === 'object' && response.data.success === false) {
+      showApiError({ response: { status: response.status, data: response.data } });
+    }
     if (typeof window !== 'undefined') window.dispatchEvent(new Event('bhli:network-end'));
     return response;
   },
@@ -84,6 +132,7 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401 && typeof window !== 'undefined') {
       const isCrmRequest = error.config?.url?.includes('/api/crm/');
       if (isCrmRequest) {
+        showApiError(error);
         window.localStorage.removeItem('crm_access_token');
         window.localStorage.removeItem('crm_refresh_token');
         if (!window.location.pathname.startsWith('/admin/login')) window.location.href = '/admin/login';
@@ -107,6 +156,7 @@ apiClient.interceptors.response.use(
       }
 
       if (typeof window !== "undefined") {
+        showApiError(error);
         window.localStorage.removeItem("access_token");
         window.localStorage.removeItem("refresh_token");
         window.localStorage.removeItem("bhli-auth");
@@ -117,6 +167,10 @@ apiClient.interceptors.response.use(
           window.location.href = `/login?redirect=${encodeURIComponent(currentPath + window.location.search)}`;
         }
       }
+    }
+
+    if (error.response?.status !== 401 && !isEmptySearchPage && !isInactiveLogoutSession) {
+      showApiError(error);
     }
     
     return Promise.reject(error);
@@ -139,29 +193,36 @@ function formatFieldErrors(errors: unknown): string | null {
 /**
  * Helper function to extract user-friendly error messages from API calls
  */
-export function getErrorMessage(error: any): string {
+export function getErrorMessage(error: unknown): string {
   if (!error) return 'An unexpected error occurred. Please try again.';
 
   if (typeof error === 'string') return error;
 
-  const directFieldError = formatFieldErrors(error.errors);
+  const apiError = error as {
+    errors?: unknown;
+    response?: { data?: unknown };
+    message?: unknown;
+  };
+
+  const directFieldError = formatFieldErrors(apiError.errors);
   if (directFieldError) return directFieldError;
 
   // Handle Axios response data
-  if (error.response?.data) {
-    const data = error.response.data;
+  if (apiError.response?.data) {
+    const data = apiError.response.data;
 
     if (typeof data === 'string') return data;
-    const responseFieldError = formatFieldErrors(data.errors);
+    const responseObject = data as Record<string, unknown>;
+    const responseFieldError = formatFieldErrors(responseObject.errors);
     if (responseFieldError) return responseFieldError;
-    if (data.message) return data.message;
-    if (data.detail) return data.detail;
-    if (data.error) return data.error;
+    if (typeof responseObject.message === 'string') return responseObject.message;
+    if (typeof responseObject.detail === 'string') return responseObject.detail;
+    if (typeof responseObject.error === 'string') return responseObject.error;
 
     // Django REST Framework field-level errors
     if (typeof data === 'object') {
       const messages: string[] = [];
-      for (const [key, value] of Object.entries(data)) {
+      for (const [key, value] of Object.entries(responseObject)) {
         if (Array.isArray(value)) {
           messages.push(`${key}: ${value.join(', ')}`);
         } else if (typeof value === 'string') {
@@ -173,11 +234,11 @@ export function getErrorMessage(error: any): string {
   }
 
   // Handle standard Error object
-  if (error.message) {
-    if (error.message.includes('Network Error')) {
+  if (typeof apiError.message === 'string') {
+    if (apiError.message.includes('Network Error')) {
       return 'Network connection lost. Please check your internet connection or server status.';
     }
-    return error.message;
+    return apiError.message;
   }
 
   return 'An unexpected error occurred. Please try again.';

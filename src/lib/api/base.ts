@@ -1,4 +1,4 @@
-import { apiClient } from './client';
+import { apiClient, showApiError, showFetchError } from './client';
 
 export type ContactLeadPayload = {
   enquiry_type?: number;
@@ -19,6 +19,8 @@ export type ContactLead = ContactLeadPayload & {
   updated?: string;
 };
 
+type ServiceSummary = { id: number; name: string; slug?: string };
+
 export const baseService = {
   getOfficerRanks: async () => {
     const response = await apiClient.get('/api/base/officer-ranks/');
@@ -35,29 +37,29 @@ export const baseService = {
       const response = await fetch(`https://bhli-backend.onrender.com/api/base/services/${query}`, {
         headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(5000), cache: 'no-store',
       });
-      if (!response.ok) return [];
+      if (!response.ok) { await showFetchError(response); return []; }
       return await response.json();
-    } catch { return []; }
+    } catch (error) { showApiError(error); return []; }
   },
   getServiceDetail: async (slug: string) => {
     try {
       const response = await fetch(`https://bhli-backend.onrender.com/api/base/services/${encodeURIComponent(slug)}/`, {
         headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(5000), cache: 'no-store',
       });
-      if (!response.ok) return null;
+      if (!response.ok) { await showFetchError(response); return null; }
       return await response.json();
-    } catch { return null; }
+    } catch (error) { showApiError(error); return null; }
   },
   // Fetch active services from backend to populate enquiry types
   getEnquiryTypes: async (): Promise<{ success: boolean; count: number; data: Array<{ id: number; name: string; slug: string }> }> => {
     try {
-      const response = await apiClient.get('/api/base/services/');
+      const response = await apiClient.get<ServiceSummary[] | { data?: ServiceSummary[] }>('/api/base/services/');
       const services = Array.isArray(response.data) ? response.data : response.data?.data;
       if (Array.isArray(services)) {
         return {
           success: true,
           count: services.length,
-          data: services.map((s: any) => ({
+          data: services.map((s) => ({
             id: s.id,
             name: s.name,
             slug: s.slug || ''

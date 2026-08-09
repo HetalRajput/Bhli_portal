@@ -9,6 +9,7 @@ import EnquiryWidget from "@/components/EnquiryWidget";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import SecurityGuards from "@/components/SecurityGuards";
 import SiteLoader from "@/components/SiteLoader";
+import ApiErrorAlerts from "@/components/ApiErrorAlerts";
 
 const manrope = Manrope({
   subsets: ["latin"],
@@ -36,6 +37,7 @@ export default function RootLayout({
     <html lang="en" data-scroll-behavior="smooth" className={`${manrope.variable} ${cormorant.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-background text-foreground selection:bg-accent/30">
         <SiteLoader />
+        <ApiErrorAlerts />
         <SecurityGuards />
         <ScrollToTop />
         <ScrollReveal />

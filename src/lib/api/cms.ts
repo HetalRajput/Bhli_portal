@@ -1,4 +1,4 @@
-import { apiClient } from './client';
+import { apiClient, showApiError, showFetchError } from './client';
 
 export type Banner = {
   id: number;
@@ -158,7 +158,7 @@ export const cmsService = {
         signal: AbortSignal.timeout(5000),
         cache: 'no-store',
       });
-      if (!response.ok) return [];
+      if (!response.ok) { await showFetchError(response); return []; }
       const payload = await response.json();
       console.log('[Services API] Response:', payload);
       const services = Array.isArray(payload) ? payload : payload?.data;
@@ -170,6 +170,7 @@ export const cmsService = {
       console.log('[Services API] Catering service:', cateringService ?? 'Catering service not found');
       return payload;
     } catch (error) {
+      showApiError(error);
       console.warn('[Services API] Request failed:', error);
       return [];
     }
@@ -186,7 +187,7 @@ export const cmsService = {
         signal: AbortSignal.timeout(5000),
         cache: 'no-store',
       });
-      if (!response.ok) return null;
+      if (!response.ok) { await showFetchError(response); return null; }
       const payload = await response.json();
       console.log('[Service Detail API] ' + slug + ':', payload);
       if (slug === 'catering-services') {
@@ -196,6 +197,7 @@ export const cmsService = {
       }
       return payload;
     } catch (error) {
+      showApiError(error);
       console.warn('[Service Detail API] ' + slug + ' request failed:', error);
       return null;
     }
@@ -207,7 +209,7 @@ export const cmsService = {
         signal: AbortSignal.timeout(5000),
         cache: 'no-store',
       });
-      if (!response.ok) return null;
+      if (!response.ok) { await showFetchError(response); return null; }
       const payload = await response.json();
       const data = payload?.data;
       if (!data) return null;
@@ -217,7 +219,8 @@ export const cmsService = {
         ratings: Array.isArray(data.ratings) ? data.ratings : [],
         price_range: data.price_range,
       };
-    } catch {
+    } catch (error) {
+      showApiError(error);
       return null;
     }
   },
@@ -249,9 +252,10 @@ export const cmsService = {
         cache: 'no-store',
       });
       if (response.status === 404) return { success: true, count: 0, results: [], data: [] };
-      if (!response.ok) return null;
+      if (!response.ok) { await showFetchError(response); return null; }
       return await response.json();
-    } catch {
+    } catch (error) {
+      showApiError(error);
       return null;
     }
   },
