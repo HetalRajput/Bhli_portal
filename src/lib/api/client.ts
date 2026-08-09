@@ -16,7 +16,7 @@ apiClient.interceptors.request.use(
     // Only access localStorage if in browser environment
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('access_token');
-      if (token) {
+      if (token && !config.headers.Authorization) {
         config.headers.Authorization = `Bearer ${token}`;
       }
     }
@@ -82,6 +82,13 @@ apiClient.interceptors.response.use(
     
     // Refresh an expired access token once, then replay the original request.
     if (error.response?.status === 401 && typeof window !== 'undefined') {
+      const isCrmRequest = error.config?.url?.includes('/api/crm/');
+      if (isCrmRequest) {
+        window.localStorage.removeItem('crm_access_token');
+        window.localStorage.removeItem('crm_refresh_token');
+        if (!window.location.pathname.startsWith('/admin/login')) window.location.href = '/admin/login';
+        return Promise.reject(error);
+      }
       const originalRequest = error.config as typeof error.config & { _retry?: boolean };
       const refresh = window.localStorage.getItem('refresh_token');
       if (refresh && !originalRequest?._retry && !originalRequest?.url?.includes('/auth/token/refresh/')) {

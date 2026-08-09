@@ -28,6 +28,7 @@ export type HotelReservationFilters = {
   cities: string[];
   locations: string[];
   ratings: string[];
+  price_range?: { min_price: string; max_price: string };
 };
 
 export type OurClient = {
@@ -214,6 +215,7 @@ export const cmsService = {
         cities: Array.isArray(data.cities) ? data.cities : [],
         locations: Array.isArray(data.locations) ? data.locations : [],
         ratings: Array.isArray(data.ratings) ? data.ratings : [],
+        price_range: data.price_range,
       };
     } catch {
       return null;
@@ -224,7 +226,7 @@ export const cmsService = {
     query: string,
     page?: number,
     pageSize?: number,
-    filters?: { city?: string; location?: string; rating?: string },
+    filters?: { city?: string; location?: string; rating?: string; min_price?: string; max_price?: string; sort?: string },
   ) => {
     const params = new URLSearchParams();
     const trimmed = (query || '').trim();
@@ -232,9 +234,12 @@ export const cmsService = {
     if (filters?.city?.trim()) params.set('city', filters.city.trim());
     if (filters?.location?.trim()) params.set('location', filters.location.trim());
     if (filters?.rating?.trim()) params.set('rating', filters.rating.trim());
+    if (filters?.min_price?.trim()) params.set('min_price', filters.min_price.trim());
+    if (filters?.max_price?.trim()) params.set('max_price', filters.max_price.trim());
+    if (filters?.sort?.trim()) params.set('sort', filters.sort.trim());
     if (page) params.set('page', String(page));
     if (pageSize) params.set('page_size', String(pageSize));
-    const hasFilters = Boolean(filters?.city?.trim() || filters?.location?.trim() || filters?.rating?.trim());
+    const hasFilters = Boolean(filters?.city?.trim() || filters?.location?.trim() || filters?.rating?.trim() || filters?.min_price?.trim() || filters?.max_price?.trim() || filters?.sort?.trim());
     const endpoint = trimmed || hasFilters ? `${encodeURIComponent(slug)}/search/` : `${encodeURIComponent(slug)}/`;
 
     try {

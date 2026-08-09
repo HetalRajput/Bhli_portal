@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ArrowRight, CheckCircle2, Globe2, MapPinned } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import HolidayPackageDetail, { type HolidayPackageType } from "@/components/HolidayPackageDetail";
-import UnifiedServiceEnquiry from "@/components/UnifiedServiceEnquiry";
+import UnifiedBookingForm from "@/components/UnifiedBookingForm";
 
 const packageTypes = {
   domestic: {
@@ -40,7 +40,7 @@ export default function HolidayPackagesFlow() {
     requestedType === "domestic" || requestedType === "international" ? requestedType : null;
 
   if (selectedType && searchParams.get("step") === "enquire") {
-    return <UnifiedServiceEnquiry serviceSlug="holiday-packages" />;
+    return <UnifiedBookingForm serviceSlug="holiday-packages" />;
   }
 
   if (selectedType) {

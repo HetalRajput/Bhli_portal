@@ -37,6 +37,8 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
   const config = documentedBookingConfigs[serviceSlug] as BookingConfig;
   const isCruiseBooking = serviceSlug === "cruise-booking";
   const isCorporateTravel = serviceSlug === "corporate-travel";
+  const isEventManagement = serviceSlug === "event-management";
+  const isHolidayPackage = serviceSlug === "holiday-packages";
   const params = useSearchParams();
   const pathname = usePathname();
   const router = useRouter();
@@ -148,6 +150,7 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
         }
         return true;
       }
+      if (isEventManagement) return true;
       for (let i = 0; i < guests.length; i++) {
         const guest = guests[i];
         if (guest.name.trim().length < 2) {
@@ -193,10 +196,10 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
 
     const payload: Record<string, unknown> = {
       service: Number(serviceId),
-      guests: guests.map((guest) => ({ name: guest.name.trim(), age: Number(guest.age), gender: guest.gender })),
       message: message.trim(),
       consent_to_contact: consent,
     };
+    if (!isEventManagement) payload.guests = guests.map((guest) => ({ name: guest.name.trim(), age: Number(guest.age), gender: guest.gender }));
     if (selectedItemId) payload.service_item = Number(selectedItemId);
 
     if (isCruiseBooking) {
@@ -264,6 +267,23 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
 
       payload.additional_requirements = message.trim() || String(values.additional_requirements || "");
       payload.declaration_accepted = consent;
+    } else if (isEventManagement) {
+      ["name", "email", "phone", "city", "event_date", "event_time", "event_location", "budget_amount", "event_theme"].forEach((key) => {
+        const value = values[key];
+        if (value !== "" && value !== undefined) payload[key] = value;
+      });
+      payload.schedule_party_for = config.fields
+        .filter((field) => field.key.startsWith("party_") && Boolean(values[field.key]))
+        .map((field) => field.label);
+      payload.message = message.trim() || String(values.requirements || "");
+    } else if (isHolidayPackage) {
+      config.fields.forEach((field) => {
+        const value = values[field.key];
+        if (value === "" || value === undefined) return;
+        if (["duration_days", "number_of_adults", "number_of_children", "number_of_infants"].includes(field.key)) payload[field.key] = Number(value);
+        else payload[field.key] = value;
+      });
+      payload.services_required = String(values.services_required || "").split(",").map((item) => item.trim()).filter(Boolean);
     } else {
       config.fields.forEach((field) => {
         const value = values[field.key];
@@ -290,13 +310,16 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
   const serviceTitle = serviceMeta?.name || serviceMeta?.title || config.title;
   const selectedTitle = selectedItemName || serviceTitle;
   const banner = selectedImage || serviceMeta?.banner_image || fallbackBanner;
-  const cruiseDateMinimum = cruiseMonth && cruiseMonth > dateMinimum.slice(0, 7) ? `${cruiseMonth}-01` : dateMinimum;
   const cruiseDateMaximum = cruiseMonth ? lastDayOfMonth(cruiseMonth) : undefined;
 
   const stepsList = isCorporateTravel ? [
     { number: 1, title: "Company profile", desc: "Organisation & contact" },
     { number: 2, title: "Services & planning", desc: "Choose your support" },
     { number: 3, title: "Review & send", desc: "Confirm request" },
+  ] : isEventManagement ? [
+    { number: 1, title: "Event details", desc: "Contact, date & scope" },
+    { number: 2, title: "Review request", desc: "Confirm event plan" },
+    { number: 3, title: "Send request", desc: "Consent & submit" },
   ] : [
     { number: 1, title: isCruiseBooking ? "Cruise Search" : "Service Details", desc: "Requirements & specs" },
     { number: 2, title: "Traveller Details", desc: "Guest names & ages" },
@@ -477,6 +500,13 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
                   <div className="mt-6 grid gap-4 sm:grid-cols-2">
                     {config.fields.filter((field) => corporatePlanningKeys.includes(field.key)).map((field) => <DynamicField key={field.key} field={field} value={values[field.key]} update={update} minDate={dateMinimum} />)}
                   </div>
+                </FormSection> : isEventManagement ? <FormSection number="02" title="Review event scope" description="Confirm the contact details, date and services entered in Step 1.">
+                  <div className="grid gap-3 rounded-2xl border border-[#087fbe]/15 bg-[#f2f9fc] p-5 text-sm text-[#456078] sm:grid-cols-2">
+                    <p>Contact: <b className="text-[#061f3b]">{String(values.name || "Not provided")}</b></p>
+                    <p>Event date: <b className="text-[#061f3b]">{String(values.event_date || "Not selected")}</b></p>
+                    <p>City: <b className="text-[#061f3b]">{String(values.city || "Not provided")}</b></p>
+                    <p>Services: <b className="text-[#061f3b]">{config.fields.filter((field) => field.key.startsWith("party_") && Boolean(values[field.key])).length} selected</b></p>
+                  </div>
                 </FormSection> : <FormSection number="02" title="Traveller information" description="Add one row for every traveller included in the request.">
                   <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
                     <p className="text-xs font-semibold text-slate-500">{guests.length} traveller{guests.length === 1 ? "" : "s"} added</p>
@@ -502,7 +532,7 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
                     <p className="text-xs font-bold text-[#087fbe] uppercase tracking-wider">Request Review Summary</p>
                     <div className="grid gap-2 sm:grid-cols-2 text-xs text-slate-600">
                       <p>Service: <b className="text-[#061f3b]">{selectedTitle}</b></p>
-                      {isCorporateTravel ? <><p>Company: <b className="text-[#061f3b]">{String(values.company_name || "Not provided")}</b></p><p>Services selected: <b className="text-[#061f3b]">{config.fields.filter((field) => field.kind === "checkbox" && Boolean(values[field.key])).length}</b></p><p>Contact: <b className="text-[#061f3b]">{String(values.contact_person_name || "Not provided")}</b></p></> : <p>Total Travellers: <b className="text-[#061f3b]">{guests.length} guest(s) ({guests[0]?.name || "Primary guest"})</b></p>}
+                      {isCorporateTravel ? <><p>Company: <b className="text-[#061f3b]">{String(values.company_name || "Not provided")}</b></p><p>Services selected: <b className="text-[#061f3b]">{config.fields.filter((field) => field.kind === "checkbox" && Boolean(values[field.key])).length}</b></p><p>Contact: <b className="text-[#061f3b]">{String(values.contact_person_name || "Not provided")}</b></p></> : isEventManagement ? <><p>Contact: <b className="text-[#061f3b]">{String(values.name || "Not provided")}</b></p><p>Event date: <b className="text-[#061f3b]">{String(values.event_date || "Not selected")}</b></p></> : <p>Total Travellers: <b className="text-[#061f3b]">{guests.length} guest(s) ({guests[0]?.name || "Primary guest"})</b></p>}
                     </div>
                   </div>
 
