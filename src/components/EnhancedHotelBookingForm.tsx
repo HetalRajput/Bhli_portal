@@ -32,6 +32,7 @@ export default function EnhancedHotelBookingForm() {
   const [guests, setGuests] = useState<Guest[]>([newGuest()]);
   const [meals, setMeals] = useState<Meal[]>([]);
   const [laundry, setLaundry] = useState(false);
+  const [kidsAccompanying, setKidsAccompanying] = useState(false);
   const [message, setMessage] = useState("");
   const [consent, setConsent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -74,7 +75,8 @@ export default function EnhancedHotelBookingForm() {
     successChime.arm();
     const mealPreference = meals.length ? `Meal preferences: ${meals.join(", ")}.` : "";
     const servicePreference = laundry ? "Additional service requested: Laundry." : "";
-    const submittedMessage = [mealPreference, servicePreference, message.trim()].filter(Boolean).join("\n").slice(0, 2000);
+    const kidsPreference = kidsAccompanying ? "Kids are accompanying this stay." : "";
+    const submittedMessage = [mealPreference, servicePreference, kidsPreference, message.trim()].filter(Boolean).join("\n").slice(0, 2000);
     const payload = {
       service: Number(serviceId),
       service_item: Number(hotel.id),
@@ -188,6 +190,10 @@ export default function EnhancedHotelBookingForm() {
                     </div>
                   ))}
                 </div>
+                <label className={`mt-4 flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-sm font-semibold transition ${kidsAccompanying ? "border-[#13a5d8] bg-[#edf9fd] text-[#087fbe] ring-2 ring-[#13a5d8]/10" : "border-slate-200 bg-white text-[#456078] hover:border-[#74bddb]"}`}>
+                  <input type="checkbox" checked={kidsAccompanying} onChange={(event) => setKidsAccompanying(event.target.checked)} className="size-4 accent-[#087fbe]" />
+                  Kids are accompanying this stay
+                </label>
               </FormSection>
 
               <FormSection number="04" title="Final details" description="Share preferences and confirm contact permission.">
