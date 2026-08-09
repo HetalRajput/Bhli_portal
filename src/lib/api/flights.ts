@@ -24,20 +24,21 @@ export type FlightPassengerPayload = {
   first_name: string;
   last_name: string;
   passenger_type: PassengerType;
-  gender: "male" | "female" | "other";
+  gender: "M" | "F" | "O";
   date_of_birth: string;
   passport_number: string;
   passport_issue_date: string | null;
   passport_expiry_date: string | null;
   passport_nationality: string;
+  ssr_info?: Record<string, unknown>;
 };
 
 export type FlightBookingPayload = {
   service: number;
-  search_session: number;
+  search_session?: number;
   ref_id: string;
   flight_id: string;
-  message: string;
+  message?: string;
   passengers: FlightPassengerPayload[];
   mobile?: string;
   email?: string;
@@ -49,6 +50,7 @@ export type FlightBookingPayload = {
     gstMobile: string;
     gstAddress: string;
   };
+  ssr_details?: Record<string, unknown>;
 };
 
 export type FlightApiResponse = {
@@ -89,4 +91,5 @@ export const flightService = {
     cancel_mode?: number;
     cancel_remarks: string;
   }) => post("/api/bookings/flight/cancel/", payload),
+  balance: () => apiClient.get<FlightApiResponse>("/api/bookings/flight/balance/").then((response) => response.data),
 };

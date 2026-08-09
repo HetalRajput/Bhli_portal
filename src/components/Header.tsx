@@ -9,15 +9,22 @@ import { authService } from "@/lib/api/auth";
 const links = [
   ["Home", "/"],
   ["Services", "/services"],
-  ["Events", "/events"],
+  ["BHLI Events", "/events"],
   ["Clients", "/clients"],
+  ["Channel Partners", "/channel-partners"],
   ["Help & opportunities", "/help-centre"],
 ];
-const moreLinks = [["Gallery", "/gallery"], ["About us", "/about-us"], ["Channel Partners", "/channel-partners"], ["Contact", "/contact-us"]];
+const moreLinks = [
+  ["Gallery", "/gallery"],
+  ["About us", "/about-us"],
+  ["Careers", "/careers"],
+  ["Become a Partner", "/become-a-partner"],
+  ["Feedback", "/complaint-feedback"],
+  ["Contact", "/contact-us"],
+];
 
 export default function Header() {
   const path = usePathname();
-  const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const [hidden, setHidden] = useState(false);
@@ -26,13 +33,32 @@ export default function Header() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [userImage, setUserImage] = useState<string | null>(null);
   const lastY = useRef(0);
+  const desktopMoreRef = useRef<HTMLDivElement>(null);
+  const mobileMoreRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    if (!moreOpen) return;
+
+    const closeWhenOutside = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (!desktopMoreRef.current?.contains(target) && !mobileMoreRef.current?.contains(target)) {
+        setMoreOpen(false);
+      }
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMoreOpen(false);
+    };
+
+    document.addEventListener("pointerdown", closeWhenOutside);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeWhenOutside);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [moreOpen]);
 
   const isLinkActive = (h: string) => {
-    if (!mounted || !path) return false;
+    if (!path) return false;
     return path === h || (h !== "/" && path.startsWith(h));
   };
 
@@ -47,7 +73,7 @@ export default function Header() {
             try {
               const parsed = JSON.parse(authData);
               if (parsed.email) setUserEmail(parsed.email);
-            } catch (e) {
+            } catch {
               // Ignore JSON parse error
             }
           }
@@ -115,7 +141,7 @@ export default function Header() {
             className="h-11 w-auto max-w-[215px] object-contain"
           />
         </Link>
-        <nav className="hidden items-center gap-7 lg:flex">
+        <nav className="hidden items-center gap-5 xl:flex">
           {links.map(([l, h]) => (
             <Link
               key={h}
@@ -129,7 +155,7 @@ export default function Header() {
               {l}
             </Link>
           ))}
-          <div className="relative">
+          <div ref={desktopMoreRef} className="relative">
             <button type="button" onClick={() => setMoreOpen((current) => !current)} aria-expanded={moreOpen} aria-haspopup="menu" className={`inline-flex items-center gap-1 py-2 text-sm font-medium transition ${moreLinks.some(([, href]) => isLinkActive(href)) ? "text-[#087dbd]" : "text-[#344a5c] hover:text-[#087dbd]"}`}>
               More <ChevronDown className={`size-4 transition-transform ${moreOpen ? "rotate-180" : ""}`} />
             </button>
@@ -144,7 +170,7 @@ export default function Header() {
             Defence desk
           </Link>
         </nav>
-        <div className="hidden items-center gap-4 lg:flex">
+        <div className="hidden items-center gap-4 xl:flex">
           {isAuthenticated ? (
             <Link
               href="/profile"
@@ -178,13 +204,13 @@ export default function Header() {
         <button
           aria-label="Toggle menu"
           onClick={() => setOpen(!open)}
-          className="grid size-10 place-items-center rounded-full border border-[#0a86c8]/25 bg-[#edf8fd] text-[#0879b7] transition hover:bg-[#dff3fb] lg:hidden"
+          className="grid size-10 place-items-center rounded-full border border-[#0a86c8]/25 bg-[#edf8fd] text-[#0879b7] transition hover:bg-[#dff3fb] xl:hidden"
         >
           {open ? <X /> : <Menu />}
         </button>
       </div>
       {open && (
-        <div className="border-t border-[#0a86c8]/15 bg-white/98 px-5 py-5 backdrop-blur-xl lg:hidden">
+        <div className="border-t border-[#0a86c8]/15 bg-white/98 px-5 py-5 backdrop-blur-xl xl:hidden">
           <nav className="flex flex-col gap-1">
             {links.map(([l, h]) => (
               <Link
@@ -198,7 +224,7 @@ export default function Header() {
                 {l}
               </Link>
             ))}
-            <div className="pt-1">
+            <div ref={mobileMoreRef} className="pt-1">
               <button type="button" onClick={() => setMoreOpen((current) => !current)} aria-expanded={moreOpen} className="flex w-full items-center justify-between rounded-xl px-4 py-3 text-left text-[#344a5c] hover:bg-[#f0f8fc]">
                 More links <ChevronDown className={`size-4 transition-transform ${moreOpen ? "rotate-180" : ""}`} />
               </button>

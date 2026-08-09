@@ -2,8 +2,11 @@
 
 import { ChevronDown, XCircle } from "lucide-react";
 import { useState, useEffect } from "react";
+import { apiClient } from "@/lib/api/client";
 
 type CruiseField = "destination" | "port" | "month" | "nights";
+type CruiseDestinationResponse = { success?: boolean; data?: Array<{ region_name: string; destinations: Array<{ name: string }> }> };
+type CruisePortResponse = { success?: boolean; data?: Array<{ region_name: string; ports: Array<{ name: string }> }> };
 
 type CruiseSearchPanelProps = {
   destination: string;
@@ -64,27 +67,27 @@ export default function CruiseSearchPanel({
   useEffect(() => {
     let active = true;
     Promise.all([
-      fetch("https://bhli-backend.onrender.com/api/bookings/cruise/destinations/").then((r) => r.json()),
-      fetch("https://bhli-backend.onrender.com/api/bookings/cruise/ports/").then((r) => r.json())
+      apiClient.get<CruiseDestinationResponse>("/api/bookings/cruise/destinations/").then((response) => response.data),
+      apiClient.get<CruisePortResponse>("/api/bookings/cruise/ports/").then((response) => response.data)
     ])
       .then(([destRes, portRes]) => {
         if (!active) return;
         if (destRes?.success && Array.isArray(destRes.data)) {
           const dests = destRes.data
-            .map((region: any) => ({
+            .map((region) => ({
               name: region.region_name,
-              options: region.destinations.map((d: any) => d.name),
+              options: region.destinations.map((destination) => destination.name),
             }))
-            .filter((r: any) => r.options.length > 0);
+            .filter((region) => region.options.length > 0);
           setDestinationGroups(dests);
         }
         if (portRes?.success && Array.isArray(portRes.data)) {
           const ports = portRes.data
-            .map((region: any) => ({
+            .map((region) => ({
               name: region.region_name,
-              options: region.ports.map((p: any) => p.name),
+              options: region.ports.map((port) => port.name),
             }))
-            .filter((r: any) => r.options.length > 0);
+            .filter((region) => region.options.length > 0);
           setPortGroups(ports);
         }
       })

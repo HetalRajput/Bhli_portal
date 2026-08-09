@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ExternalLink, Mail, MapPin, Phone } from "lucide-react";
+import { ExternalLink, Instagram, Mail, MapPin, Phone } from "lucide-react";
 
 const locationUrl = "https://www.google.com/maps/place/13.04072,77.539637";
 const locationEmbedUrl =
@@ -25,8 +25,8 @@ export default function Footer() {
             <p className="text-xs font-bold uppercase tracking-[.16em] text-[#087dbd]">Follow us</p>
             <div className="mt-3 flex items-center gap-2">
               {socialLinks.map(([label, mark, href]) => (
-                <a key={label} href={href} target="_blank" rel="noopener noreferrer" aria-label={`Follow Booking Hospitality on ${label}`} title={label} className="grid size-9 place-items-center rounded-full border border-[#087dbd]/20 bg-[#f1f9fc] text-xs font-extrabold text-[#087dbd] transition hover:-translate-y-0.5 hover:border-[#087dbd] hover:bg-[#087dbd] hover:text-white">
-                  <span aria-hidden="true">{mark}</span>
+                <a key={label} href={href} target="_blank" rel="noopener noreferrer" aria-label={`Follow Booking Hospitality on ${label}`} title={label} className="grid size-12 place-items-center rounded-full border border-[#087dbd]/20 bg-[#f1f9fc] text-2xl font-extrabold text-[#087dbd] transition hover:-translate-y-0.5 hover:border-[#087dbd] hover:bg-[#087dbd] hover:text-white">
+                  {label === "Instagram" ? <Instagram aria-hidden="true" className="size-7" strokeWidth={2.25} /> : <span aria-hidden="true" className="leading-none">{mark}</span>}
                 </a>
               ))}
             </div>
@@ -37,7 +37,7 @@ export default function Footer() {
           <h3 className="mb-4 text-sm font-bold uppercase tracking-widest text-[#087dbd]">Explore</h3>
           <div className="grid gap-3 text-sm text-[#344a5c]/75">
             <Link href="/services" className="transition-colors hover:text-[#087dbd]">Services</Link>
-            <Link href="/events" className="transition-colors hover:text-[#087dbd]">Events</Link>
+            <Link href="/events" className="transition-colors hover:text-[#087dbd]">  BHLI Events</Link>
             <Link href="/about-us" className="transition-colors hover:text-[#087dbd]">About us</Link>
             <Link href="/channel-partners" className="transition-colors hover:text-[#087dbd]">Channel Partners</Link>
             <Link href="/clients" className="transition-colors hover:text-[#087dbd]">Clients</Link>

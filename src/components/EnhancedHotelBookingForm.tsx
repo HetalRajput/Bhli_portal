@@ -70,6 +70,10 @@ export default function EnhancedHotelBookingForm() {
     if (!hotel.id || !Number.isInteger(Number(hotel.id))) return setError("Please return to the hotel list and select a valid hotel.");
     if (!stay.checkInDate || !stay.checkOutDate || stay.checkOutDate <= stay.checkInDate) return setError("Select a check-out date after the check-in date.");
     if (guests.some((guest) => guest.name.trim().length < 2 || Number(guest.age) < 1 || Number(guest.age) > 120)) return setError("Enter a valid name and age for every guest.");
+    const normalizedGuests = guests.map((guest) => ({ name: guest.name.trim(), age: Number(guest.age), gender: guest.gender }));
+    const adults = normalizedGuests.filter((guest) => guest.age > 6);
+    const children = normalizedGuests.filter((guest) => guest.age <= 6);
+    if (!adults.length) return setError("At least one adult guest older than 6 is required.");
     if (!consent) return setError("Please consent to contact before submitting your request.");
 
     successChime.arm();
@@ -85,11 +89,10 @@ export default function EnhancedHotelBookingForm() {
       check_out_date: stay.checkOutDate,
       check_out_time: stay.checkOutTime,
       number_of_rooms: Number(stay.rooms),
-      number_of_guests: guests.length,
       budget_amount: stay.budget || undefined,
       td_tariff_amount: stay.tdTariff || undefined,
       message: submittedMessage,
-      guests: guests.map((guest) => ({ name: guest.name.trim(), age: Number(guest.age), gender: guest.gender })),
+      guests: { adults, children },
       consent_to_contact: consent,
     };
 

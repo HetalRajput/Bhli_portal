@@ -14,10 +14,10 @@ import {
   Route,
   ShieldCheck,
   Sparkles,
-  UsersRound,
 } from "lucide-react";
 import DomesticPricingTable from "./DomesticPricingTable";
 import InternationalPricingTable from "./InternationalPricingTable";
+import LiveHolidayCatalog from "./LiveHolidayCatalog";
 
 export type HolidayPackageType = "domestic" | "international";
 
@@ -221,6 +221,8 @@ export default function HolidayPackageDetail({
           </div>
         </div>
       </section>
+
+      <LiveHolidayCatalog collection={packageType} />
 
       {/* Package information directly below the page header */}
       {packageType === "domestic" && <DomesticPricingTable />}

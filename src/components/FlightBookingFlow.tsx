@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { getErrorMessage } from "@/lib/api/client";
 import { airportOptions } from "@/lib/airports";
+import { portalService } from "@/lib/api/portal";
 import {
   flightService,
   type FlightBookingPayload,
@@ -255,7 +256,7 @@ function makePassenger(type: PassengerType): PassengerForm {
     first_name: "",
     last_name: "",
     passenger_type: type,
-    gender: "male",
+    gender: "M",
     date_of_birth: "",
     passport_number: "",
     passport_issue_date: null,
@@ -301,12 +302,15 @@ export default function FlightBookingFlow() {
   const [loadingFareId, setLoadingFareId] = useState("");
   const [error, setError] = useState("");
   const [bookingResult, setBookingResult] = useState<JsonRecord | null>(null);
+  const [flightServiceId, setFlightServiceId] = useState<number | null>(null);
 
   useEffect(() => {
-    if (!hasLoginSession()) {
-      router.replace(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
-    }
-  }, [router]);
+    let active = true;
+    portalService.service("flight-booking").then((service) => {
+      if (active && service.id) setFlightServiceId(service.id);
+    }).catch(() => setFlightServiceId(null));
+    return () => { active = false; };
+  }, []);
 
   const updateForm = (key: keyof SearchForm, value: string) =>
     setForm((current) => ({ ...current, [key]: value }));
@@ -449,13 +453,14 @@ export default function FlightBookingFlow() {
     }
 
     const payload: FlightBookingPayload = {
-      service: 2,
+      service: flightServiceId || 0,
       search_session: searchContext.searchSession,
       ref_id: searchContext.refId,
       flight_id: selectedFare.bookingFlightId,
       message: message.trim() || "Please book this flight.",
       passengers,
     };
+    if (!flightServiceId) return setError("The Flight Booking service is unavailable. Please refresh and try again.");
     if (mobile) payload.mobile = mobile;
     if (email) payload.email = email;
     if (pan) payload.first_pax_pan_no = pan;
@@ -803,12 +808,14 @@ export default function FlightBookingFlow() {
 function AirportField({ label, value, icon, onChange }: { label: string; value: string; icon: ReactNode; onChange: (value: string) => void }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
-  const selectedAirport = airportOptions.find(([code]) => code === value);
+  const [remoteSuggestions, setRemoteSuggestions] = useState<[string, string, string][] | null>(null);
+  const [chosenAirport, setChosenAirport] = useState<[string, string, string] | null>(null);
+  const selectedAirport = chosenAirport?.[0] === value ? chosenAirport : airportOptions.find(([code]) => code === value);
   const selectedLabel = selectedAirport ? `${selectedAirport[1]} (${selectedAirport[0]})` : value;
   const displayedQuery = open ? query : selectedLabel;
   const listId = `airport-results-${label.toLowerCase()}`;
   const normalizedQuery = query.trim().toLowerCase();
-  const suggestions = airportOptions
+  const fallbackSuggestions = airportOptions
     .filter(([code, city, airport]) => {
       if (!normalizedQuery) return true;
       return code.toLowerCase().includes(normalizedQuery) ||
@@ -816,9 +823,26 @@ function AirportField({ label, value, icon, onChange }: { label: string; value: 
         airport.toLowerCase().includes(normalizedQuery);
     })
     .slice(0, 8);
+  const suggestions = open && normalizedQuery.length >= 2 && remoteSuggestions
+    ? remoteSuggestions
+    : fallbackSuggestions;
 
-  function chooseAirport(code: string, city: string) {
+  useEffect(() => {
+    const search = query.trim();
+    if (!open || search.length < 2) return;
+    let active = true;
+    const timer = window.setTimeout(() => {
+      portalService.airports({ search, page: 1, page_size: 8 }).then((response) => {
+        if (!active) return;
+        setRemoteSuggestions(response.data.map((airport) => [airport.airport_code, airport.airport_city, airport.airport_name]));
+      }).catch(() => { if (active) setRemoteSuggestions(null); });
+    }, 250);
+    return () => { active = false; window.clearTimeout(timer); };
+  }, [open, query]);
+
+  function chooseAirport(code: string, city: string, airport: string) {
     onChange(code);
+    setChosenAirport([code, city, airport]);
     setQuery(`${city} (${code})`);
     setOpen(false);
   }
@@ -843,6 +867,7 @@ function AirportField({ label, value, icon, onChange }: { label: string; value: 
             onBlur={() => window.setTimeout(() => setOpen(false), 150)}
             onChange={(event) => {
               setQuery(event.target.value);
+              setRemoteSuggestions(null);
               setOpen(true);
               onChange("");
             }}
@@ -867,7 +892,7 @@ function AirportField({ label, value, icon, onChange }: { label: string; value: 
               aria-selected={value === code}
               onMouseDown={(event) => {
                 event.preventDefault();
-                chooseAirport(code, city);
+                chooseAirport(code, city, airport);
               }}
               className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-[#edf8fc] ${value === code ? "bg-[#edf8fc]" : ""}`}
             >
@@ -930,7 +955,7 @@ function PassengerCard({ passenger, index, international, update }: { passenger:
         <SelectField label="Title" value={passenger.title} onChange={(value) => update(index, "title", value)} options={[["Mr", "Mr"], ["Ms", "Ms"], ["Mrs", "Mrs"], ["Master", "Master"]]} />
         <InputField label="First name" value={passenger.first_name} onChange={(value) => update(index, "first_name", value)} />
         <InputField label="Last name" value={passenger.last_name} onChange={(value) => update(index, "last_name", value)} />
-        <SelectField label="Gender" value={passenger.gender} onChange={(value) => update(index, "gender", value)} options={[["male", "Male"], ["female", "Female"], ["other", "Other"]]} />
+        <SelectField label="Gender" value={passenger.gender} onChange={(value) => update(index, "gender", value)} options={[["M", "Male"], ["F", "Female"], ["O", "Other"]]} />
         <InputField label="Date of birth" type="date" value={passenger.date_of_birth} onChange={(value) => update(index, "date_of_birth", value)} />
         {international && (
           <>

@@ -2,6 +2,7 @@ import { apiClient } from "./client";
 
 export type BookingGuestInput = { name: string; age: number; gender: "male" | "female" | "other" };
 export type BookingGuest = BookingGuestInput & { id?: number };
+export type BookingGuestDetails = { adults: BookingGuest[]; children: BookingGuest[] };
 
 export type BookingRequest = {
   id: number;
@@ -20,6 +21,7 @@ export type BookingRequest = {
   remarks?: string;
   admin_notes?: string;
   guests: BookingGuest[];
+  guest_details?: BookingGuestDetails;
   created: string;
   updated: string;
   details?: Record<string, unknown>;
@@ -48,11 +50,17 @@ export type BookingRequestInput = {
 export type SimpleBookingInput = { service: number; date: string; message?: string; consent_to_contact?: boolean };
 
 export const bookingService = {
+  createTypedBooking: async <T = Record<string, unknown>>(slug: string, data: Record<string, unknown>) => (
+    await apiClient.post<T>(`/api/bookings/${encodeURIComponent(slug)}/`, data)
+  ).data,
   createGenericBooking: async (data: BookingRequestInput) => (await apiClient.post("/api/bookings/requests/", data)).data,
   createSimpleBooking: async (data: SimpleBookingInput) => (await apiClient.post("/api/bookings/requests/simple/", data)).data,
   listBookings: async (params?: { service?: number; service_slug?: string; status?: string }) => (
     await apiClient.get<BookingHistoryResponse>("/api/bookings/requests/history/", { params })
   ).data,
-  getBookingById: async (id: number) => (await apiClient.get<BookingRequest>(`/api/bookings/requests/${id}/`)).data,
+  getBookingById: async (id: number) => {
+    const payload = (await apiClient.get<BookingRequest | { success: boolean; data: BookingRequest }>(`/api/bookings/requests/${id}/`)).data;
+    return "data" in payload ? payload.data : payload;
+  },
   cancelBooking: async (id: number, reason?: string) => (await apiClient.post(`/api/bookings/requests/${id}/cancel/`, { reason: reason?.trim() || "" })).data,
 };

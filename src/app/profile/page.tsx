@@ -260,7 +260,7 @@ export default function ProfilePage() {
     setBookingDetailError("");
     try {
       const response = await bookingService.getBookingById(id);
-      setSelectedBooking(response?.data || response);
+      setSelectedBooking(response);
     } catch (error) {
       setBookingDetailError(getErrorMessage(error));
     } finally {

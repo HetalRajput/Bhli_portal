@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, Bus, CalendarDays, Car, Coins, Ship, Hotel, Map, Plane, ShieldCheck, Ticket, Train, UtensilsCrossed } from "lucide-react";
 import { cmsService } from "@/lib/api/cms";
+import VendorCardLink from "@/components/VendorCardLink";
 
 // Fallback items in case API is empty or fails
 const fallbackItems = [
@@ -11,6 +12,7 @@ const fallbackItems = [
   ["Taxi services", "Airport transfers, local travel and outstation cabs.", Car, "/services/taxi-services", "https://images.pexels.com/photos/116675/pexels-photo-116675.jpeg?auto=compress&cs=tinysrgb&w=900"],
   ["Holiday packages", "Curated family, group and individual escapes.", Map, "/services/holiday-packages", "https://images.pexels.com/photos/417074/pexels-photo-417074.jpeg?auto=compress&cs=tinysrgb&w=900"],
   ["Event management", "Professional corporate events and thematic celebrations.", CalendarDays, "/services/event-management", "https://images.pexels.com/photos/1190298/pexels-photo-1190298.jpeg?auto=compress&cs=tinysrgb&w=900"],
+  ["Hotel Consultancy", "Concept, pre-opening, people, controls and performance support for hospitality businesses.", ArrowRight, "/services/hotel-consultancy", "https://images.pexels.com/photos/3769138/pexels-photo-3769138.jpeg?auto=compress&cs=tinysrgb&w=900"],
 ];
 
 const iconMap: Record<string, any> = {
@@ -69,32 +71,13 @@ export default async function Services() {
     return identity.includes("holiday") && identity.includes("package");
   };
 
-  // Pre-fetch vendor URLs for any services with vendor_links (like Catering)
-  const resolvedVendorLinks: Record<string, string> = {};
-  await Promise.all(
-    apiServices.map(async (s) => {
-      const trackingUrl = s.vendor_links?.[0]?.tracking_url;
-      if (trackingUrl) {
-        try {
-          const res = await fetch(trackingUrl, { cache: "no-store" });
-          const json = await res.json();
-          const finalUrl = json?.data?.url || json?.data?.redirect_url || json?.url;
-          if (finalUrl) {
-            resolvedVendorLinks[s.slug] = finalUrl;
-          }
-        } catch {
-          // ignore
-        }
-      }
-    })
-  );
-
   // Use API data if available, otherwise use fallback data mapped to the same structure
   const displayServices = apiServices.length > 0
     ? apiServices.map(s => {
-      const vendorUrl = resolvedVendorLinks[s.slug];
+      const vendorUrl = s.vendor_links?.[0]?.tracking_url;
       const isCatering = s.slug === "catering-services" || s.slug?.includes("catering");
-      const targetLink = isCatering && vendorUrl
+      const usesVendor = Boolean(vendorUrl) && (isCatering || s.booking_mode === "third_party");
+      const targetLink = usesVendor
         ? vendorUrl
         : isHolidayPackage(s) ? "/services/holiday-packages" : `/services/${s.slug}`;
 
@@ -103,7 +86,7 @@ export default async function Services() {
         description: s.short_description || s.description || "",
         Icon: getIcon(s.slug, s.service_type),
         link: targetLink,
-        isExternal: isCatering && Boolean(vendorUrl),
+        isExternal: usesVendor,
         image: s.banner_image || s.image || fallbackItems[0][4]
       };
     })
@@ -164,15 +147,13 @@ export default async function Services() {
             );
 
             return service.isExternal ? (
-              <a
+              <VendorCardLink
                 key={i}
-                href={String(service.link)}
-                target="_blank"
-                rel="noopener noreferrer"
+                trackingUrl={String(service.link)}
                 className="service-list-card group block min-w-0 overflow-hidden rounded-3xl border border-black/10 bg-white"
               >
                 {cardContent}
-              </a>
+              </VendorCardLink>
             ) : (
               <Link
                 key={i}
