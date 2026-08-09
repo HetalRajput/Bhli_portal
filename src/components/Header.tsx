@@ -9,11 +9,19 @@ import { authService } from "@/lib/api/auth";
 const links = [
   ["Home", "/"],
   ["Services", "/services"],
-  ["Events", "/events"],
+  ["BHLI Events", "/events"],
   ["Clients", "/clients"],
+  ["Channel Partners", "/channel-partners"],
   ["Help & opportunities", "/help-centre"],
 ];
-const moreLinks = [["Gallery", "/gallery"], ["About us", "/about-us"], ["Channel Partners", "/channel-partners"], ["Contact", "/contact-us"]];
+const moreLinks = [
+  ["Gallery", "/gallery"],
+  ["About us", "/about-us"],
+  ["Careers", "/careers"],
+  ["Become a Partner", "/become-a-partner"],
+  ["Feedback", "/complaint-feedback"],
+  ["Contact", "/contact-us"],
+];
 
 export default function Header() {
   const path = usePathname();
@@ -133,7 +141,7 @@ export default function Header() {
             className="h-11 w-auto max-w-[215px] object-contain"
           />
         </Link>
-        <nav className="hidden items-center gap-7 lg:flex">
+        <nav className="hidden items-center gap-5 xl:flex">
           {links.map(([l, h]) => (
             <Link
               key={h}
@@ -162,7 +170,7 @@ export default function Header() {
             Defence desk
           </Link>
         </nav>
-        <div className="hidden items-center gap-4 lg:flex">
+        <div className="hidden items-center gap-4 xl:flex">
           {isAuthenticated ? (
             <Link
               href="/profile"
@@ -196,13 +204,13 @@ export default function Header() {
         <button
           aria-label="Toggle menu"
           onClick={() => setOpen(!open)}
-          className="grid size-10 place-items-center rounded-full border border-[#0a86c8]/25 bg-[#edf8fd] text-[#0879b7] transition hover:bg-[#dff3fb] lg:hidden"
+          className="grid size-10 place-items-center rounded-full border border-[#0a86c8]/25 bg-[#edf8fd] text-[#0879b7] transition hover:bg-[#dff3fb] xl:hidden"
         >
           {open ? <X /> : <Menu />}
         </button>
       </div>
       {open && (
-        <div className="border-t border-[#0a86c8]/15 bg-white/98 px-5 py-5 backdrop-blur-xl lg:hidden">
+        <div className="border-t border-[#0a86c8]/15 bg-white/98 px-5 py-5 backdrop-blur-xl xl:hidden">
           <nav className="flex flex-col gap-1">
             {links.map(([l, h]) => (
               <Link
