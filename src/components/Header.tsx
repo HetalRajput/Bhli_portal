@@ -17,7 +17,6 @@ const moreLinks = [["Gallery", "/gallery"], ["About us", "/about-us"], ["Channel
 
 export default function Header() {
   const path = usePathname();
-  const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const [hidden, setHidden] = useState(false);
@@ -26,13 +25,32 @@ export default function Header() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [userImage, setUserImage] = useState<string | null>(null);
   const lastY = useRef(0);
+  const desktopMoreRef = useRef<HTMLDivElement>(null);
+  const mobileMoreRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    if (!moreOpen) return;
+
+    const closeWhenOutside = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (!desktopMoreRef.current?.contains(target) && !mobileMoreRef.current?.contains(target)) {
+        setMoreOpen(false);
+      }
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMoreOpen(false);
+    };
+
+    document.addEventListener("pointerdown", closeWhenOutside);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeWhenOutside);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [moreOpen]);
 
   const isLinkActive = (h: string) => {
-    if (!mounted || !path) return false;
+    if (!path) return false;
     return path === h || (h !== "/" && path.startsWith(h));
   };
 
@@ -47,7 +65,7 @@ export default function Header() {
             try {
               const parsed = JSON.parse(authData);
               if (parsed.email) setUserEmail(parsed.email);
-            } catch (e) {
+            } catch {
               // Ignore JSON parse error
             }
           }
@@ -129,7 +147,7 @@ export default function Header() {
               {l}
             </Link>
           ))}
-          <div className="relative">
+          <div ref={desktopMoreRef} className="relative">
             <button type="button" onClick={() => setMoreOpen((current) => !current)} aria-expanded={moreOpen} aria-haspopup="menu" className={`inline-flex items-center gap-1 py-2 text-sm font-medium transition ${moreLinks.some(([, href]) => isLinkActive(href)) ? "text-[#087dbd]" : "text-[#344a5c] hover:text-[#087dbd]"}`}>
               More <ChevronDown className={`size-4 transition-transform ${moreOpen ? "rotate-180" : ""}`} />
             </button>
@@ -198,7 +216,7 @@ export default function Header() {
                 {l}
               </Link>
             ))}
-            <div className="pt-1">
+            <div ref={mobileMoreRef} className="pt-1">
               <button type="button" onClick={() => setMoreOpen((current) => !current)} aria-expanded={moreOpen} className="flex w-full items-center justify-between rounded-xl px-4 py-3 text-left text-[#344a5c] hover:bg-[#f0f8fc]">
                 More links <ChevronDown className={`size-4 transition-transform ${moreOpen ? "rotate-180" : ""}`} />
               </button>
