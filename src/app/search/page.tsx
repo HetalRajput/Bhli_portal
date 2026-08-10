@@ -2,6 +2,7 @@
 
 import { useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import GlobalPageSkeleton from "@/components/GlobalPageSkeleton";
 
 function SearchRedirect() {
   const params = useSearchParams();
@@ -37,7 +38,7 @@ function SearchRedirect() {
 
 export default function SearchPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#061f3b]" />}>
+    <Suspense fallback={<GlobalPageSkeleton />}>
       <SearchRedirect />
     </Suspense>
   );

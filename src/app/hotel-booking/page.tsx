@@ -7,6 +7,7 @@ import { useSearchParams } from "next/navigation";
 import { bookingService } from "@/lib/api/bookings";
 import { getErrorMessage } from "@/lib/api/client";
 import { cmsService } from "@/lib/api/cms";
+import GlobalPageSkeleton from "@/components/GlobalPageSkeleton";
 
 const money = (value: number) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(value);
 const localToday = () => { const date = new Date(); date.setMinutes(date.getMinutes() - date.getTimezoneOffset()); return date.toISOString().slice(0, 10); };
@@ -179,4 +180,4 @@ function Success({ hotel, reference }: { hotel: string; reference: string }) {
   return <div className="grid min-h-screen place-items-center bg-[#071b2f] px-5 py-24"><section className="w-full max-w-lg rounded-[2.25rem] bg-white p-8 text-center shadow-2xl md:p-12"><span className="mx-auto grid size-24 place-items-center rounded-full bg-emerald-50 text-emerald-600"><CheckCircle2 className="size-12" /></span><p className="mt-7 text-xs font-bold uppercase tracking-[.2em] text-emerald-600">Booking submitted</p><h1 className="mt-3 font-serif text-4xl text-[#061f3b]">Your stay is requested</h1><p className="mt-4 text-sm leading-7 text-black/50">Your request for {hotel} is confirmed with reference <b className="text-[#087fbe]">{reference}</b>.</p><Link href="/" className="mt-8 inline-flex items-center gap-2 rounded-full bg-[#061f3b] px-8 py-3.5 font-bold text-white">Return home<ChevronRight className="size-4" /></Link></section></div>;
 }
 
-export default function HotelBookingPage() { return <Suspense fallback={<div className="min-h-screen bg-[#071b2f]" />}><BookingFlow /></Suspense>; }
+export default function HotelBookingPage() { return <Suspense fallback={<GlobalPageSkeleton />}><BookingFlow /></Suspense>; }

@@ -5,6 +5,7 @@ import { ArrowLeft, ExternalLink, LockKeyhole, ShieldCheck } from "lucide-react"
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
+import GlobalPageSkeleton from "@/components/GlobalPageSkeleton";
 
 const razorpayLink = "https://pages.razorpay.com/pl_PqPHewqyh9VNft/view";
 
@@ -51,5 +52,5 @@ function PaymentContent() {
 }
 
 export default function PaymentPage() {
-  return <Suspense fallback={<div className="min-h-screen bg-[#f5f9fc]" />}><PaymentContent /></Suspense>;
+  return <Suspense fallback={<GlobalPageSkeleton />}><PaymentContent /></Suspense>;
 }

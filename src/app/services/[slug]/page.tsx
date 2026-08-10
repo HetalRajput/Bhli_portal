@@ -3,6 +3,7 @@ import HolidayPackagesFlow from "@/components/HolidayPackagesFlow";
 import EventManagementFlow from "@/components/EventManagementFlow";
 import HotelConsultancyPage from "@/app/services/hotel-consultancy/page";
 import { Suspense } from "react";
+import ServicePageSkeleton from "@/components/ServicePageSkeleton";
 
 type GenericServicePageProps = {
   params: Promise<{ slug: string }>;
@@ -23,7 +24,7 @@ export default async function GenericServicePage({ params }: GenericServicePageP
 
   if (isHolidayPackage) {
     return (
-      <Suspense fallback={<div className="min-h-screen bg-[#edf5f9]" />}>
+      <Suspense fallback={<ServicePageSkeleton />}>
         <HolidayPackagesFlow />
       </Suspense>
     );
@@ -31,14 +32,14 @@ export default async function GenericServicePage({ params }: GenericServicePageP
 
   if (isEventManagement) {
     return (
-      <Suspense fallback={<div className="min-h-screen bg-[#f4f8fb]" />}>
+      <Suspense fallback={<ServicePageSkeleton />}>
         <EventManagementFlow />
       </Suspense>
     );
   }
 
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#061f3b]" />}>
+    <Suspense fallback={<ServicePageSkeleton />}>
       <GenericServiceEnquiry />
     </Suspense>
   );

@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo, useRef, Suspense } from "react";
 
 import { useSearchParams } from "next/navigation";
 import HotelCard from "@/components/HotelCard";
+import ServicePageSkeleton from "@/components/ServicePageSkeleton";
 import {
   MapPin,
   Building2,
@@ -741,7 +742,7 @@ function HotelReservationsContent() {
 
 export default function HotelReservationsPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#f5f9fc]" />}>
+    <Suspense fallback={<ServicePageSkeleton />}>
       <HotelReservationsContent />
     </Suspense>
   );
