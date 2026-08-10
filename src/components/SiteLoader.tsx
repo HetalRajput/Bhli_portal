@@ -3,8 +3,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 
-const MINIMUM_DISPLAY_TIME = 450;
-
 /** A service-neutral reservation-card animation. */
 export function BookingLoaderMark({ compact = false }: { compact?: boolean }) {
   const frame = compact ? "h-12 w-20" : "h-20 w-32";
@@ -26,14 +24,9 @@ export function BookingLoaderMark({ compact = false }: { compact?: boolean }) {
 }
 
 export default function SiteLoader() {
-  const [initialLoad, setInitialLoad] = useState(true);
   const [activeRequests, setActiveRequests] = useState(0);
 
   useEffect(() => {
-    const finishInitialLoad = () => window.setTimeout(() => setInitialLoad(false), MINIMUM_DISPLAY_TIME);
-    if (document.readyState === "complete") finishInitialLoad();
-    else window.addEventListener("load", finishInitialLoad, { once: true });
-
     const startRequest = () => setActiveRequests((count) => count + 1);
     const finishRequest = () => setActiveRequests((count) => Math.max(0, count - 1));
     window.addEventListener("bhli:network-start", startRequest);
@@ -43,7 +36,6 @@ export default function SiteLoader() {
     window.fetch = async (...args) => { startRequest(); try { return await originalFetch(...args); } finally { finishRequest(); } };
 
     return () => {
-      window.removeEventListener("load", finishInitialLoad);
       window.removeEventListener("bhli:network-start", startRequest);
       window.removeEventListener("bhli:network-end", finishRequest);
       window.fetch = originalFetch;
@@ -51,13 +43,8 @@ export default function SiteLoader() {
   }, []);
 
   return (
-    <>
-      <AnimatePresence>
-        {initialLoad && <motion.div className="pointer-events-none fixed inset-0 z-[200] grid place-items-center bg-[#eff9fd]/50 backdrop-blur-[2px]" initial={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.35 }} role="status" aria-label="Loading website"><BookingLoaderMark /></motion.div>}
-      </AnimatePresence>
-      <AnimatePresence>
-        {activeRequests > 0 && !initialLoad && <motion.div className="pointer-events-none fixed inset-x-0 top-0 z-[200]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} role="status" aria-label="Loading content"><motion.div className="h-1 bg-gradient-to-r from-[#087fbe] via-[#45c7ed] to-[#087fbe]" animate={{ backgroundPositionX: ["0%", "200%"] }} transition={{ duration: 1.1, repeat: Infinity, ease: "linear" }} style={{ backgroundSize: "200% 100%" }} /></motion.div>}
-      </AnimatePresence>
-    </>
+    <AnimatePresence>
+      {activeRequests > 0 && <motion.div className="pointer-events-none fixed inset-x-0 top-0 z-[200]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} role="status" aria-label="Loading content"><motion.div className="h-1 bg-gradient-to-r from-[#087fbe] via-[#45c7ed] to-[#087fbe]" animate={{ backgroundPositionX: ["0%", "200%"] }} transition={{ duration: 1.1, repeat: Infinity, ease: "linear" }} style={{ backgroundSize: "200% 100%" }} /></motion.div>}
+    </AnimatePresence>
   );
 }

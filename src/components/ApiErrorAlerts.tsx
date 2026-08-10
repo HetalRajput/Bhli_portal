@@ -72,18 +72,6 @@ export default function ApiErrorAlerts() {
           </article>
         );
       })}
-      <style jsx>{`
-        .api-error-alert { animation: api-alert-enter .42s cubic-bezier(.22, 1, .36, 1) both; }
-        .api-error-progress { animation: api-alert-progress ${DISPLAY_TIME}ms linear forwards; }
-        @keyframes api-alert-enter {
-          from { opacity: 0; transform: translate3d(28px, -10px, 0) scale(.96); }
-          to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
-        }
-        @keyframes api-alert-progress { from { transform: scaleX(1); } to { transform: scaleX(0); } }
-        @media (prefers-reduced-motion: reduce) {
-          .api-error-alert, .api-error-progress { animation: none; }
-        }
-      `}</style>
     </div>
   );
 }

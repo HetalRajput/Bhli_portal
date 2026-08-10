@@ -181,15 +181,21 @@ function HotelReservationsContent() {
     return () => clearTimeout(timer);
   }, [searchInput, searchTerm]);
 
-
-  // Load service metadata once on mount
+  // The default list response includes service metadata. Only request it
+  // separately when a filtered deep link skips that endpoint.
   useEffect(() => {
+    if (!initialDestination && !initialCity && !initialLocation && !initialRating) return;
+    let active = true;
     cmsService.getServiceDetail("hotel-reservations").then((detail) => {
-      if (detail?.success && detail?.data && !Array.isArray(detail.data)) {
+      if (active && detail?.success && detail?.data && !Array.isArray(detail.data)) {
         setServiceData(detail.data);
       }
     }).catch(() => {});
-  }, []);
+    return () => {
+      active = false;
+    };
+  }, [initialDestination, initialCity, initialLocation, initialRating]);
+
 
   useEffect(() => {
     let active = true;
@@ -240,6 +246,7 @@ function HotelReservationsContent() {
           if (res && res.success !== false) {
             // default endpoint returns: { success, count, total_pages, data: { ...service info..., items: [...] } }
             if (res.data && !Array.isArray(res.data) && res.data.items && Array.isArray(res.data.items)) {
+              if (active) setServiceData(res.data);
               items = res.data.items;
             } else if (Array.isArray(res.data)) {
               items = res.data;
@@ -370,35 +377,6 @@ function HotelReservationsContent() {
     }
     return range;
   };
-
-  // Prefetch & Preload Next Page Data & Images in background
-  useEffect(() => {
-    if (searchTerm || cityFilter || locationFilter || ratingFilter || loading || !totalPages || currentPage >= totalPages || (totalCount > 0 && totalItems <= currentPage * pageSize)) return;
-    const nextPage = currentPage + 1;
-    const prefetchNextPage = async () => {
-      try {
-        const res = await cmsService.searchServiceItems("hotel-reservations", searchTerm, nextPage, pageSize, {
-          city: cityFilter,
-          location: locationFilter,
-          rating: ratingFilter,
-        });
-        if (res && res.success !== false) {
-          const nextItems = res?.results || res?.data || res?.items || (Array.isArray(res) ? res : []);
-          if (Array.isArray(nextItems)) {
-            nextItems.forEach((item: any) => {
-              if (item?.image && typeof window !== "undefined") {
-                const img = new Image();
-                img.src = item.image;
-              }
-            });
-          }
-        }
-      } catch {
-        // silent prefetch error ignore
-      }
-    };
-    prefetchNextPage();
-  }, [searchTerm, cityFilter, locationFilter, ratingFilter, currentPage, totalPages, totalCount, totalItems, pageSize, loading]);
 
   const displayName = serviceData?.name || "Hotel Reservations";
   const displayDesc = serviceData?.description || serviceData?.short_description || "Handpicked stays aligned to comfort, policy and official entitlement rates.";

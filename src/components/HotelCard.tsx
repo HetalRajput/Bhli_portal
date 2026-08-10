@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, MapPin, Sparkles, Star } from "lucide-react";
 
@@ -51,14 +50,6 @@ export default function HotelCard({
     ? !displayLocation?.toLowerCase().includes(city.toLowerCase())
     : false;
 
-  // Preload image into browser cache eagerly
-  useEffect(() => {
-    if (typeof window !== "undefined" && image) {
-      const img = new Image();
-      img.src = image;
-    }
-  }, [image]);
-
   return (
     <div className="group flex flex-col justify-between overflow-hidden rounded-[2.5rem] border border-slate-100 bg-white p-2 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-[#061f3b]/8 animate-in fade-in slide-in-from-bottom-3 duration-500">
       <div>
@@ -66,7 +57,7 @@ export default function HotelCard({
           <img
             src={image}
             alt={title}
-            loading="eager"
+            loading="lazy"
             decoding="async"
             className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
             onError={(event) => {
