@@ -184,14 +184,22 @@ apiClient.interceptors.response.use(
   }
 );
 
-function formatFieldErrors(errors: unknown): string | null {
+function formatFieldErrors(errors: unknown, path = ""): string | null {
   if (!errors || typeof errors !== "object") return null;
   const messages: string[] = [];
-  for (const value of Object.values(errors as Record<string, unknown>)) {
-    if (typeof value === "string") messages.push(value);
-    else if (Array.isArray(value)) messages.push(...value.filter((item): item is string => typeof item === "string"));
-    else {
-      const nested = formatFieldErrors(value);
+  for (const [key, value] of Object.entries(errors as Record<string, unknown>)) {
+    const fieldPath = path ? `${path}.${key}` : key;
+    if (typeof value === "string") messages.push(`${fieldPath}: ${value}`);
+    else if (Array.isArray(value)) {
+      value.forEach((item, index) => {
+        if (typeof item === "string") messages.push(`${fieldPath}: ${item}`);
+        else {
+          const nested = formatFieldErrors(item, `${fieldPath}[${index}]`);
+          if (nested) messages.push(nested);
+        }
+      });
+    } else {
+      const nested = formatFieldErrors(value, fieldPath);
       if (nested) messages.push(nested);
     }
   }

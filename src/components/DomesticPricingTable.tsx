@@ -1,4 +1,5 @@
-import { Check, Users, Hotel, Bed, Plane, MapPin, Briefcase } from "lucide-react";
+import Link from "next/link";
+import { Check, Users, Hotel, Bed, MapPin, Briefcase, ArrowRight } from "lucide-react";
 
 export default function DomesticPricingTable() {
   return (
@@ -16,18 +17,21 @@ export default function DomesticPricingTable() {
             
             {/* Headers */}
             <div className="hidden md:block bg-[#b0d2f0]/50 p-4 font-bold text-[#061f3b] text-center text-lg">Details</div>
-            <div className="bg-[#b3cdf0] p-4 text-center">
+            <Link href="/services/holiday-packages/domestic/silver" className="group bg-[#b3cdf0] p-4 text-center transition hover:bg-[#9fc3ea] focus:outline-none focus:ring-4 focus:ring-inset focus:ring-white/60">
               <h3 className="font-bold text-[#061f3b] text-lg">Silver Package</h3>
               <p className="text-sm text-[#061f3b]/70">(Budget Hotel & Resort)</p>
-            </div>
-            <div className="bg-[#f0d075] p-4 text-center">
+              <span className="mt-1 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-[#061f3b]/55">View hotels <ArrowRight className="size-3" /></span>
+            </Link>
+            <Link href="/services/holiday-packages/domestic/gold" className="group bg-[#f0d075] p-4 text-center transition hover:bg-[#e9c451] focus:outline-none focus:ring-4 focus:ring-inset focus:ring-white/60">
               <h3 className="font-bold text-[#061f3b] text-lg">Gold Package</h3>
               <p className="text-sm text-[#061f3b]/70">3-Star Hotel & Resort</p>
-            </div>
-            <div className="bg-[#2a4185] p-4 text-center text-white">
+              <span className="mt-1 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-[#061f3b]/55">View hotels <ArrowRight className="size-3" /></span>
+            </Link>
+            <Link href="/services/holiday-packages/domestic/platinum" className="group bg-[#2a4185] p-4 text-center text-white transition hover:bg-[#213672] focus:outline-none focus:ring-4 focus:ring-inset focus:ring-white/60">
               <h3 className="font-bold text-lg">Platinum Package</h3>
               <p className="text-sm text-white/70">4/5-Star Luxury Hotel & Resorts</p>
-            </div>
+              <span className="mt-1 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-white/60">View hotels <ArrowRight className="size-3" /></span>
+            </Link>
 
             {/* Row 1: Guests */}
             <div className="hidden md:flex items-center gap-2 p-3 font-semibold text-[#061f3b] bg-white/30"><Users className="size-4" /> Guests</div>

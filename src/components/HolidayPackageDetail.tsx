@@ -31,9 +31,9 @@ const catalogs = {
     accent: "from-[#0875b7] to-[#13a5d8]",
     summary: ["Silver: From ₹9,999", "Gold: From ₹13,999", "Platinum: From ₹24,999"],
     pricingCards: [
-      { title: "Silver Package", price: "₹9,999", subtitle: "Budget Hotel & Resort" },
-      { title: "Gold Package", price: "₹13,999", subtitle: "3-Star Hotel & Resort" },
-      { title: "Platinum Package", price: "₹24,999", subtitle: "4/5-Star Luxury Hotels" }
+      { title: "Silver Package", price: "₹9,999", subtitle: "Budget Hotel & Resort", href: "/services/holiday-packages/domestic/silver" },
+      { title: "Gold Package", price: "₹13,999", subtitle: "3-Star Hotel & Resort", href: "/services/holiday-packages/domestic/gold" },
+      { title: "Platinum Package", price: "₹24,999", subtitle: "4/5-Star Luxury Hotels", href: "/services/holiday-packages/domestic/platinum" }
     ],
     sections: [
       {
@@ -104,9 +104,9 @@ const catalogs = {
     accent: "from-[#061f3b] to-[#13a5d8]",
     summary: ["Budget: ₹50K - ₹90K", "Mid-Range: ₹90K - ₹1.5L", "Premium: ₹2L - ₹5L+"],
     pricingCards: [
-      { title: "Budget Packages", price: "₹50K - ₹90K", subtitle: "Best Value Options" },
-      { title: "Mid-Range Packages", price: "₹90K - ₹1.5L", subtitle: "Standard Comfort" },
-      { title: "Premium Packages", price: "₹2L - ₹5L+", subtitle: "Luxury Experiences" }
+      { title: "Budget Packages", price: "₹50K - ₹90K", subtitle: "Best Value Options", href: "/services/holiday-packages?type=international&step=enquire" },
+      { title: "Mid-Range Packages", price: "₹90K - ₹1.5L", subtitle: "Standard Comfort", href: "/services/holiday-packages?type=international&step=enquire" },
+      { title: "Premium Packages", price: "₹2L - ₹5L+", subtitle: "Luxury Experiences", href: "/services/holiday-packages?type=international&step=enquire" }
     ],
     sections: [
       {
@@ -204,7 +204,7 @@ export default function HolidayPackageDetail({
             {catalog.pricingCards && (
               <div className="flex w-full flex-col gap-4 lg:w-[380px] lg:pt-8">
                 {catalog.pricingCards.map((card) => (
-                  <div key={card.title} className="group relative flex items-center justify-between overflow-hidden rounded-2xl border border-white/20 bg-white/10 p-6 shadow-2xl backdrop-blur-md transition hover:bg-white/15 hover:shadow-[#13a5d8]/20">
+                  <Link key={card.title} href={card.href} className="group relative flex items-center justify-between overflow-hidden rounded-2xl border border-white/20 bg-white/10 p-6 shadow-2xl backdrop-blur-md transition hover:-translate-y-0.5 hover:border-[#59d7ff]/50 hover:bg-white/15 hover:shadow-[#13a5d8]/20 focus:outline-none focus:ring-4 focus:ring-[#13a5d8]/25">
                     <div className="absolute inset-0 -z-10 bg-gradient-to-r from-white/0 via-white/5 to-white/0 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
                     <div>
                       <h3 className="font-serif text-xl font-semibold text-white">{card.title}</h3>
@@ -213,8 +213,9 @@ export default function HolidayPackageDetail({
                     <div className="text-right">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-[#36c5f0]">Starting from</span>
                       <p className="font-serif text-2xl font-bold text-white">{card.price}</p>
+                      <span className="mt-1 inline-flex items-center justify-end gap-1 text-[9px] font-bold uppercase tracking-wider text-white/55 transition group-hover:text-white">View hotels <ArrowRight className="size-3" /></span>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             )}
