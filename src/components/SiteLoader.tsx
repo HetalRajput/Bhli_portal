@@ -2,23 +2,35 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
+import { BusFront, CarTaxiFront, Hotel, Plane, TrainFront } from "lucide-react";
 
-/** A service-neutral reservation-card animation. */
+const bookingServices = [
+  { label: "Hotel", Icon: Hotel },
+  { label: "Flight", Icon: Plane },
+  { label: "Train", Icon: TrainFront },
+  { label: "Bus", Icon: BusFront },
+  { label: "Taxi", Icon: CarTaxiFront },
+] as const;
+
+/** Cycles through the core booking services while a page is loading. */
 export function BookingLoaderMark({ compact = false }: { compact?: boolean }) {
-  const frame = compact ? "h-12 w-20" : "h-20 w-32";
-
   return (
-    <div className={`relative ${frame}`} aria-hidden="true">
-      <motion.span className="absolute inset-x-2 top-6 h-11 rounded-xl border border-[#087fbe]/15 bg-white/35" animate={{ y: [3, 7, 3], scale: [0.94, 0.98, 0.94] }} transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }} />
-      <motion.span className="absolute inset-x-1 top-3 h-12 rounded-xl border border-[#087fbe]/20 bg-white/55 shadow-sm" animate={{ y: [2, -1, 2], scale: [0.97, 1, 0.97] }} transition={{ duration: 1.8, delay: 0.1, repeat: Infinity, ease: "easeInOut" }} />
-      <motion.div className="absolute inset-x-0 top-0 rounded-xl border border-[#087fbe]/20 bg-white/85 p-3 shadow-[0_8px_22px_rgba(8,127,190,.12)]" animate={{ y: [0, -4, 0] }} transition={{ duration: 1.8, delay: 0.2, repeat: Infinity, ease: "easeInOut" }}>
-        <div className="flex items-center gap-2">
-          <span className="size-5 rounded-md bg-[#087fbe]/12" />
-          <span className="h-1.5 w-12 rounded-full bg-[#087fbe]/22" />
-        </div>
-        <div className="mt-3 flex gap-1.5"><span className="h-1.5 flex-1 rounded-full bg-[#087fbe]/14" /><span className="h-1.5 w-6 rounded-full bg-[#13a5d8]/45" /></div>
-        <motion.span className="mt-3 block h-1.5 w-16 rounded-full bg-[#087fbe]" animate={{ scaleX: [0.35, 1, 0.35], opacity: [0.4, 1, 0.4] }} transition={{ duration: 1.25, repeat: Infinity, ease: "easeInOut" }} style={{ transformOrigin: "left" }} />
-      </motion.div>
+    <div className={`relative grid place-items-center ${compact ? "size-12" : "size-20"}`} aria-hidden="true">
+      <motion.span
+        className="absolute inset-0 rounded-full border border-[#087fbe]/20 bg-white/90 shadow-[0_16px_45px_rgba(8,127,190,.18)]"
+        animate={{ scale: [0.94, 1.05, 0.94], opacity: [0.75, 1, 0.75] }}
+        transition={{ duration: 1.3, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <span className="absolute inset-1 rounded-full bg-gradient-to-br from-sky-50 to-cyan-100/70" />
+      {bookingServices.map(({ label, Icon }, index) => (
+        <span
+          key={label}
+          className="booking-service-loader-icon absolute inset-0 grid place-items-center text-[#087fbe]"
+          style={{ animationDelay: `${index * 0.5}s` }}
+        >
+          <Icon className={compact ? "size-5" : "size-9"} strokeWidth={1.8} />
+        </span>
+      ))}
     </div>
   );
 }

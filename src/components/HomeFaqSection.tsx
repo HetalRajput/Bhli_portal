@@ -18,7 +18,26 @@ export default function HomeFaqSection({ faqs }: { faqs: HomeFaq[] }) {
     .sort((first, second) => (first.display_order ?? 0) - (second.display_order ?? 0));
   const [openId, setOpenId] = useState<number | null>(visibleFaqs[0]?.id ?? null);
 
-  if (!visibleFaqs.length) return null;
+  if (!visibleFaqs.length) {
+    return <section className="border-t border-[#087fbe]/10 bg-[#edf6fa] py-20 md:py-24" aria-label="FAQ content unavailable">
+      <div className="mx-auto grid max-w-7xl animate-pulse gap-12 px-5 lg:grid-cols-[.72fr_1.28fr] lg:px-8">
+        <div>
+          <div className="size-14 rounded-2xl bg-slate-300/70" />
+          <div className="mt-7 h-3 w-44 rounded-full bg-slate-300/70" />
+          <div className="mt-5 h-10 w-full max-w-sm rounded-xl bg-slate-300/70" />
+          <div className="mt-3 h-10 w-3/4 rounded-xl bg-slate-300/60" />
+          <div className="mt-6 h-4 w-full max-w-md rounded-full bg-slate-300/60" />
+        </div>
+        <div className="space-y-3">
+          {Array.from({ length: 4 }, (_, index) => <div key={index} className="flex h-20 items-center gap-4 rounded-2xl border border-slate-200 bg-white px-5">
+            <div className="size-9 shrink-0 rounded-full bg-slate-200" />
+            <div className="h-4 flex-1 rounded-full bg-slate-200" />
+            <div className="size-9 shrink-0 rounded-full bg-slate-100" />
+          </div>)}
+        </div>
+      </div>
+    </section>;
+  }
 
   return (
     <section className="relative overflow-hidden border-t border-[#087fbe]/10 bg-[#edf6fa] py-20 md:py-24" aria-labelledby="home-faq-heading">

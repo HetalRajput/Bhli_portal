@@ -3,17 +3,8 @@
 import { useEffect, useState } from 'react';
 import type { Banner } from '@/lib/api/cms';
 
-const fallbackSlides = [
-  { src: 'https://images.pexels.com/photos/189296/pexels-photo-189296.jpeg?auto=compress&cs=tinysrgb&w=1800', alt: 'Luxury resort hospitality' },
-  { src: 'https://images.pexels.com/photos/258154/pexels-photo-258154.jpeg?auto=compress&cs=tinysrgb&w=1800', alt: 'Premium hotel destination' },
-  { src: 'https://images.pexels.com/photos/3225531/pexels-photo-3225531.jpeg?auto=compress&cs=tinysrgb&w=1800', alt: 'Scenic Indian travel destination' },
-  { src: 'https://images.pexels.com/photos/358319/pexels-photo-358319.jpeg?auto=compress&cs=tinysrgb&w=1800', alt: 'Air travel journey' },
-];
-
 export default function HeroBackground({ banners = [] }: { banners?: Banner[] }) {
-  const slides = banners.length
-    ? banners.map((banner) => ({ src: banner.image, alt: banner.title || 'BHLI travel banner' }))
-    : fallbackSlides;
+  const slides = banners.map((banner) => ({ src: banner.image, alt: banner.title || 'BHLI travel banner' }));
   const [active, setActive] = useState(0);
 
   useEffect(() => {
@@ -21,6 +12,13 @@ export default function HeroBackground({ banners = [] }: { banners?: Banner[] })
     const timer = window.setInterval(() => setActive((current) => (current + 1) % slides.length), 5000);
     return () => window.clearInterval(timer);
   }, [slides.length]);
+
+  if (!slides.length) {
+    return <div className='absolute inset-0 -z-20 overflow-hidden bg-[#061f3b]' aria-label='Banner content unavailable'>
+      <div className='absolute inset-0 animate-pulse bg-gradient-to-r from-[#041b33] via-[#0a4166] to-[#061f3b]' />
+      <div className='absolute right-[8%] top-[16%] size-72 animate-pulse rounded-full bg-[#13a5d8]/10 blur-3xl' />
+    </div>;
+  }
 
   return <div className='absolute inset-0 -z-20 overflow-hidden bg-[#061f3b]'>
     {slides.map((slide, index) => <img key={`${slide.src}-${index}`} src={slide.src} alt={slide.alt} aria-hidden={index !== active} className={`absolute inset-0 h-full w-full object-cover transition-[opacity,transform] duration-[1400ms] ease-out ${index === active ? 'scale-105 opacity-45' : 'scale-100 opacity-0'}`} />)}

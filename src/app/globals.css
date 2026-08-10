@@ -25,6 +25,69 @@ body {
 
 html { scroll-behavior: smooth; }
 
+.travel-solution-card[href="#"] {
+  pointer-events: none;
+  animation: home-skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.travel-solution-card[href="#"] > div:first-child {
+  background: #dfe8ed;
+}
+
+.travel-solution-card[href="#"] img,
+.travel-solution-card[href="#"] > div:first-child > div,
+.travel-solution-card[href="#"] > div:first-child > span,
+.travel-solution-card[href="#"] svg {
+  visibility: hidden;
+}
+
+.travel-solution-card[href="#"] h3,
+.travel-solution-card[href="#"] p,
+.travel-solution-card[href="#"] > div:last-child > span {
+  color: transparent;
+  border-radius: 999px;
+  background: #dfe8ed;
+}
+
+.travel-solution-card[href="#"] h3 {
+  width: 72%;
+  min-height: 1.75rem;
+}
+
+.travel-solution-card[href="#"] p {
+  min-height: 3.75rem;
+}
+
+@keyframes home-skeleton-pulse {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+
+.not-found-plane {
+  animation: not-found-plane-float 2.8s ease-in-out infinite;
+}
+
+@keyframes not-found-plane-float {
+  0%, 100% { transform: translate(-50%, -50%) translateY(0) rotate(-2deg); }
+  50% { transform: translate(-50%, -50%) translateY(-12px) rotate(4deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .not-found-plane { animation: none; }
+}
+
+.booking-service-loader-icon {
+  opacity: 0;
+  animation: booking-service-icon-cycle 2.5s linear infinite;
+}
+
+@keyframes booking-service-icon-cycle {
+  0% { opacity: 0; transform: translateY(7px) scale(0.65); }
+  3% { opacity: 1; transform: translateY(0) scale(1); }
+  17% { opacity: 1; transform: translateY(0) scale(1); }
+  20%, 100% { opacity: 0; transform: translateY(-7px) scale(0.65); }
+}
+
 .api-error-alert {
   animation: api-alert-enter 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
 }

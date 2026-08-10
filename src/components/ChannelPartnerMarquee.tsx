@@ -6,7 +6,7 @@ import PartnerLogo from "@/components/PartnerLogo";
 
 type Partner = { id: string; name: string; role: string; logo: string | null };
 
-export default function ChannelPartnerMarquee({ partners }: { partners: Partner[] }) {
+export default function ChannelPartnerMarquee({ partners, skeletonCount = 6 }: { partners: Partner[]; skeletonCount?: number }) {
   const viewport = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -26,7 +26,17 @@ export default function ChannelPartnerMarquee({ partners }: { partners: Partner[
     return () => cancelAnimationFrame(frame);
   }, [partners.length]);
 
-  if (!partners.length) return null;
+  if (!partners.length) {
+    return <div className="overflow-hidden py-3" aria-label="Partner content unavailable">
+      <div className="flex gap-6 px-3">
+        {Array.from({ length: skeletonCount }, (_, index) => <div key={index} className="h-40 w-52 shrink-0 animate-pulse rounded-2xl border border-slate-100 bg-[#f3f7f9] p-4">
+          <div className="mx-auto mt-2 size-16 rounded-2xl bg-slate-200/80" />
+          <div className="mx-auto mt-5 h-3 w-28 rounded-full bg-slate-200/80" />
+          <div className="mx-auto mt-2 h-2.5 w-20 rounded-full bg-slate-200/60" />
+        </div>)}
+      </div>
+    </div>;
+  }
   const loop = [...partners, ...partners];
 
   return <div className="relative w-full py-3">

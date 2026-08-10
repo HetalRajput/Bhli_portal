@@ -121,7 +121,12 @@ apiClient.interceptors.response.use(
       error.response?.status === 400 &&
       error.config?.url?.includes('/api/accounts/auth/logout/');
 
-    if (!isEmptySearchPage && !isHandledServiceFailure && !isInactiveLogoutSession) {
+    const isRejectedRefreshToken =
+      error.config?.method?.toLowerCase() === 'post' &&
+      error.response?.status === 401 &&
+      error.config?.url?.includes('/api/accounts/auth/token/refresh/');
+
+    if (!isEmptySearchPage && !isHandledServiceFailure && !isInactiveLogoutSession && !isRejectedRefreshToken) {
       console.warn(
       `❌ [API Response Error] ${error.config?.method?.toUpperCase()} ${fullUrl} ${status}`,
       error.response?.data || error.message
@@ -143,7 +148,9 @@ apiClient.interceptors.response.use(
       if (refresh && !originalRequest?._retry && !originalRequest?.url?.includes('/auth/token/refresh/')) {
         originalRequest._retry = true;
         try {
-          const refreshResponse = await apiClient.post('/api/accounts/auth/token/refresh/', { refresh });
+          // Keep refresh outside this intercepted client so a rejected token
+          // cannot recursively trigger another refresh/error cycle.
+          const refreshResponse = await axios.post(`${BASE_URL}/api/accounts/auth/token/refresh/`, { refresh });
           const access = refreshResponse.data?.access;
           if (access) {
             window.localStorage.setItem('access_token', access);
