@@ -33,7 +33,7 @@ export default function HotelConsultancyPage() {
           {consultancyServices.map((service, index) => {
             const Icon = icons[index];
             return (
-              <article key={service.slug} className="group flex min-h-[470px] flex-col overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-[0_12px_40px_rgba(6,55,92,.07)]">
+              <Link key={service.slug} href={`/services/hotel-consultancy/${service.slug}`} aria-label={`View ${service.title} details`} className="group flex min-h-[470px] flex-col overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-[0_12px_40px_rgba(6,55,92,.07)] transition hover:-translate-y-1 hover:shadow-[0_20px_55px_rgba(6,55,92,.13)]">
                 <div className="relative h-52 overflow-hidden">
                   <Image src={service.image} alt="" fill unoptimized sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw" className="object-cover group-hover:scale-105" />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#061f3b]/75 to-transparent" />
@@ -44,9 +44,9 @@ export default function HotelConsultancyPage() {
                   <p className="text-[10px] font-extrabold uppercase tracking-[.2em] text-[#087fbe]">{service.eyebrow}</p>
                   <h3 className="mt-3 font-serif text-3xl leading-none">{service.title}</h3>
                   <p className="mt-4 text-sm leading-7 text-slate-600">{service.summary}</p>
-                  <Link href={`/services/hotel-consultancy/${service.slug}`} className="mt-auto inline-flex items-center gap-2 pt-6 text-sm font-extrabold text-[#087fbe]">Know More <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" /></Link>
+                  <span className="mt-auto inline-flex items-center gap-2 pt-6 text-sm font-extrabold text-[#087fbe]">Know More <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" /></span>
                 </div>
-              </article>
+              </Link>
             );
           })}
         </div>

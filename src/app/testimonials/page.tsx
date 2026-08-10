@@ -1,17 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { MessageSquare, Star, Quote } from "lucide-react";
-import { cmsService } from "@/lib/api/cms";
-
-interface Testimonial {
-  id: number;
-  name: string;
-  designation?: string;
-  organization?: string;
-  message: string;
-  rating?: number;
-}
+import { useEffect, useState } from "react";
+import { MessageSquare } from "lucide-react";
+import TestimonialsSlider from "@/components/TestimonialsSlider";
+import { cmsService, type Testimonial } from "@/lib/api/cms";
 
 const fallbackTestimonials: Testimonial[] = [
   {
@@ -20,7 +12,11 @@ const fallbackTestimonials: Testimonial[] = [
     designation: "Command Logistics Officer",
     organization: "Indian Army",
     message: "BHLI's defence help desk has simplified our transit bookings tremendously. Their command liaison and compliance matching with official MoU rates are exceptional.",
-    rating: 5
+    rating: 5,
+    is_active: true,
+    display_order: 1,
+    created_at: "",
+    updated_at: "",
   },
   {
     id: 2,
@@ -28,7 +24,11 @@ const fallbackTestimonials: Testimonial[] = [
     designation: "Deputy Director",
     organization: "Ministry of Defence",
     message: "Highly reliable and professional travel service. The corporate rates and VVIP security protocols handled for our delegation stay in Delhi were top-notch.",
-    rating: 5
+    rating: 5,
+    is_active: true,
+    display_order: 2,
+    created_at: "",
+    updated_at: "",
   },
   {
     id: 3,
@@ -36,7 +36,11 @@ const fallbackTestimonials: Testimonial[] = [
     designation: "Senior HR Manager",
     organization: "PSU Aerospace Division",
     message: "Our entire team transits and event banquets have been handled by BHLI for over 2 years now. The seamless billing and 24x7 reservation support save us time and effort.",
-    rating: 5
+    rating: 5,
+    is_active: true,
+    display_order: 3,
+    created_at: "",
+    updated_at: "",
   }
 ];
 
@@ -48,12 +52,10 @@ export default function TestimonialsPage() {
     const fetchTestimonials = async () => {
       try {
         const res = await cmsService.getTestimonials();
-        console.log("Testimonials API Response:", res);
-        if (res.length > 0) {
-          setTestimonials(res.filter((testimonial) => testimonial.is_active));
-        } else {
-          setTestimonials(fallbackTestimonials);
-        }
+        const activeTestimonials = res
+          .filter((testimonial) => testimonial.is_active)
+          .sort((first, second) => first.display_order - second.display_order || second.id - first.id);
+        setTestimonials(activeTestimonials.length ? activeTestimonials : fallbackTestimonials);
       } catch (err) {
         console.warn("Failed to fetch testimonials, loading fallback", err);
         setTestimonials(fallbackTestimonials);
@@ -64,19 +66,8 @@ export default function TestimonialsPage() {
     fetchTestimonials();
   }, []);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f5f9fc]">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-4 border-[#0879b7] border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm font-semibold text-[#062b50]">Loading testimonials...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="bg-[#f5f9fc] text-[#122b42] min-h-screen">
+    <div className="min-h-screen bg-[#f5f9fc] text-[#122b42]">
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-[#062b50] px-5 py-20 text-white lg:px-8">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(215,181,109,.15),transparent_40%)]" />
@@ -93,43 +84,28 @@ export default function TestimonialsPage() {
         </div>
       </section>
 
-      {/* Testimonials Grid */}
-      <section className="mx-auto max-w-7xl px-5 py-20 lg:px-8">
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-          {testimonials.map((t) => (
-            <div
-              key={t.id}
-              className="relative flex flex-col justify-between overflow-hidden rounded-[2rem] border border-black/8 bg-white p-8 shadow-sm transition duration-300 hover:shadow-xl"
-            >
-              <div>
-                <Quote className="absolute top-6 right-6 h-12 w-12 text-[#087dbd]/10 pointer-events-none" />
-                
-                {/* Rating */}
-                <div className="flex gap-1 mb-5">
-                  {Array.from({ length: t.rating || 5 }).map((_, i) => (
-                    <Star key={i} className="size-4 fill-amber-400 text-amber-400" />
-                  ))}
-                </div>
-
-                {/* Message */}
-                <p className="text-sm font-semibold leading-relaxed text-black/65 relative z-10 italic">
-                  "{t.message}"
-                </p>
-              </div>
-
-              {/* Author */}
-              <div className="mt-8 border-t border-black/5 pt-5">
-                <h4 className="font-serif text-lg font-bold text-[#062b50]">{t.name}</h4>
-                {(t.designation || t.organization) && (
-                  <p className="text-xs font-bold text-black/45 mt-0.5">
-                    {t.designation} {t.designation && t.organization && "|"} {t.organization}
-                  </p>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
+      <section className="mx-auto max-w-7xl px-5 py-14 sm:py-20 lg:px-8">
+        {loading ? <TestimonialsSkeleton /> : <TestimonialsSlider testimonials={testimonials} />}
       </section>
+    </div>
+  );
+}
+
+function TestimonialsSkeleton() {
+  return (
+    <div role="status" aria-label="Loading testimonials">
+      <span className="sr-only">Loading testimonials...</span>
+      <div className="mb-7 flex items-center justify-between"><div className="h-4 w-40 animate-pulse rounded-full bg-slate-200" /><div className="flex gap-2"><div className="size-11 animate-pulse rounded-full bg-slate-200" /><div className="size-11 animate-pulse rounded-full bg-sky-100" /></div></div>
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {[0, 1, 2].map((card) => (
+          <div key={card} className="min-h-[430px] animate-pulse rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
+            <div className="size-12 rounded-2xl bg-sky-100" />
+            <div className="mt-6 h-4 w-24 rounded-full bg-amber-100" />
+            <div className="mt-7 space-y-4"><div className="h-4 w-full rounded-full bg-slate-100" /><div className="h-4 w-full rounded-full bg-slate-100" /><div className="h-4 w-5/6 rounded-full bg-slate-100" /><div className="h-4 w-2/3 rounded-full bg-slate-100" /></div>
+            <div className="mt-24 border-t border-slate-100 pt-5"><div className="h-5 w-36 rounded-full bg-slate-200" /><div className="mt-3 h-3 w-24 rounded-full bg-slate-100" /></div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

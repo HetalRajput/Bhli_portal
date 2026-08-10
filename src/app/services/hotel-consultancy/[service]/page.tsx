@@ -4,6 +4,7 @@ import Image from "next/image";
 import { ArrowLeft, ArrowRight, Check, ChevronRight } from "lucide-react";
 import { notFound } from "next/navigation";
 import { consultancyServices, getConsultancyService } from "@/lib/hotel-consultancy";
+import HotelConsultancyForm from "@/components/HotelConsultancyForm";
 
 type PageProps = { params: Promise<{ service: string }> };
 
@@ -94,7 +95,7 @@ export default async function ConsultancyServiceDetail({ params }: PageProps) {
               <p className="text-xs font-extrabold uppercase tracking-[.24em] text-[#087fbe]">What we deliver</p>
               <h2 className="mt-4 font-serif text-4xl leading-tight">A practical scope built around your project.</h2>
               <p className="mt-5 text-sm leading-7 text-slate-600">We tailor the depth, sequence and deliverables to your stage of development and internal capability.</p>
-              <Link href="/contact-us" className="mt-7 inline-flex items-center gap-2 rounded-full bg-[#087fbe] px-6 py-3.5 text-sm font-extrabold text-white shadow-lg shadow-[#087fbe]/20 hover:-translate-y-0.5 hover:bg-[#07345d]">Discuss this service <ArrowRight className="size-4" /></Link>
+              <Link href="#consultancy-request" className="mt-7 inline-flex items-center gap-2 rounded-full bg-[#087fbe] px-6 py-3.5 text-sm font-extrabold text-white shadow-lg shadow-[#087fbe]/20 hover:-translate-y-0.5 hover:bg-[#07345d]">Request consultancy <ArrowRight className="size-4" /></Link>
 
               <nav aria-label="Hotel consultancy services" className="mt-9 hidden overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 shadow-sm lg:block">
                 {consultancyServices.map((item) => (
@@ -135,6 +136,11 @@ export default async function ConsultancyServiceDetail({ params }: PageProps) {
           <Link href={`/services/hotel-consultancy/${nextService.slug}`} className="inline-flex items-center gap-2 text-sm font-extrabold text-[#087fbe]">Explore service <ChevronRight className="size-4" /></Link>
         </div>
       </section>
+
+      <HotelConsultancyForm
+        selectedServiceSlug={service.slug}
+        selectedServiceTitle={service.detailTitle || service.title}
+      />
     </div>
   );
 }

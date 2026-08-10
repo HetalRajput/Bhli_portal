@@ -8,12 +8,12 @@ import {
   Target,
   Users,
   Mail,
-  Quote,
-  Star,
 } from "lucide-react";
 import { cmsService, type GalleryAlbum, type GalleryCategory, type Testimonial } from "@/lib/api/cms";
 import TeamAvatar from "@/components/TeamAvatar";
 import AboutGallerySlider from "@/components/AboutGallerySlider";
+import LegalTrustSection from "@/components/LegalTrustSection";
+import TestimonialsSlider from "@/components/TestimonialsSlider";
 
 interface TeamMember {
   id: number;
@@ -26,8 +26,6 @@ interface TeamMember {
   email?: string;
   linkedin_url?: string;
 }
-
-const PROFILE_ICON_PLACEHOLDER = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23edf6fc' stroke='%23087dbd' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='11' fill='%23edf6fc'/><path d='M18 20v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 6 18.5V20' fill='none'/><circle cx='12' cy='8.5' r='3.5' fill='%23087dbd' stroke='none'/></svg>";
 
 const fallbackTeamMembers: TeamMember[] = [
   {
@@ -67,35 +65,39 @@ export default async function About() {
   let testimonials: Testimonial[] = [];
   let galleryAlbums: GalleryAlbum[] = [];
   let galleryCategories: GalleryCategory[] = [];
-  try {
-    const res = await cmsService.getTeam();
-    console.log("About Page - Team API Response:", res);
-    if (res && res.success && Array.isArray(res.data) && res.data.length > 0) {
-      teamMembers = res.data;
-    } else if (Array.isArray(res) && res.length > 0) {
-      teamMembers = res;
-    }
-  } catch (err) {
-    console.error("Failed to fetch team members for About page:", err);
+  const [teamResult, testimonialResult, albumResult, categoryResult] = await Promise.allSettled([
+    cmsService.getTeam(),
+    cmsService.getTestimonials(),
+    cmsService.getGallery(),
+    cmsService.getGalleryCategories(),
+  ]);
+
+  if (teamResult.status === "fulfilled") {
+    const response = teamResult.value;
+    if (response?.success && Array.isArray(response.data)) teamMembers = response.data;
+    else if (Array.isArray(response)) teamMembers = response;
+  } else {
+    console.error("Failed to fetch team members for About page:", teamResult.reason);
   }
 
-  try {
-    testimonials = (await cmsService.getTestimonials())
+  if (testimonialResult.status === "fulfilled") {
+    testimonials = testimonialResult.value
       .filter((testimonial) => testimonial.is_active)
-      .sort((a, b) => a.display_order - b.display_order);
-  } catch (err) {
-    console.error("Failed to fetch testimonials for About page:", err);
+      .sort((a, b) => a.display_order - b.display_order || b.id - a.id);
+  } else {
+    console.error("Failed to fetch testimonials for About page:", testimonialResult.reason);
   }
 
-  try {
-    [galleryAlbums, galleryCategories] = await Promise.all([
-      cmsService.getGallery(),
-      cmsService.getGalleryCategories(),
-    ]);
-    galleryAlbums = galleryAlbums.filter((album) => album.is_active).sort((a, b) => a.display_order - b.display_order);
-    galleryCategories = galleryCategories.filter((category) => category.is_active !== false).sort((a, b) => a.display_order - b.display_order);
-  } catch (err) {
-    console.error("Failed to fetch gallery for About page:", err);
+  if (albumResult.status === "fulfilled") {
+    galleryAlbums = albumResult.value.filter((album) => album.is_active).sort((a, b) => a.display_order - b.display_order);
+  } else {
+    console.error("Failed to fetch gallery albums for About page:", albumResult.reason);
+  }
+
+  if (categoryResult.status === "fulfilled") {
+    galleryCategories = categoryResult.value.filter((category) => category.is_active !== false).sort((a, b) => a.display_order - b.display_order);
+  } else {
+    console.error("Failed to fetch gallery categories for About page:", categoryResult.reason);
   }
 
   const displayTeam = teamMembers.length > 0 ? teamMembers : fallbackTeamMembers;
@@ -170,7 +172,7 @@ export default async function About() {
               "Trust, respect, clarity, accountability and service before self.",
             ],
           ].map(([Icon, title, desc]) => {
-            const IconComponent = Icon as any;
+            const IconComponent = Icon as typeof Compass;
             return (
               <div key={String(title)} className="rounded-3xl bg-[#edf6fb] p-8">
                 <IconComponent className="size-8 text-[#087fbe]" />
@@ -330,7 +332,7 @@ export default async function About() {
               <p className="text-xs font-bold uppercase tracking-[.22em] text-[#087fbe]">Client testimonials</p>
               <h2 className="mt-4 font-serif text-4xl md:text-5xl">Trusted by the people we serve.</h2>
             </div>
-            <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {/* The former static testimonial cards are kept out of the render tree.
               {testimonials.map((testimonial) => (
                 <article key={testimonial.id} className="flex h-full flex-col rounded-3xl border border-black/5 bg-white p-7 shadow-sm">
                   <Quote className="size-8 text-[#13a5d8]" />
@@ -346,6 +348,9 @@ export default async function About() {
                   </footer>
                 </article>
               ))}
+            </div> */}
+            <div className="mt-10">
+              <TestimonialsSlider testimonials={testimonials} />
             </div>
           </div>
         </section>
@@ -364,6 +369,8 @@ export default async function About() {
           Start a conversation
         </Link>
       </section>
+
+      <LegalTrustSection />
     </div>
   );
 }

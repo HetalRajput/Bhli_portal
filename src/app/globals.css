@@ -63,6 +63,21 @@ html { scroll-behavior: smooth; }
   50% { opacity: 1; }
 }
 
+.testimonial-marquee-mask {
+  -webkit-mask-image: linear-gradient(to right, transparent, black 3%, black 97%, transparent);
+  mask-image: linear-gradient(to right, transparent, black 3%, black 97%, transparent);
+}
+
+.testimonial-marquee-track {
+  animation: testimonial-marquee-scroll 26s linear infinite;
+  will-change: transform;
+}
+
+@keyframes testimonial-marquee-scroll {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-50%, 0, 0); }
+}
+
 .not-found-plane {
   animation: not-found-plane-float 2.8s ease-in-out infinite;
 }
@@ -74,6 +89,7 @@ html { scroll-behavior: smooth; }
 
 @media (prefers-reduced-motion: reduce) {
   .not-found-plane { animation: none; }
+  .testimonial-marquee-track { animation: none; }
 }
 
 .booking-service-loader-icon {
