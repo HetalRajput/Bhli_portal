@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
+import type { LucideIcon } from "lucide-react";
 import { ArrowRight, CheckCircle2, Crown, Flag, Flame, Gift, Heart, Map, Sparkles, Image as ImageIcon, Music, PartyPopper, Palette, Flower2, CircleDot, X, Maximize2 } from "lucide-react";
-import UnifiedBookingForm from "@/components/UnifiedBookingForm";
+import EventQuotationForm from "@/components/EventQuotationForm";
 
 type ServiceData = {
   id: string;
@@ -16,7 +16,7 @@ type ServiceData = {
   cards: {
     title: string;
     desc: string;
-    icon: any;
+    icon: LucideIcon;
     color: string;
     image: string;
     badge?: string;
@@ -304,8 +304,19 @@ export default function EventManagementFlow() {
   const [activeServiceKey, setActiveServiceKey] = useState<string>("Balloon Decoration");
   const [previewImage, setPreviewImage] = useState<{ title: string; image: string } | null>(null);
   const [isFormModalOpen, setIsFormModalOpen] = useState<boolean>(false);
+  const [selectedTheme, setSelectedTheme] = useState("");
 
   const activeService = servicesData[activeServiceKey] || servicesData["Balloon Decoration"];
+
+  function openQuotation(theme = "") {
+    setSelectedTheme(theme);
+    setIsFormModalOpen(true);
+  }
+
+  function closeQuotation() {
+    setIsFormModalOpen(false);
+    setSelectedTheme("");
+  }
 
   return (
     <main className="min-h-screen bg-[#f4f8fb] text-[#122b42]">
@@ -327,7 +338,7 @@ export default function EventManagementFlow() {
           </p>
           <div className="mt-4 flex flex-wrap justify-center gap-3">
             <button
-              onClick={() => setIsFormModalOpen(true)}
+              onClick={() => openQuotation()}
               className="inline-flex items-center gap-2 rounded-full bg-[#13a5d8] px-6 py-2.5 text-xs font-bold text-[#062b50] transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[#13a5d8]/25"
             >
               Request Event Quote <ArrowRight className="size-3.5" />
@@ -456,7 +467,7 @@ export default function EventManagementFlow() {
                         <h4 className="font-serif text-xl font-semibold text-[#062b50]">{card.title}</h4>
                         <p className="mt-2 text-xs leading-5 text-[#607789]">{card.desc}</p>
                         <button
-                          onClick={() => setIsFormModalOpen(true)}
+                          onClick={() => openQuotation(card.title)}
                           className="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-[#087fbe] transition hover:gap-2"
                         >
                           Book this service <ArrowRight className="size-3.5" />
@@ -534,8 +545,9 @@ export default function EventManagementFlow() {
               </div>
               <button
                 onClick={() => {
+                  const theme = previewImage.title;
                   setPreviewImage(null);
-                  setIsFormModalOpen(true);
+                  openQuotation(theme);
                 }}
                 className="inline-flex items-center gap-2 rounded-full bg-[#13a5d8] px-6 py-3 text-xs font-bold text-[#062b50] transition hover:bg-[#108cb8]"
               >
@@ -548,28 +560,20 @@ export default function EventManagementFlow() {
 
       {/* Interactive Booking Form Popup Modal */}
       {isFormModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md overflow-y-auto animate-fadeIn">
-          <div className="relative my-8 max-w-4xl w-full rounded-3xl bg-white p-6 sm:p-8 shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#020b14]/85 p-2 backdrop-blur-md animate-fadeIn sm:p-4" role="dialog" aria-modal="true" aria-labelledby="event-quotation-title">
+          <div className="relative w-full max-w-[1080px] overflow-hidden rounded-[1.75rem] bg-white shadow-[0_32px_100px_rgba(0,0,0,.45)]">
             <button
-              onClick={() => setIsFormModalOpen(false)}
-              className="absolute top-4 right-4 z-10 grid size-10 place-items-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-slate-200"
+              type="button"
+              onClick={closeQuotation}
+              aria-label="Close event quotation form"
+              className="absolute right-4 top-4 z-20 grid size-9 place-items-center rounded-full border border-slate-200 bg-white/95 text-slate-500 shadow-sm transition hover:bg-slate-100 hover:text-[#061f3b]"
             >
               <X className="size-5" />
             </button>
-            <div className="mb-6 text-center">
-              <p className="text-xs font-bold uppercase tracking-[.24em] text-[#087fbe]">Service Enquiry</p>
-              <h3 className="mt-1 font-serif text-2xl font-semibold text-[#061f3b] sm:text-3xl">
-                Event Request & Quotation
-              </h3>
-              <p className="mt-1 text-xs font-medium text-[#607789]">
-                Selected Category: <span className="font-bold text-[#087fbe]">{activeService.name}</span>
-              </p>
-            </div>
-            <UnifiedBookingForm serviceSlug="event-management" />
+            <EventQuotationForm selectedCategory={activeService.name} selectedTheme={selectedTheme} onClose={closeQuotation} />
           </div>
         </div>
       )}
     </main>
   );
 }
-

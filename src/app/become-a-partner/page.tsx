@@ -294,11 +294,14 @@ export default function BecomeAPartnerPage() {
               <Field name="company_name" label="Company name" icon={<Building2 />} autoComplete="organization" required />
               <SelectField name="vendor_type" label="Vendor type" icon={<BriefcaseBusiness />} defaultValue="hotels" required>
                 <option value="hotels">Hotels</option>
-                <option value="airlines">Airlines</option>
-                <option value="travel_agency">Travel agency</option>
-                <option value="tour_operator">Tour operator / DMC</option>
-                <option value="transport">Transport provider</option>
-                <option value="event_management">Event management</option>
+                <option value="airlines">Taxi</option>
+                <option value="travel_agency">Flight</option>
+                <option value="travel_agency">Bus</option>
+                <option value="travel_agency">Train</option>
+                <option value="tour_operator">Visa</option>
+                <option value="transport">Holiday Package</option>
+                <option value="event_management">Catering</option>
+                <option value="other">Event Management</option>
                 <option value="other">Other</option>
               </SelectField>
               <Field name="contact_person_name" label="Contact person name" icon={<UserRound />} autoComplete="name" required />
