@@ -1,8 +1,8 @@
 "use client";
 
 import type { ReactNode } from "react";
-import UnifiedBookingForm from "@/components/UnifiedBookingForm";
+import EnhancedHotelBookingForm from "@/components/EnhancedHotelBookingForm";
 
 export default function HotelBookingTemplate({ children }: { children: ReactNode }) {
-  return <><div className="hidden">{children}</div><UnifiedBookingForm serviceSlug="hotel-reservations" /></>;
+  return <><div className="hidden">{children}</div><EnhancedHotelBookingForm /></>;
 }

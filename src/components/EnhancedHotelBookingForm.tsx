@@ -13,7 +13,8 @@ type Guest = { name: string; age: string; gender: "male" | "female" | "other" };
 type Meal = "Breakfast" | "Lunch" | "Dinner";
 
 const mealOptions: Meal[] = ["Breakfast", "Lunch", "Dinner"];
-const newGuest = (): Guest => ({ name: "", age: "18", gender: "male" });
+const newAdult = (): Guest => ({ name: "", age: "18", gender: "male" });
+const newChild = (): Guest => ({ name: "", age: "6", gender: "female" });
 const defaultHero = "https://bhli-project-images.s3.eu-north-1.amazonaws.com/bhli-main-folder/services/banners/hotels-c7460ed9000f4ebaa01bfc5a7e890757.webp";
 const localToday = () => { const value = new Date(); value.setMinutes(value.getMinutes() - value.getTimezoneOffset()); return value.toISOString().slice(0, 10); };
 
@@ -29,10 +30,10 @@ export default function EnhancedHotelBookingForm() {
   const [serviceId, setServiceId] = useState(params.get("service") || "");
   const [loadingService, setLoadingService] = useState(!params.get("service"));
   const [stay, setStay] = useState({ checkInDate: "", checkInTime: "14:00", checkOutDate: "", checkOutTime: "11:00", rooms: "1", budget: "", tdTariff: "" });
-  const [guests, setGuests] = useState<Guest[]>([newGuest()]);
+  const [adults, setAdults] = useState<Guest[]>([newAdult()]);
+  const [children, setChildren] = useState<Guest[]>([]);
   const [meals, setMeals] = useState<Meal[]>([]);
   const [laundry, setLaundry] = useState(false);
-  const [kidsAccompanying, setKidsAccompanying] = useState(false);
   const [message, setMessage] = useState("");
   const [consent, setConsent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -54,9 +55,9 @@ export default function EnhancedHotelBookingForm() {
   }, [serviceId]);
 
   const updateStay = (key: keyof typeof stay, value: string) => setStay((current) => ({ ...current, [key]: value }));
-  const updateGuest = (index: number, key: keyof Guest, value: string) => setGuests((current) => current.map((guest, guestIndex) => guestIndex === index ? { ...guest, [key]: value } : guest));
-  const addGuest = () => setGuests((current) => current.length >= 8 ? current : [...current, newGuest()]);
-  const removeGuest = (index: number) => setGuests((current) => current.length === 1 ? current : current.filter((_, guestIndex) => guestIndex !== index));
+  const updateAdult = (index: number, key: keyof Guest, value: string) => setAdults((current) => current.map((guest, guestIndex) => guestIndex === index ? { ...guest, [key]: value } : guest));
+  const updateChild = (index: number, key: keyof Guest, value: string) => setChildren((current) => current.map((guest, guestIndex) => guestIndex === index ? { ...guest, [key]: value } : guest));
+  const totalGuests = adults.length + children.length;
   const toggleMeal = (meal: Meal) => setMeals((current) => current.includes(meal) ? current.filter((item) => item !== meal) : [...current, meal]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -69,30 +70,28 @@ export default function EnhancedHotelBookingForm() {
     if (!serviceId || !Number.isInteger(Number(serviceId))) return setError("The hotel reservation service is unavailable. Please try again.");
     if (!hotel.id || !Number.isInteger(Number(hotel.id))) return setError("Please return to the hotel list and select a valid hotel.");
     if (!stay.checkInDate || !stay.checkOutDate || stay.checkOutDate <= stay.checkInDate) return setError("Select a check-out date after the check-in date.");
-    if (guests.some((guest) => guest.name.trim().length < 2 || Number(guest.age) < 1 || Number(guest.age) > 120)) return setError("Enter a valid name and age for every guest.");
-    const normalizedGuests = guests.map((guest) => ({ name: guest.name.trim(), age: Number(guest.age), gender: guest.gender }));
-    const adults = normalizedGuests.filter((guest) => guest.age > 6);
-    const children = normalizedGuests.filter((guest) => guest.age <= 6);
-    if (!adults.length) return setError("At least one adult guest older than 6 is required.");
+    if (adults.some((guest) => guest.name.trim().length < 2 || Number(guest.age) < 18 || Number(guest.age) > 120)) return setError("Enter a valid name and age (18–120) for every adult guest.");
+    if (children.some((guest) => guest.name.trim().length < 2 || Number(guest.age) < 1 || Number(guest.age) > 17)) return setError("Enter a valid name and age (1–17) for every child guest.");
+    const normalizedAdults = adults.map((guest) => ({ name: guest.name.trim(), age: Number(guest.age), gender: guest.gender }));
+    const normalizedChildren = children.map((guest) => ({ name: guest.name.trim(), age: Number(guest.age), gender: guest.gender }));
     if (!consent) return setError("Please consent to contact before submitting your request.");
 
     successChime.arm();
     const mealPreference = meals.length ? `Meal preferences: ${meals.join(", ")}.` : "";
     const servicePreference = laundry ? "Additional service requested: Laundry." : "";
-    const kidsPreference = kidsAccompanying ? "Kids are accompanying this stay." : "";
-    const submittedMessage = [mealPreference, servicePreference, kidsPreference, message.trim()].filter(Boolean).join("\n").slice(0, 2000);
+    const submittedMessage = [mealPreference, servicePreference, message.trim()].filter(Boolean).join("\n").slice(0, 2000);
     const payload = {
       service: Number(serviceId),
       service_item: Number(hotel.id),
       check_in_date: stay.checkInDate,
-      check_in_time: stay.checkInTime,
+      check_in_time: `${stay.checkInTime}:00`,
       check_out_date: stay.checkOutDate,
-      check_out_time: stay.checkOutTime,
+      check_out_time: `${stay.checkOutTime}:00`,
       number_of_rooms: Number(stay.rooms),
       budget_amount: stay.budget || undefined,
       td_tariff_amount: stay.tdTariff || undefined,
       message: submittedMessage,
-      guests: { adults, children },
+      guests: { adults: normalizedAdults, children: normalizedChildren },
       consent_to_contact: consent,
     };
 
@@ -178,25 +177,17 @@ export default function EnhancedHotelBookingForm() {
                 </fieldset>
               </FormSection>
 
-              <FormSection number="03" title="Guest information" description="Add one row for each traveller.">
-                <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-                  <p className="text-xs font-semibold text-slate-500">{guests.length} guest{guests.length === 1 ? "" : "s"} added</p>
-                  <button type="button" onClick={addGuest} disabled={guests.length >= 8} className="inline-flex items-center gap-2 rounded-xl border border-[#087fbe]/20 bg-[#edf9fd] px-4 py-2 text-xs font-bold text-[#087fbe] transition hover:border-[#13a5d8] hover:bg-[#e3f5fb] disabled:cursor-not-allowed disabled:opacity-45"><Plus className="size-4" />Add guest</button>
+              <FormSection number="03" title="Guest information" description="Enter adult and child traveller details separately.">
+                <div className="mb-4 flex items-center justify-between rounded-xl bg-[#f2f9fc] px-4 py-3">
+                  <p className="text-xs font-semibold text-slate-500">Total guests</p>
+                  <p className="text-sm font-extrabold text-[#087fbe]">{totalGuests} <span className="font-semibold text-slate-400">({adults.length} adult{adults.length === 1 ? "" : "s"}, {children.length} child{children.length === 1 ? "" : "ren"})</span></p>
                 </div>
-                <div className="space-y-3">
-                  {guests.map((guest, index) => (
-                    <div key={index} className="grid gap-3 rounded-2xl border border-slate-200 bg-[#fbfdff] p-3 sm:grid-cols-[1fr_88px_120px_44px]">
-                      <label className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 focus-within:border-[#13a5d8] focus-within:ring-4 focus-within:ring-[#13a5d8]/10"><UserRound className="size-4 text-[#087fbe]" /><input required minLength={2} value={guest.name} onChange={(event) => updateGuest(index, "name", event.target.value)} placeholder={`Guest ${index + 1} full name`} className="h-11 min-w-0 flex-1 text-sm outline-none" /></label>
-                      <input required aria-label={`Guest ${index + 1} age`} placeholder="Age" type="number" min="1" max="120" value={guest.age} onChange={(event) => updateGuest(index, "age", event.target.value)} className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-[#13a5d8]" />
-                      <select aria-label={`Guest ${index + 1} gender`} value={guest.gender} onChange={(event) => updateGuest(index, "gender", event.target.value as Guest["gender"])} className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-[#13a5d8]"><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option></select>
-                      <button type="button" onClick={() => removeGuest(index)} disabled={guests.length === 1} aria-label={`Remove guest ${index + 1}`} title="Remove guest" className="grid size-11 place-items-center rounded-xl border border-red-100 bg-white text-red-400 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-30"><Trash2 className="size-4" /></button>
-                    </div>
-                  ))}
-                </div>
-                <label className={`mt-4 flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-sm font-semibold transition ${kidsAccompanying ? "border-[#13a5d8] bg-[#edf9fd] text-[#087fbe] ring-2 ring-[#13a5d8]/10" : "border-slate-200 bg-white text-[#456078] hover:border-[#74bddb]"}`}>
-                  <input type="checkbox" checked={kidsAccompanying} onChange={(event) => setKidsAccompanying(event.target.checked)} className="size-4 accent-[#087fbe]" />
-                  Kids are accompanying this stay
-                </label>
+
+                <GuestGroup title="Adult guests" description="At least one adult aged 18 or above is required." guests={adults} minimumAge={18} maximumAge={120} addLabel="Add adult" canAdd={totalGuests < 8} canRemove={adults.length > 1} add={() => setAdults((current) => [...current, newAdult()])} remove={(index) => setAdults((current) => current.filter((_, guestIndex) => guestIndex !== index))} update={updateAdult} />
+
+                <div className="my-5 border-t border-dashed border-slate-200" />
+
+                <GuestGroup title="Child guests" description="Add children aged 1–17 only when applicable." guests={children} minimumAge={1} maximumAge={17} addLabel="Add child" canAdd={totalGuests < 8} canRemove add={() => setChildren((current) => [...current, newChild()])} remove={(index) => setChildren((current) => current.filter((_, guestIndex) => guestIndex !== index))} update={updateChild} />
               </FormSection>
 
               <FormSection number="04" title="Final details" description="Share preferences and confirm contact permission.">
@@ -217,6 +208,22 @@ export default function EnhancedHotelBookingForm() {
       </main>
     </div>
   );
+}
+
+function GuestGroup({ title, description, guests, minimumAge, maximumAge, addLabel, canAdd, canRemove, add, remove, update }: {
+  title: string;
+  description: string;
+  guests: Guest[];
+  minimumAge: number;
+  maximumAge: number;
+  addLabel: string;
+  canAdd: boolean;
+  canRemove: boolean;
+  add: () => void;
+  remove: (index: number) => void;
+  update: (index: number, key: keyof Guest, value: string) => void;
+}) {
+  return <div><div className="mb-3 flex flex-wrap items-center justify-between gap-3"><div><h4 className="text-sm font-bold text-[#061f3b]">{title}</h4><p className="mt-0.5 text-[11px] text-slate-400">{description}</p></div><button type="button" onClick={add} disabled={!canAdd} className="inline-flex items-center gap-2 rounded-xl border border-[#087fbe]/20 bg-[#edf9fd] px-4 py-2 text-xs font-bold text-[#087fbe] transition hover:border-[#13a5d8] hover:bg-[#e3f5fb] disabled:cursor-not-allowed disabled:opacity-45"><Plus className="size-4" />{addLabel}</button></div><div className="space-y-3">{guests.length ? guests.map((guest, index) => <div key={index} className="grid gap-3 rounded-2xl border border-slate-200 bg-[#fbfdff] p-3 sm:grid-cols-[1fr_88px_120px_44px]"><label className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 focus-within:border-[#13a5d8] focus-within:ring-4 focus-within:ring-[#13a5d8]/10"><UserRound className="size-4 text-[#087fbe]" /><input required minLength={2} value={guest.name} onChange={(event) => update(index, "name", event.target.value)} placeholder={`${title.slice(0, -1)} ${index + 1} full name`} className="h-11 min-w-0 flex-1 text-sm outline-none" /></label><input required aria-label={`${title} ${index + 1} age`} placeholder="Age" type="number" min={minimumAge} max={maximumAge} value={guest.age} onChange={(event) => update(index, "age", event.target.value)} className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-[#13a5d8]" /><select aria-label={`${title} ${index + 1} gender`} value={guest.gender} onChange={(event) => update(index, "gender", event.target.value as Guest["gender"])} className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-[#13a5d8]"><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option></select><button type="button" onClick={() => remove(index)} disabled={!canRemove} aria-label={`Remove ${title.toLowerCase()} ${index + 1}`} title="Remove guest" className="grid size-11 place-items-center rounded-xl border border-red-100 bg-white text-red-400 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-30"><Trash2 className="size-4" /></button></div>) : <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50/70 px-4 py-4 text-center text-xs text-slate-400">No children added.</p>}</div></div>;
 }
 
 function FormSection({ number, title, description, children }: { number: string; title: string; description: string; children: React.ReactNode }) {
