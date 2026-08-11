@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { HelpCircle, ChevronDown, ChevronUp } from "lucide-react";
-import { cmsService } from "@/lib/api/cms";
+import { useFaqsQuery } from "@/store/websiteApi";
 
 interface FAQ {
   id: number;
@@ -34,31 +34,11 @@ const fallbackFaqs: FAQ[] = [
 ];
 
 export default function FaqsPage() {
-  const [faqs, setFaqs] = useState<FAQ[]>([]);
   const [openId, setOpenId] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchFaqs = async () => {
-      try {
-        const res = await cmsService.getFaqs();
-        console.log("FAQs API Response:", res);
-        if (res && res.success && Array.isArray(res.data) && res.data.length > 0) {
-          setFaqs(res.data);
-        } else if (res && Array.isArray(res) && res.length > 0) {
-          setFaqs(res);
-        } else {
-          setFaqs(fallbackFaqs);
-        }
-      } catch (err) {
-        console.warn("Failed to fetch FAQs, using fallback", err);
-        setFaqs(fallbackFaqs);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchFaqs();
-  }, []);
+  const { data: response, isLoading: loading } = useFaqsQuery();
+  const payload = response as { success?: boolean; data?: FAQ[] } | FAQ[] | undefined;
+  const remoteFaqs = Array.isArray(payload) ? payload : payload?.success && Array.isArray(payload.data) ? payload.data : [];
+  const faqs = remoteFaqs.length ? remoteFaqs : fallbackFaqs;
 
   const toggleFaq = (id: number) => {
     setOpenId(openId === id ? null : id);

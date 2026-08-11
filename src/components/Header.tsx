@@ -4,7 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronDown, Menu, X, User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { authService } from "@/lib/api/auth";
+import { useAppSelector } from "@/store/hooks";
+import { useProfileQuery } from "@/store/websiteApi";
 
 const links = [
   ["Home", "/"],
@@ -29,9 +30,11 @@ export default function Header() {
   const [moreOpen, setMoreOpen] = useState(false);
   const [hidden, setHidden] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [userImage, setUserImage] = useState<string | null>(null);
+  const session = useAppSelector((state) => state.session);
+  const { data: profile } = useProfileQuery(undefined, { skip: !session.hydrated || !session.isAuthenticated });
+  const isAuthenticated = session.isAuthenticated;
+  const userEmail = profile?.email || session.email;
+  const userImage = profile?.image || session.profileImage;
   const lastY = useRef(0);
   const desktopMoreRef = useRef<HTMLDivElement>(null);
   const mobileMoreRef = useRef<HTMLDivElement>(null);
@@ -61,49 +64,6 @@ export default function Header() {
     if (!path) return false;
     return path === h || (h !== "/" && path.startsWith(h));
   };
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      if (typeof window !== "undefined") {
-        const token = window.localStorage.getItem("access_token");
-        const authData = window.localStorage.getItem("bhli-auth");
-        if (token || authData) {
-          setIsAuthenticated(true);
-          if (authData) {
-            try {
-              const parsed = JSON.parse(authData);
-              if (parsed.email) setUserEmail(parsed.email);
-            } catch {
-              // Ignore JSON parse error
-            }
-          }
-          try {
-            const cached = JSON.parse(window.localStorage.getItem("bhli-profile-details") || "{}");
-            if (cached.profileImage) setUserImage(cached.profileImage);
-          } catch {
-            setUserImage(null);
-          }
-          if (token) {
-            try {
-              const profile = await authService.getProfile();
-              setUserEmail(profile.email || null);
-              setUserImage(profile.image || null);
-            } catch {
-              // The API interceptor handles invalid sessions.
-            }
-          }
-        } else {
-          setIsAuthenticated(false);
-          setUserEmail(null);
-          setUserImage(null);
-        }
-      }
-    };
-
-    checkAuth();
-    window.addEventListener("storage", checkAuth);
-    return () => window.removeEventListener("storage", checkAuth);
-  }, [path]);
 
   useEffect(() => {
     const onScroll = () => {

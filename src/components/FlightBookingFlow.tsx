@@ -22,19 +22,27 @@ import {
   UserRound,
   Users,
 } from "lucide-react";
-import { getErrorMessage } from "@/lib/api/client";
 import { airportOptions } from "@/lib/airports";
-import { portalService } from "@/lib/api/portal";
 import {
-  flightService,
   type FlightBookingPayload,
   type FlightCabin,
   type FlightPassengerPayload,
   type FlightSearchPayload,
   type PassengerType,
 } from "@/lib/api/flights";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { useAirportsQuery, useServiceQuery } from "@/store/websiteApi";
+import {
+  clearFlightError,
+  clearSearch,
+  clearSelectedFare,
+  loadFlightFare,
+  resetFlightBooking,
+  searchFlights as searchFlightsRequest,
+  submitFlightBooking,
+  type JsonRecord,
+} from "@/store/flightBookingSlice";
 
-type JsonRecord = Record<string, unknown>;
 type SearchForm = {
   trip_type: "0" | "1";
   service_type: "1" | "2";
@@ -46,22 +54,6 @@ type SearchForm = {
   children: string;
   infants: string;
   cabin: FlightCabin;
-};
-
-type SearchContext = {
-  searchSession: number;
-  refId: string;
-  fallbackFlightId: string;
-  flights: JsonRecord[];
-};
-
-type SelectedFare = {
-  searchFlightId: string;
-  bookingFlightId: string;
-  flight: JsonRecord;
-  fareDetails: JsonRecord;
-  priceDetails: JsonRecord;
-  fareRules: JsonRecord | null;
 };
 
 type PassengerForm = FlightPassengerPayload;
@@ -102,20 +94,6 @@ const firstArray = (record: JsonRecord | null, keys: string[]) => {
   }
   return [] as unknown[];
 };
-
-function extractFlights(providerResponse: unknown): JsonRecord[] {
-  if (Array.isArray(providerResponse)) {
-    return providerResponse.map(asRecord).filter((item): item is JsonRecord => Boolean(item));
-  }
-
-  const provider = asRecord(providerResponse);
-  const direct = firstArray(provider, ["results", "flights", "flightResults", "flightList"]);
-  if (direct.length) return direct.map(asRecord).filter((item): item is JsonRecord => Boolean(item));
-
-  const nested = asRecord(provider?.data);
-  const nestedFlights = firstArray(nested, ["results", "flights", "flightResults", "flightList"]);
-  return nestedFlights.map(asRecord).filter((item): item is JsonRecord => Boolean(item));
-}
 
 function onwardDetails(flight: JsonRecord) {
   const flights = asRecord(flight.Flights) || asRecord(flight.flights);
@@ -274,6 +252,7 @@ function buildPassengers(form: SearchForm) {
 }
 
 export default function FlightBookingFlow() {
+  const dispatch = useAppDispatch();
   const params = useSearchParams();
   const router = useRouter();
   const requestedDestination = params.get("destination")?.toUpperCase() || "";
@@ -289,8 +268,6 @@ export default function FlightBookingFlow() {
     infants: "0",
     cabin: "E",
   });
-  const [searchContext, setSearchContext] = useState<SearchContext | null>(null);
-  const [selectedFare, setSelectedFare] = useState<SelectedFare | null>(null);
   const [passengers, setPassengers] = useState<PassengerForm[]>([]);
   const [mobile, setMobile] = useState("");
   const [email, setEmail] = useState("");
@@ -298,19 +275,19 @@ export default function FlightBookingFlow() {
   const [pan, setPan] = useState("");
   const [includeGst, setIncludeGst] = useState(false);
   const [gst, setGst] = useState({ gstNo: "", gstCompany: "", gstEmail: "", gstMobile: "", gstAddress: "" });
-  const [loading, setLoading] = useState<"search" | "book" | "">("");
-  const [loadingFareId, setLoadingFareId] = useState("");
-  const [error, setError] = useState("");
-  const [bookingResult, setBookingResult] = useState<JsonRecord | null>(null);
-  const [flightServiceId, setFlightServiceId] = useState<number | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    portalService.service("flight-booking").then((service) => {
-      if (active && service.id) setFlightServiceId(service.id);
-    }).catch(() => setFlightServiceId(null));
-    return () => { active = false; };
-  }, []);
+  const [validationError, setValidationError] = useState("");
+  const { data: flightServiceRecord } = useServiceQuery("flight-booking");
+  const flightServiceId = flightServiceRecord?.id ?? null;
+  const {
+    searchContext,
+    selectedFare,
+    bookingResult,
+    searchStatus,
+    bookingStatus,
+    loadingFareId,
+    error: requestError,
+  } = useAppSelector((state) => state.flightBooking);
+  const error = validationError || requestError;
 
   const updateForm = (key: keyof SearchForm, value: string) =>
     setForm((current) => ({ ...current, [key]: value }));
@@ -335,7 +312,7 @@ export default function FlightBookingFlow() {
       return;
     }
     const validation = validateSearch();
-    if (validation) return setError(validation);
+    if (validation) return setValidationError(validation);
 
     const payload: FlightSearchPayload = {
       trip_type: Number(form.trip_type) as 0 | 1,
@@ -351,68 +328,26 @@ export default function FlightBookingFlow() {
       fare_type: "A",
     };
 
-    setError("");
-    setLoading("search");
-    setSelectedFare(null);
-    setBookingResult(null);
+    setValidationError("");
+    dispatch(clearFlightError());
     try {
-      const response = await flightService.search(payload);
-      if (!response.success) throw new Error(response.message || "Flight search failed.");
-      const data = asRecord(response.data);
-      const refId = stringValue(data, ["ref_id", "refID"], response.ref_id || "");
-      const fallbackFlightId = stringValue(
-        data,
-        ["search_flight_id", "flight_id", "flightID"],
-        response.search_flight_id || "",
-      );
-      const searchSession = Number(data?.search_session || 0);
-      const flights = extractFlights(data?.provider_response);
-      if (!refId || !searchSession) throw new Error("The search response did not include its required reference data.");
-      setSearchContext({ searchSession, refId, fallbackFlightId, flights });
+      await dispatch(searchFlightsRequest(payload)).unwrap();
       setPassengers(buildPassengers(form));
       window.setTimeout(() => document.getElementById("flight-results")?.scrollIntoView({ behavior: "smooth" }), 50);
-    } catch (searchError) {
-      setError(getErrorMessage(searchError));
-    } finally {
-      setLoading("");
-    }
+    } catch { /* The slice exposes a user-friendly request error. */ }
   }
 
   async function selectFlight(flight: JsonRecord, index: number) {
     if (!searchContext) return;
     const searchFlightId = flightIdentity(flight, searchContext.fallbackFlightId);
-    if (!searchFlightId) return setError("This result does not contain a selectable flight ID.");
+    if (!searchFlightId) return setValidationError("This result does not contain a selectable flight ID.");
 
-    setError("");
-    setLoadingFareId(searchFlightId);
+    setValidationError("");
+    dispatch(clearFlightError());
     try {
-      const fareResponse = await flightService.fareDetails(searchContext.refId, searchFlightId);
-      if (!fareResponse.success) throw new Error(fareResponse.message || "Fare details could not be loaded.");
-      const fareData = asRecord(fareResponse.data) || {};
-      const bookingFlightId =
-        fareResponse.booking_flight_id ||
-        stringValue(fareData, ["booking_flight_id", "flight_id", "flightID"], "");
-      if (!bookingFlightId) throw new Error("Fare details did not return the booking flight ID.");
-
-      const priceResponse = await flightService.priceVerify(searchContext.refId, bookingFlightId);
-      if (!priceResponse.success) throw new Error(priceResponse.message || "The latest fare could not be verified.");
-      const priceData = asRecord(priceResponse.data) || {};
-      const rulesResponse = await flightService.fareRules(searchContext.refId, bookingFlightId).catch(() => null);
-
-      setSelectedFare({
-        searchFlightId,
-        bookingFlightId,
-        flight,
-        fareDetails: fareData,
-        priceDetails: priceData,
-        fareRules: rulesResponse?.success ? asRecord(rulesResponse.data) : null,
-      });
+      await dispatch(loadFlightFare({ refId: searchContext.refId, searchFlightId, flight })).unwrap();
       window.setTimeout(() => document.getElementById("traveller-details")?.scrollIntoView({ behavior: "smooth" }), 50);
-    } catch (fareError) {
-      setError(getErrorMessage(fareError));
-    } finally {
-      setLoadingFareId("");
-    }
+    } catch { /* The slice exposes a user-friendly request error. */ }
     void index;
   }
 
@@ -446,7 +381,7 @@ export default function FlightBookingFlow() {
     event.preventDefault();
     if (!searchContext || !selectedFare) return;
     const validation = validatePassengers();
-    if (validation) return setError(validation);
+    if (validation) return setValidationError(validation);
     if (!hasLoginSession()) {
       router.push(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
       return;
@@ -460,24 +395,18 @@ export default function FlightBookingFlow() {
       message: message.trim() || "Please book this flight.",
       passengers,
     };
-    if (!flightServiceId) return setError("The Flight Booking service is unavailable. Please refresh and try again.");
+    if (!flightServiceId) return setValidationError("The Flight Booking service is unavailable. Please refresh and try again.");
     if (mobile) payload.mobile = mobile;
     if (email) payload.email = email;
     if (pan) payload.first_pax_pan_no = pan;
     if (includeGst) payload.gst = gst;
 
-    setError("");
-    setLoading("book");
+    setValidationError("");
+    dispatch(clearFlightError());
     try {
-      const response = await flightService.book(payload);
-      if (!response.success) throw new Error(response.message || "Flight booking failed.");
-      setBookingResult(asRecord(response.data) || {});
+      await dispatch(submitFlightBooking(payload)).unwrap();
       window.scrollTo({ top: 0, behavior: "smooth" });
-    } catch (bookingError) {
-      setError(getErrorMessage(bookingError));
-    } finally {
-      setLoading("");
-    }
+    } catch { /* The slice exposes a user-friendly request error. */ }
   }
 
   if (bookingResult) {
@@ -499,7 +428,7 @@ export default function FlightBookingFlow() {
           </div>
           <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
             <Link href="/profile" className="rounded-xl bg-[#061f3b] px-6 py-3.5 text-sm font-bold text-white">View my bookings</Link>
-            <button type="button" onClick={() => window.location.reload()} className="rounded-xl border border-slate-200 px-6 py-3.5 text-sm font-bold text-[#087fbe]">Book another flight</button>
+            <button type="button" onClick={() => { dispatch(resetFlightBooking()); setValidationError(""); }} className="rounded-xl border border-slate-200 px-6 py-3.5 text-sm font-bold text-[#087fbe]">Book another flight</button>
           </div>
         </section>
       </main>
@@ -642,10 +571,10 @@ export default function FlightBookingFlow() {
                   {form.trip_type === "0" ? "One way" : "Round trip"} · {form.service_type === "1" ? "Domestic" : "International"} · {Number(form.adults) + Number(form.children) + Number(form.infants)} traveller{Number(form.adults) + Number(form.children) + Number(form.infants) === 1 ? "" : "s"}
                 </p>
               </div>
-              <button disabled={loading === "search"} className="group inline-flex w-full items-center justify-center sm:w-auto sm:min-w-56 gap-2 rounded-xl bg-gradient-to-r from-[#0875b7] to-[#13a5d8] px-7 py-4 text-sm font-bold text-white shadow-[0_12px_30px_rgba(8,126,186,.28)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_36px_rgba(8,126,186,.4)] disabled:opacity-60">
-                {loading === "search" ? <LoaderCircle className="size-4 animate-spin" /> : <Search className="size-4" />}
-                {loading === "search" ? "Searching live fares..." : "Search available flights"}
-                {loading !== "search" && <ArrowRight className="size-4 transition group-hover:translate-x-1" />}
+              <button disabled={searchStatus === "pending"} className="group inline-flex w-full items-center justify-center sm:w-auto sm:min-w-56 gap-2 rounded-xl bg-gradient-to-r from-[#0875b7] to-[#13a5d8] px-7 py-4 text-sm font-bold text-white shadow-[0_12px_30px_rgba(8,126,186,.28)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_36px_rgba(8,126,186,.4)] disabled:opacity-60">
+                {searchStatus === "pending" ? <LoaderCircle className="size-4 animate-spin" /> : <Search className="size-4" />}
+                {searchStatus === "pending" ? "Searching live fares..." : "Search available flights"}
+                {searchStatus !== "pending" && <ArrowRight className="size-4 transition group-hover:translate-x-1" />}
               </button>
             </div>
           </form>
@@ -666,7 +595,7 @@ export default function FlightBookingFlow() {
                 <h2 className="mt-1 font-serif text-2xl text-[#061f3b] sm:text-3xl">Select a flight</h2>
                 <p className="mt-2 text-sm text-slate-500">Reference {searchContext.refId}</p>
               </div>
-              <button type="button" onClick={() => { setSearchContext(null); setError(""); }} className="inline-flex items-center gap-2 text-sm font-bold text-[#087fbe]"><RotateCcw className="size-4" />Change search</button>
+              <button type="button" onClick={() => { dispatch(clearSearch()); setValidationError(""); }} className="inline-flex items-center gap-2 text-sm font-bold text-[#087fbe]"><RotateCcw className="size-4" />Change search</button>
             </div>
 
             {searchContext.flights.length ? (
@@ -748,7 +677,7 @@ export default function FlightBookingFlow() {
               </div>
               <div className="flex w-full items-center justify-between gap-3 sm:w-auto sm:gap-5">
                 <div className="text-right"><p className="text-[10px] uppercase tracking-wider text-white/45">Verified total</p><p className="mt-1 text-xl font-extrabold sm:text-2xl">{verifiedPrice ? formatMoney(verifiedPrice) : "Confirmed by provider"}</p></div>
-                <button type="button" onClick={() => setSelectedFare(null)} className="grid size-11 place-items-center rounded-full border border-white/15 bg-white/10" aria-label="Choose another flight"><RotateCcw className="size-4" /></button>
+                <button type="button" onClick={() => dispatch(clearSelectedFare())} className="grid size-11 place-items-center rounded-full border border-white/15 bg-white/10" aria-label="Choose another flight"><RotateCcw className="size-4" /></button>
               </div>
             </div>
 
@@ -792,9 +721,9 @@ export default function FlightBookingFlow() {
 
               <footer className="flex flex-col gap-4 border-t border-slate-100 bg-[#fbfdff] px-4 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-8">
                 <p className="flex items-center gap-2 text-xs text-slate-500"><ShieldCheck className="size-4 text-[#087fbe]" />The backend verifies the price again before final booking.</p>
-                <button disabled={loading === "book"} className="inline-flex w-full items-center justify-center sm:w-auto sm:min-w-52 gap-2 rounded-xl bg-gradient-to-r from-[#0875b7] to-[#13a5d8] px-6 py-3.5 text-sm font-bold text-white shadow-lg disabled:opacity-60">
-                  {loading === "book" ? <LoaderCircle className="size-4 animate-spin" /> : <Plane className="size-4" />}
-                  {loading === "book" ? "Booking..." : "Confirm flight booking"}
+                <button disabled={bookingStatus === "pending"} className="inline-flex w-full items-center justify-center sm:w-auto sm:min-w-52 gap-2 rounded-xl bg-gradient-to-r from-[#0875b7] to-[#13a5d8] px-6 py-3.5 text-sm font-bold text-white shadow-lg disabled:opacity-60">
+                  {bookingStatus === "pending" ? <LoaderCircle className="size-4 animate-spin" /> : <Plane className="size-4" />}
+                  {bookingStatus === "pending" ? "Booking..." : "Confirm flight booking"}
                 </button>
               </footer>
             </section>
@@ -808,7 +737,7 @@ export default function FlightBookingFlow() {
 function AirportField({ label, value, icon, onChange }: { label: string; value: string; icon: ReactNode; onChange: (value: string) => void }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
-  const [remoteSuggestions, setRemoteSuggestions] = useState<[string, string, string][] | null>(null);
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [chosenAirport, setChosenAirport] = useState<[string, string, string] | null>(null);
   const selectedAirport = chosenAirport?.[0] === value ? chosenAirport : airportOptions.find(([code]) => code === value);
   const selectedLabel = selectedAirport ? `${selectedAirport[1]} (${selectedAirport[0]})` : value;
@@ -823,6 +752,11 @@ function AirportField({ label, value, icon, onChange }: { label: string; value: 
         airport.toLowerCase().includes(normalizedQuery);
     })
     .slice(0, 8);
+  const { data: airportResponse } = useAirportsQuery(
+    { search: debouncedQuery, page: 1, page_size: 8 },
+    { skip: !open || debouncedQuery.length < 2 },
+  );
+  const remoteSuggestions = airportResponse?.data.map((airport) => [airport.airport_code, airport.airport_city, airport.airport_name] as [string, string, string]);
   const suggestions = open && normalizedQuery.length >= 2 && remoteSuggestions
     ? remoteSuggestions
     : fallbackSuggestions;
@@ -830,14 +764,10 @@ function AirportField({ label, value, icon, onChange }: { label: string; value: 
   useEffect(() => {
     const search = query.trim();
     if (!open || search.length < 2) return;
-    let active = true;
     const timer = window.setTimeout(() => {
-      portalService.airports({ search, page: 1, page_size: 8 }).then((response) => {
-        if (!active) return;
-        setRemoteSuggestions(response.data.map((airport) => [airport.airport_code, airport.airport_city, airport.airport_name]));
-      }).catch(() => { if (active) setRemoteSuggestions(null); });
+      setDebouncedQuery(search);
     }, 250);
-    return () => { active = false; window.clearTimeout(timer); };
+    return () => window.clearTimeout(timer);
   }, [open, query]);
 
   function chooseAirport(code: string, city: string, airport: string) {
@@ -867,7 +797,6 @@ function AirportField({ label, value, icon, onChange }: { label: string; value: 
             onBlur={() => window.setTimeout(() => setOpen(false), 150)}
             onChange={(event) => {
               setQuery(event.target.value);
-              setRemoteSuggestions(null);
               setOpen(true);
               onChange("");
             }}

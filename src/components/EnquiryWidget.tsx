@@ -2,14 +2,9 @@
 
 import { AlertCircle, Check, Mail, MessageSquareText, Phone, Send, ShieldCheck, X } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
-import { baseService, type ContactLeadPayload } from "@/lib/api/base";
+import { type ContactLeadPayload } from "@/lib/api/base";
 import { getErrorMessage } from "@/lib/api/client";
-
-interface EnquiryTypeItem {
-  id: number;
-  name: string;
-  slug: string;
-}
+import { useCreateContactLeadMutation, useEnquiryTypesQuery } from "@/store/websiteApi";
 
 const fieldClass = "w-full rounded-xl border border-[#087fbe]/15 bg-[#f8fbfd] px-4 py-3 text-sm text-[#122b42] outline-none transition focus:border-[#087fbe] focus:bg-white focus:ring-4 focus:ring-[#13a5d8]/10 placeholder:text-black/30";
 const labelClass = "grid gap-2 text-xs font-bold uppercase tracking-[.08em] text-[#456276]";
@@ -17,9 +12,10 @@ const labelClass = "grid gap-2 text-xs font-bold uppercase tracking-[.08em] text
 export default function EnquiryWidget() {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [enquiryTypes, setEnquiryTypes] = useState<EnquiryTypeItem[]>([]);
+  const { data: enquiryTypeResponse } = useEnquiryTypesQuery(undefined, { skip: !open });
+  const [createContactLead, { isLoading: isSubmitting }] = useCreateContactLeadMutation();
+  const enquiryTypes = enquiryTypeResponse?.data ?? [];
 
   useEffect(() => {
     if (!open) return;
@@ -34,16 +30,6 @@ export default function EnquiryWidget() {
       document.body.style.overflow = previousOverflow;
     };
   }, [open]);
-
-  useEffect(() => {
-    if (!open || enquiryTypes.length > 0) return;
-    baseService.getEnquiryTypes().then((response) => {
-      const items = response?.success && Array.isArray(response.data)
-        ? response.data
-        : Array.isArray(response) ? response : [];
-      setEnquiryTypes(items);
-    }).catch((fetchError) => console.warn("Failed to fetch enquiry types", fetchError));
-  }, [open, enquiryTypes.length]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -78,14 +64,11 @@ export default function EnquiryWidget() {
     if (selectedType) payload.enquiry_type = selectedType.id;
 
     setError("");
-    setIsSubmitting(true);
     try {
-      await baseService.createContactLead(payload);
+      await createContactLead(payload).unwrap();
       setSubmitted(true);
     } catch (submitError) {
       setError(getErrorMessage(submitError));
-    } finally {
-      setIsSubmitting(false);
     }
   }
 

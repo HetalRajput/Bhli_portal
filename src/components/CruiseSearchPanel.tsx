@@ -1,13 +1,10 @@
 "use client";
 
 import { ChevronDown, XCircle } from "lucide-react";
-import { useState, useEffect } from "react";
-import { apiClient } from "@/lib/api/client";
+import { useState } from "react";
+import { useCruiseDestinationsQuery, useCruisePortsQuery } from "@/store/websiteApi";
 
 type CruiseField = "destination" | "port" | "month" | "nights";
-type CruiseDestinationResponse = { success?: boolean; data?: Array<{ region_name: string; destinations: Array<{ name: string }> }> };
-type CruisePortResponse = { success?: boolean; data?: Array<{ region_name: string; ports: Array<{ name: string }> }> };
-
 type CruiseSearchPanelProps = {
   destination: string;
   departurePort: string;
@@ -55,8 +52,6 @@ export default function CruiseSearchPanel({
   onNightsChange,
   onSearch,
 }: CruiseSearchPanelProps) {
-  const [destinationGroups, setDestinationGroups] = useState(initialDestinations);
-  const [portGroups, setPortGroups] = useState(initialPorts);
   const [openField, setOpenField] = useState<CruiseField | null>("destination");
   const [selectionError, setSelectionError] = useState("");
   const now = new Date();
@@ -64,41 +59,14 @@ export default function CruiseSearchPanel({
   const currentMonth = now.getMonth();
   const years = [currentYear, currentYear + 1, currentYear + 2];
 
-  useEffect(() => {
-    let active = true;
-    Promise.all([
-      apiClient.get<CruiseDestinationResponse>("/api/bookings/cruise/destinations/").then((response) => response.data),
-      apiClient.get<CruisePortResponse>("/api/bookings/cruise/ports/").then((response) => response.data)
-    ])
-      .then(([destRes, portRes]) => {
-        if (!active) return;
-        if (destRes?.success && Array.isArray(destRes.data)) {
-          const dests = destRes.data
-            .map((region) => ({
-              name: region.region_name,
-              options: region.destinations.map((destination) => destination.name),
-            }))
-            .filter((region) => region.options.length > 0);
-          setDestinationGroups(dests);
-        }
-        if (portRes?.success && Array.isArray(portRes.data)) {
-          const ports = portRes.data
-            .map((region) => ({
-              name: region.region_name,
-              options: region.ports.map((port) => port.name),
-            }))
-            .filter((region) => region.options.length > 0);
-          setPortGroups(ports);
-        }
-      })
-      .catch((err) => {
-        console.error("Error loading cruise destinations/ports:", err);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, []);
+  const { data: destinationResponse } = useCruiseDestinationsQuery();
+  const { data: portResponse } = useCruisePortsQuery();
+  const destinationGroups = destinationResponse?.success && Array.isArray(destinationResponse.data)
+    ? destinationResponse.data.map((region) => ({ name: region.region_name, options: region.destinations.map((item) => item.name) })).filter((region) => region.options.length)
+    : initialDestinations;
+  const portGroups = portResponse?.success && Array.isArray(portResponse.data)
+    ? portResponse.data.map((region) => ({ name: region.region_name, options: region.ports.map((item) => item.name) })).filter((region) => region.options.length)
+    : initialPorts;
 
   const fields: Array<{ key: CruiseField; eyebrow: string; placeholder: string; value: string }> = [
     { key: "destination", eyebrow: "Select Destination", placeholder: "Where to?", value: destination },

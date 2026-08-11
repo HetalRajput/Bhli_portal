@@ -1,21 +1,20 @@
 "use client";
 
-import { FormEvent, ReactNode, useEffect, useState } from "react";
+import { FormEvent, ReactNode, useState } from "react";
 import { ArrowLeft, ArrowRight, BadgeInfo, Building2, CalendarDays, Check, CheckCircle2, CheckSquare, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Clock3, CirclePlus, Hash, IndianRupee, Landmark, Mail, MapPin, MessageSquareText, Phone, Search, Send, ShieldCheck, Sparkles, Trash2, UserRound, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import BookingSuccessModal from "@/components/BookingSuccessModal";
 import CruiseSearchPanel from "@/components/CruiseSearchPanel";
 import { documentedBookingConfigs } from "@/components/DocumentedBookingForm";
-import { apiClient, getErrorMessage } from "@/lib/api/client";
-import { cmsService } from "@/lib/api/cms";
+import { getErrorMessage } from "@/lib/api/client";
 import { useSuccessChime } from "@/hooks/useSuccessChime";
+import { useServiceQuery, useSubmitServiceBookingMutation } from "@/store/websiteApi";
 
 type FieldKind = "text" | "number" | "decimal" | "date" | "time" | "select" | "textarea" | "checkbox";
 type BookingField = { key: string; label: string; kind?: FieldKind; required?: boolean; placeholder?: string; options?: [string, string][]; min?: number; defaultValue?: string | boolean };
 type BookingConfig = { title: string; description: string; fields: BookingField[] };
 type Guest = { name: string; age: string; gender: "male" | "female" | "other" };
-type ServiceMeta = { id?: number; name?: string; title?: string; banner_image?: string | null };
 
 const fallbackBanner = "https://images.pexels.com/photos/3769138/pexels-photo-3769138.jpeg?auto=compress&cs=tinysrgb&w=1600";
 const newGuest = (): Guest => ({ name: "", age: "18", gender: "male" });
@@ -46,14 +45,13 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
   const selectedItemName = serviceSlug === "hotel-reservations" ? params.get("name") || "Selected hotel" : "";
   const selectedImage = serviceSlug === "hotel-reservations" ? params.get("image") || "" : "";
   const initialServiceId = params.get("service") || "";
-  const [serviceId, setServiceId] = useState(initialServiceId);
-  const [serviceMeta, setServiceMeta] = useState<ServiceMeta | null>(null);
+  const { data: serviceMeta, isLoading: loadingService } = useServiceQuery(serviceSlug);
+  const serviceId = initialServiceId || String(serviceMeta?.id || "");
   const [values, setValues] = useState<Record<string, string | boolean>>(() => Object.fromEntries(config.fields.map((field) => [field.key, field.defaultValue ?? ""])));
   const [guests, setGuests] = useState<Guest[]>([newGuest()]);
   const [message, setMessage] = useState("");
   const [consent, setConsent] = useState(false);
-  const [loadingService, setLoadingService] = useState(!initialServiceId);
-  const [submitting, setSubmitting] = useState(false);
+  const [submitServiceBooking, { isLoading: submitting }] = useSubmitServiceBookingMutation();
   const [error, setError] = useState("");
   const [reference, setReference] = useState("");
   const [dateMinimum] = useState(today);
@@ -62,19 +60,6 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
   const [currentStep, setCurrentStep] = useState(1);
   const successChime = useSuccessChime();
   const formId = `booking-form-${serviceSlug}`;
-
-  useEffect(() => {
-    let active = true;
-    cmsService.getServiceDetail(serviceSlug)
-      .then((response) => {
-        const service = response?.success && response.data && !Array.isArray(response.data) ? response.data : response;
-        if (!active || !service) return;
-        setServiceMeta(service);
-        if (!initialServiceId && service.id) setServiceId(String(service.id));
-      })
-      .finally(() => { if (active) setLoadingService(false); });
-    return () => { active = false; };
-  }, [initialServiceId, serviceSlug]);
 
   const update = (key: string, value: string | boolean) => setValues((current) => {
     const next = { ...current, [key]: value };
@@ -293,21 +278,17 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
     }
 
     successChime.arm();
-    setSubmitting(true);
     try {
-      const response = await apiClient.post(`/api/bookings/${serviceSlug}/`, payload);
-      const data = response.data;
+      const data = await submitServiceBooking({ serviceSlug, payload }).unwrap() as { data?: { booking?: { id?: number }; id?: number }; reference?: string };
       const bookingId = data?.data?.booking?.id ?? data?.data?.id;
       setReference(bookingId ? `BH${String(bookingId).padStart(6, "0")}` : data?.reference || "Submitted");
       successChime.play();
     } catch (submissionError) {
       setError(getErrorMessage(submissionError));
-    } finally {
-      setSubmitting(false);
     }
   }
 
-  const serviceTitle = serviceMeta?.name || serviceMeta?.title || config.title;
+  const serviceTitle = serviceMeta?.name || config.title;
   const selectedTitle = selectedItemName || serviceTitle;
   const banner = selectedImage || serviceMeta?.banner_image || fallbackBanner;
   const cruiseDateMaximum = cruiseMonth ? lastDayOfMonth(cruiseMonth) : undefined;

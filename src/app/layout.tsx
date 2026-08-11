@@ -10,6 +10,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import SecurityGuards from "@/components/SecurityGuards";
 import SiteLoader from "@/components/SiteLoader";
 import ApiErrorAlerts from "@/components/ApiErrorAlerts";
+import StoreProvider from "@/store/StoreProvider";
 
 const manrope = Manrope({
   subsets: ["latin"],
@@ -36,18 +37,20 @@ export default function RootLayout({
   return (
     <html lang="en" data-scroll-behavior="smooth" className={`${manrope.variable} ${cormorant.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-background text-foreground selection:bg-accent/30">
-        <SiteLoader />
-        <ApiErrorAlerts />
-        <SecurityGuards />
-        <ScrollToTop />
-        <ScrollReveal />
-        <Header />
-        <main className="flex-1 flex flex-col">
-          {children}
-        </main>
-        <Footer />
-        <EnquiryWidget />
-        <SpeedInsights />
+        <StoreProvider>
+          <SiteLoader />
+          <ApiErrorAlerts />
+          <SecurityGuards />
+          <ScrollToTop />
+          <ScrollReveal />
+          <Header />
+          <main className="flex-1 flex flex-col">
+            {children}
+          </main>
+          <Footer />
+          <EnquiryWidget />
+          <SpeedInsights />
+        </StoreProvider>
       </body>
     </html>
   );

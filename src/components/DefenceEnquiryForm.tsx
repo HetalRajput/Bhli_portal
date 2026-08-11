@@ -1,9 +1,10 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useState } from "react";
 import { AlertCircle, CheckCircle2, Send } from "lucide-react";
-import { baseService, type ContactLeadPayload } from "@/lib/api/base";
+import { type ContactLeadPayload } from "@/lib/api/base";
 import { getErrorMessage } from "@/lib/api/client";
+import { useCreateContactLeadMutation, useEnquiryTypesQuery } from "@/store/websiteApi";
 
 type EnquiryTypeItem = {
   id: number;
@@ -24,41 +25,16 @@ export default function DefenceEnquiryForm() {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [enquiryType, setEnquiryType] = useState("Defence travel");
-  const [enquiryTypes, setEnquiryTypes] = useState<EnquiryTypeItem[]>([]);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-
-  useEffect(() => {
-    let active = true;
-
-    async function loadEnquiryTypes() {
-      try {
-        const response = await baseService.getEnquiryTypes();
-        const types: EnquiryTypeItem[] = Array.isArray(response)
-          ? response
-          : response?.success && Array.isArray(response.data)
-            ? response.data
-            : [];
-
-        if (!active || types.length === 0) return;
-
-        setEnquiryTypes(types);
-        const defenceType = types.find((type) =>
-          `${type.name} ${type.slug}`.toLowerCase().includes("defence"),
-        );
-        setEnquiryType(String(defenceType?.id ?? types[0].id));
-      } catch {
-        // Keep the local options usable if enquiry types cannot be loaded.
-      }
-    }
-
-    loadEnquiryTypes();
-    return () => {
-      active = false;
-    };
-  }, []);
+  const { data: enquiryTypeResponse } = useEnquiryTypesQuery();
+  const [createContactLead, { isLoading: isSubmitting }] = useCreateContactLeadMutation();
+  const enquiryTypes: EnquiryTypeItem[] = enquiryTypeResponse?.data ?? [];
+  const defaultRemoteType = enquiryTypes.find((type) => `${type.name} ${type.slug}`.toLowerCase().includes("defence")) ?? enquiryTypes[0];
+  const selectedEnquiryType = enquiryTypes.length && !enquiryTypes.some((type) => String(type.id) === enquiryType)
+    ? String(defaultRemoteType.id)
+    : enquiryType;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -90,8 +66,8 @@ export default function DefenceEnquiryForm() {
       return;
     }
 
-    const selectedType = enquiryTypes.find((type) => String(type.id) === enquiryType);
-    const selectedTypeName = selectedType?.name ?? enquiryType;
+    const selectedType = enquiryTypes.find((type) => String(type.id) === selectedEnquiryType);
+    const selectedTypeName = selectedType?.name ?? selectedEnquiryType;
     const payload: ContactLeadPayload = {
       name: trimmedName,
       email: trimmedEmail,
@@ -102,9 +78,8 @@ export default function DefenceEnquiryForm() {
 
     if (selectedType) payload.enquiry_type = selectedType.id;
 
-    setIsSubmitting(true);
     try {
-      await baseService.createContactLead(payload);
+      await createContactLead(payload).unwrap();
       setIsSuccess(true);
       setName("");
       setPhone("");
@@ -112,8 +87,6 @@ export default function DefenceEnquiryForm() {
       setMessage("");
     } catch (submissionError) {
       setError(getErrorMessage(submissionError));
-    } finally {
-      setIsSubmitting(false);
     }
   }
 
@@ -186,7 +159,7 @@ export default function DefenceEnquiryForm() {
             <label className="grid gap-2 text-sm font-semibold">
               Enquiry type *
               <select
-                value={enquiryType}
+                value={selectedEnquiryType}
                 onChange={(event) => setEnquiryType(event.target.value)}
                 className="rounded-xl border border-black/10 bg-[#f8fbfd] px-4 py-3.5 outline-none focus:border-[#087fbe]"
               >

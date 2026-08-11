@@ -1,54 +1,45 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useState } from "react";
 import { CheckCircle2, LoaderCircle, Star } from "lucide-react";
 import { getErrorMessage } from "@/lib/api/client";
-import { portalService, type ServiceRating } from "@/lib/api/portal";
+import { useRatingsQuery, useServiceQuery, useSubmitRatingMutation } from "@/store/websiteApi";
 
 export default function ServiceRatings({ serviceSlug }: { serviceSlug: string }) {
-  const [serviceId, setServiceId] = useState<number | null>(null);
-  const [ratings, setRatings] = useState<ServiceRating[]>([]);
   const [rating, setRating] = useState(5);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
+  const [localError, setLocalError] = useState("");
   const [success, setSuccess] = useState("");
-
-  useEffect(() => {
-    let active = true;
-    Promise.all([portalService.service(serviceSlug), portalService.ratings({ service_slug: serviceSlug, page_size: 6 })])
-      .then(([service, response]) => {
-        if (!active) return;
-        setServiceId(service.id);
-        setRatings(response.data);
-      })
-      .catch((requestError) => { if (active) setError(getErrorMessage(requestError)); })
-      .finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
-  }, [serviceSlug]);
+  const serviceQuery = useServiceQuery(serviceSlug);
+  const ratingsQuery = useRatingsQuery({ service_slug: serviceSlug, page_size: 6 });
+  const [submitRating, { isLoading: saving }] = useSubmitRatingMutation();
+  const serviceId = serviceQuery.data?.id ?? null;
+  const ratings = ratingsQuery.data?.data ?? [];
+  const loading = serviceQuery.isLoading || ratingsQuery.isLoading;
+  const queryError = serviceQuery.error || ratingsQuery.error;
+  const error = localError || (queryError && "message" in queryError ? String(queryError.message) : "");
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!serviceId) return setError("This service is unavailable for reviews right now.");
+    if (!serviceId) return setLocalError("This service is unavailable for reviews right now.");
     const form = new FormData(event.currentTarget);
-    setSaving(true);
-    setError("");
+    setLocalError("");
     setSuccess("");
     try {
-      await portalService.submitRating({
-        service: serviceId,
-        rating,
-        title: String(form.get("title") || "").trim(),
-        review: String(form.get("review") || "").trim(),
-        is_anonymous: form.get("is_anonymous") === "true",
-      });
+      await submitRating({
+        serviceSlug,
+        payload: {
+          service: serviceId,
+          rating,
+          title: String(form.get("title") || "").trim(),
+          review: String(form.get("review") || "").trim(),
+          is_anonymous: form.get("is_anonymous") === "true",
+        },
+      }).unwrap();
       setSuccess("Thank you. Your review was submitted and will appear after approval.");
       event.currentTarget.reset();
       setRating(5);
     } catch (submitError) {
-      setError(getErrorMessage(submitError));
-    } finally {
-      setSaving(false);
+      setLocalError(getErrorMessage(submitError));
     }
   }
 
