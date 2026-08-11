@@ -4,6 +4,7 @@ import { baseService, type ContactLead, type ContactLeadPayload } from "@/lib/ap
 import { cmsService } from "@/lib/api/cms";
 import { authService, type UserProfile } from "@/lib/api/auth";
 import { busService, type BusBookingPayload, type BusBookingResponse, type BusCity } from "@/lib/api/bus";
+import { cateringService, type CateringBookingPayload, type CateringBookingResponse, type CateringCity } from "@/lib/api/catering";
 import {
   portalService,
   type Airport,
@@ -127,12 +128,33 @@ export const websiteApi = createApi({
         } catch (error) { return failure(error); }
       },
     }),
+    cateringCities: builder.query<CateringCity[], string | void>({
+      queryFn: async (search) => {
+        try {
+          const response = await cateringService.cities(search || "");
+          if (!response.success) return { error: { message: "Catering cities could not be loaded." } };
+          return { data: response.data };
+        } catch (error) { return failure(error); }
+      },
+      keepUnusedDataFor: 1800,
+    }),
+    createCateringBooking: builder.mutation<CateringBookingResponse, { payload: CateringBookingPayload; file?: File | null }>({
+      queryFn: async ({ payload, file }) => {
+        try {
+          const response = await cateringService.createBooking(payload, file);
+          if (!response.success) return { error: { message: response.message || "Catering request could not be submitted." } };
+          return { data: response };
+        } catch (error) { return failure(error); }
+      },
+    }),
   }),
 });
 
 export const {
   useAirportsQuery,
   useBusCitiesQuery,
+  useCateringCitiesQuery,
+  useCreateCateringBookingMutation,
   useCreateBusBookingMutation,
   useCreateContactLeadMutation,
   useCruiseDestinationsQuery,
