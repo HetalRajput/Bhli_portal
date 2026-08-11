@@ -34,6 +34,7 @@ const lastDayOfMonth = (value: string) => {
 
 export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: string }) {
   const config = documentedBookingConfigs[serviceSlug] as BookingConfig;
+  const serviceApiSlug = serviceSlug === "corporate-travel" ? "corporate-travel-desk-b2b" : serviceSlug;
   const isCruiseBooking = serviceSlug === "cruise-booking";
   const isCorporateTravel = serviceSlug === "corporate-travel";
   const isEventManagement = serviceSlug === "event-management";
@@ -45,7 +46,7 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
   const selectedItemName = serviceSlug === "hotel-reservations" ? params.get("name") || "Selected hotel" : "";
   const selectedImage = serviceSlug === "hotel-reservations" ? params.get("image") || "" : "";
   const initialServiceId = params.get("service") || "";
-  const { data: serviceMeta, isLoading: loadingService } = useServiceQuery(serviceSlug);
+  const { data: serviceMeta, isLoading: loadingService } = useServiceQuery(serviceApiSlug);
   const serviceId = initialServiceId || String(serviceMeta?.id || "");
   const [values, setValues] = useState<Record<string, string | boolean>>(() => Object.fromEntries(config.fields.map((field) => [field.key, field.defaultValue ?? ""])));
   const [guests, setGuests] = useState<Guest[]>([newGuest()]);

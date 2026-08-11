@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { apiClient } from './client';
+import { apiClient, refreshAccessToken } from './client';
 
 export type SignupPayload = {
   first_name: string;
@@ -48,8 +48,7 @@ export const authService = {
     return response.data;
   },
   refreshToken: async (refresh: string) => {
-    const response = await apiClient.post('/api/accounts/auth/token/refresh/', { refresh });
-    return response.data;
+    return refreshAccessToken(refresh);
   },
   getProfile: async (): Promise<UserProfile> => {
     const response = await apiClient.get('/api/accounts/profile/');

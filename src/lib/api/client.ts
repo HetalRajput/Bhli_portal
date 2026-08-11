@@ -2,6 +2,7 @@ import axios from 'axios';
 
 const BASE_URL = 'https://bhli-backend.onrender.com';
 let apiRequestSequence = 0;
+let refreshRequest: Promise<{ access: string; refresh?: string }> | null = null;
 
 export const API_ERROR_EVENT = 'bhli:api-error';
 
@@ -53,6 +54,42 @@ export const apiClient = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+function clearWebsiteSession() {
+  if (typeof window === 'undefined') return;
+  window.localStorage.removeItem('access_token');
+  window.localStorage.removeItem('refresh_token');
+  window.localStorage.removeItem('bhli-auth');
+  window.dispatchEvent(new Event('storage'));
+}
+
+export function refreshAccessToken(refreshOverride?: string): Promise<{ access: string; refresh?: string }> {
+  if (typeof window === 'undefined') return Promise.reject(new Error('Token refresh is only available in the browser.'));
+  const refresh = refreshOverride || window.localStorage.getItem('refresh_token');
+  if (!refresh) return Promise.reject(new Error('No refresh token is available.'));
+
+  if (!refreshRequest) {
+    refreshRequest = axios
+      .post(`${BASE_URL}/api/accounts/auth/token/refresh/`, { refresh }, {
+        headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      })
+      .then((response) => {
+        const payload = response.data?.data ?? response.data;
+        const access = payload?.access;
+        const rotatedRefresh = payload?.refresh;
+        if (!access || typeof access !== 'string') throw new Error('The refresh endpoint did not return an access token.');
+        window.localStorage.setItem('access_token', access);
+        if (rotatedRefresh && typeof rotatedRefresh === 'string') window.localStorage.setItem('refresh_token', rotatedRefresh);
+        window.dispatchEvent(new Event('storage'));
+        return { access, refresh: typeof rotatedRefresh === 'string' ? rotatedRefresh : undefined };
+      })
+      .finally(() => {
+        refreshRequest = null;
+      });
+  }
+
+  return refreshRequest;
+}
 
 // Request interceptor to add the JWT token to headers and log every API hit
 apiClient.interceptors.request.use(
@@ -144,19 +181,25 @@ apiClient.interceptors.response.use(
         return Promise.reject(error);
       }
       const originalRequest = error.config as typeof error.config & { _retry?: boolean };
+      const isAuthRequest = originalRequest?.url?.includes('/api/accounts/auth/');
+      const currentAccess = window.localStorage.getItem('access_token');
+      const sentAuthorization = String(originalRequest?.headers?.Authorization || '');
+
+      // Another request may already have refreshed the session. Replay with the
+      // newer stored access token instead of rotating the refresh token again.
+      if (!isAuthRequest && !originalRequest?._retry && currentAccess && sentAuthorization !== `Bearer ${currentAccess}`) {
+        originalRequest._retry = true;
+        originalRequest.headers.Authorization = `Bearer ${currentAccess}`;
+        return apiClient(originalRequest);
+      }
+
       const refresh = window.localStorage.getItem('refresh_token');
-      if (refresh && !originalRequest?._retry && !originalRequest?.url?.includes('/auth/token/refresh/')) {
+      if (refresh && !isAuthRequest && !originalRequest?._retry) {
         originalRequest._retry = true;
         try {
-          // Keep refresh outside this intercepted client so a rejected token
-          // cannot recursively trigger another refresh/error cycle.
-          const refreshResponse = await axios.post(`${BASE_URL}/api/accounts/auth/token/refresh/`, { refresh });
-          const access = refreshResponse.data?.access;
-          if (access) {
-            window.localStorage.setItem('access_token', access);
-            originalRequest.headers.Authorization = `Bearer ${access}`;
-            return apiClient(originalRequest);
-          }
+          const tokens = await refreshAccessToken(refresh);
+          originalRequest.headers.Authorization = `Bearer ${tokens.access}`;
+          return apiClient(originalRequest);
         } catch {
           // Fall through and clear the invalid session.
         }
@@ -164,10 +207,7 @@ apiClient.interceptors.response.use(
 
       if (typeof window !== "undefined") {
         showApiError(error);
-        window.localStorage.removeItem("access_token");
-        window.localStorage.removeItem("refresh_token");
-        window.localStorage.removeItem("bhli-auth");
-        window.dispatchEvent(new Event("storage"));
+        clearWebsiteSession();
         
         const currentPath = window.location.pathname;
         if (!currentPath.startsWith("/login")) {

@@ -3,6 +3,7 @@ import HolidayPackagesFlow from "@/components/HolidayPackagesFlow";
 import EventManagementFlow from "@/components/EventManagementFlow";
 import HotelConsultancyPage from "@/app/services/hotel-consultancy/page";
 import BusTicketRequestForm from "@/components/BusTicketRequestForm";
+import CateringServiceRequestForm from "@/components/CateringServiceRequestForm";
 import { Suspense } from "react";
 import ServicePageSkeleton from "@/components/ServicePageSkeleton";
 
@@ -27,6 +28,14 @@ export default async function GenericServicePage({ params }: GenericServicePageP
     return (
       <Suspense fallback={<ServicePageSkeleton />}>
         <BusTicketRequestForm />
+      </Suspense>
+    );
+  }
+
+  if (slug === "catering-services") {
+    return (
+      <Suspense fallback={<ServicePageSkeleton />}>
+        <CateringServiceRequestForm />
       </Suspense>
     );
   }

@@ -85,6 +85,8 @@ export default function ProfilePage() {
   // New Interactive states
   const [showQrModal, setShowQrModal] = useState<boolean>(false);
   const [showBenefits, setShowBenefits] = useState<boolean>(false);
+  const [confirmation, setConfirmation] = useState<"remove-photo" | "sign-out" | null>(null);
+  const [confirmationBusy, setConfirmationBusy] = useState(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -239,6 +241,7 @@ export default function ProfilePage() {
 
   const handleLogout = async () => {
     if (typeof window !== "undefined") {
+      setConfirmationBusy(true);
       const refresh = localStorage.getItem("refresh_token");
       if (refresh) {
         try {
@@ -251,6 +254,7 @@ export default function ProfilePage() {
       localStorage.removeItem("refresh_token");
       localStorage.removeItem("bhli-auth");
       window.dispatchEvent(new Event("storage"));
+      setConfirmation(null);
       router.push("/login");
     }
   };
@@ -300,6 +304,7 @@ export default function ProfilePage() {
   };
 
   const handleImageRemove = async () => {
+    setConfirmationBusy(true);
     try {
       setProfileError("");
       await authService.updateProfileImage(null);
@@ -309,8 +314,11 @@ export default function ProfilePage() {
       window.dispatchEvent(new Event("storage"));
       setIsSaved(true);
       setTimeout(() => setIsSaved(false), 3000);
+      setConfirmation(null);
     } catch (error) {
       setProfileError(getErrorMessage(error));
+    } finally {
+      setConfirmationBusy(false);
     }
   };
 
@@ -456,7 +464,7 @@ export default function ProfilePage() {
             </nav>
             <div className="mt-auto space-y-2 border-t border-slate-100 p-2 pt-3">
               <Link href="/services" className="flex items-center justify-center gap-2 rounded-lg bg-[#07152d] px-3 py-2.5 text-[11px] font-bold text-white transition hover:bg-[#0b2b4d]"><Building className="size-3.5" />Explore services</Link>
-              <button type="button" onClick={handleLogout} className="flex w-full items-center justify-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2.5 text-[11px] font-bold text-rose-700 transition hover:bg-rose-100">
+              <button type="button" onClick={() => setConfirmation("sign-out")} className="flex w-full items-center justify-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2.5 text-[11px] font-bold text-rose-700 transition hover:bg-rose-100">
                 <LogOut className="size-3.5" />Sign Out
               </button>
             </div>
@@ -504,7 +512,7 @@ export default function ProfilePage() {
                       {profileImage && (
                         <button
                           type="button"
-                          onClick={handleImageRemove}
+                          onClick={() => setConfirmation("remove-photo")}
                           className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 font-bold text-xs transition-colors border border-red-200"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -951,6 +959,20 @@ export default function ProfilePage() {
         </div>
 
       </div>
+
+      {confirmation && (
+        <div className="fixed inset-0 z-[120] grid place-items-center bg-[#061f3b]/70 p-4 backdrop-blur-sm" onClick={() => { if (!confirmationBusy) setConfirmation(null); }}>
+          <section role="alertdialog" aria-modal="true" aria-labelledby="confirmation-title" aria-describedby="confirmation-description" onClick={(event) => event.stopPropagation()} className="w-full max-w-md rounded-[1.75rem] bg-white p-6 text-center shadow-[0_28px_90px_rgba(6,31,59,.3)] sm:p-8">
+            <span className="mx-auto grid size-16 place-items-center rounded-full bg-rose-50 text-rose-600">{confirmation === "sign-out" ? <LogOut className="size-7" /> : <Trash2 className="size-7" />}</span>
+            <h2 id="confirmation-title" className="mt-5 font-serif text-3xl font-semibold text-[#07152d]">{confirmation === "sign-out" ? "Sign out of your account?" : "Remove profile photo?"}</h2>
+            <p id="confirmation-description" className="mx-auto mt-3 max-w-sm text-sm leading-6 text-slate-500">{confirmation === "sign-out" ? "You will need to sign in again to access your profile and booking requests." : "Your current profile photo will be permanently removed from your account."}</p>
+            <div className="mt-7 grid gap-3 sm:grid-cols-2">
+              <button type="button" disabled={confirmationBusy} onClick={() => setConfirmation(null)} className="rounded-xl border border-slate-200 px-5 py-3 text-sm font-bold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50">Cancel</button>
+              <button type="button" disabled={confirmationBusy} onClick={() => { if (confirmation === "sign-out") void handleLogout(); else void handleImageRemove(); }} className="inline-flex items-center justify-center gap-2 rounded-xl bg-rose-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-rose-600/20 transition hover:bg-rose-700 disabled:cursor-wait disabled:opacity-60">{confirmationBusy ? <><span className="size-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />Please wait...</> : confirmation === "sign-out" ? "Yes, sign out" : "Yes, remove photo"}</button>
+            </div>
+          </section>
+        </div>
+      )}
 
       {/* QR DIGITAL PASS MODAL */}
       {selectedBooking && (

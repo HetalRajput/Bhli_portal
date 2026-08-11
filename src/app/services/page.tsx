@@ -54,7 +54,7 @@ export default async function Services() {
     ? apiServices.map(s => {
       const vendorUrl = s.vendor_links?.[0]?.tracking_url;
       const isCatering = s.slug === "catering-services" || s.slug?.includes("catering");
-      const usesVendor = Boolean(vendorUrl) && (isCatering || s.booking_mode === "third_party");
+      const usesVendor = !isCatering && Boolean(vendorUrl) && s.booking_mode === "third_party";
       const targetLink = usesVendor
         ? String(vendorUrl)
         : isHolidayPackage(s) ? "/services/holiday-packages" : `/services/${s.slug}`;

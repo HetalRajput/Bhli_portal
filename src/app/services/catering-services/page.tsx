@@ -1,5 +1,7 @@
-import GenericServiceEnquiry from "@/components/GenericServiceEnquiry";
+import { Suspense } from "react";
+import CateringServiceRequestForm from "@/components/CateringServiceRequestForm";
+import ServicePageSkeleton from "@/components/ServicePageSkeleton";
 
 export default function ServicePage() {
-  return <GenericServiceEnquiry serviceSlug="catering-services" />;
+  return <Suspense fallback={<ServicePageSkeleton />}><CateringServiceRequestForm /></Suspense>;
 }

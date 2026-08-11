@@ -24,12 +24,15 @@ export type Airport = {
 
 export type VendorLink = {
   id: number;
-  service: number;
-  service_name: string;
-  service_slug: string;
+  service: number | null;
+  service_name?: string;
+  service_slug?: string;
   vendor_name: string;
   title: string;
+  subtitle?: string;
+  description?: string;
   slug: string;
+  image?: string | null;
   tracking_url: string;
   utm_source: string;
   utm_medium: string;
