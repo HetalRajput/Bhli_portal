@@ -95,14 +95,14 @@ function TestimonialsSkeleton() {
   return (
     <div role="status" aria-label="Loading testimonials">
       <span className="sr-only">Loading testimonials...</span>
-      <div className="mb-7 flex items-center justify-between"><div className="h-4 w-40 animate-pulse rounded-full bg-slate-200" /><div className="flex gap-2"><div className="size-11 animate-pulse rounded-full bg-slate-200" /><div className="size-11 animate-pulse rounded-full bg-sky-100" /></div></div>
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="mb-5 flex items-center justify-between"><div className="h-4 w-40 animate-pulse rounded-full bg-slate-200" /><div className="flex gap-2"><div className="size-9 animate-pulse rounded-full bg-slate-200" /><div className="size-9 animate-pulse rounded-full bg-sky-100" /></div></div>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {[0, 1, 2].map((card) => (
-          <div key={card} className="min-h-[430px] animate-pulse rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
-            <div className="size-12 rounded-2xl bg-sky-100" />
-            <div className="mt-6 h-4 w-24 rounded-full bg-amber-100" />
-            <div className="mt-7 space-y-4"><div className="h-4 w-full rounded-full bg-slate-100" /><div className="h-4 w-full rounded-full bg-slate-100" /><div className="h-4 w-5/6 rounded-full bg-slate-100" /><div className="h-4 w-2/3 rounded-full bg-slate-100" /></div>
-            <div className="mt-24 border-t border-slate-100 pt-5"><div className="h-5 w-36 rounded-full bg-slate-200" /><div className="mt-3 h-3 w-24 rounded-full bg-slate-100" /></div>
+          <div key={card} className="min-h-[340px] animate-pulse rounded-[1.5rem] border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="size-10 rounded-xl bg-sky-100" />
+            <div className="mt-4 h-3.5 w-20 rounded-full bg-amber-100" />
+            <div className="mt-5 space-y-3"><div className="h-3.5 w-full rounded-full bg-slate-100" /><div className="h-3.5 w-full rounded-full bg-slate-100" /><div className="h-3.5 w-5/6 rounded-full bg-slate-100" /></div>
+            <div className="mt-16 border-t border-slate-100 pt-4"><div className="h-5 w-32 rounded-full bg-slate-200" /><div className="mt-2 h-3 w-24 rounded-full bg-slate-100" /></div>
           </div>
         ))}
       </div>

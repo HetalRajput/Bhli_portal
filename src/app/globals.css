@@ -68,6 +68,16 @@ html { scroll-behavior: smooth; }
   mask-image: linear-gradient(to right, transparent, black 3%, black 97%, transparent);
 }
 
+.testimonial-compact-card blockquote {
+  display: -webkit-box;
+  margin-top: 1rem;
+  overflow: hidden;
+  font-size: 0.875rem;
+  line-height: 1.5rem;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 8;
+}
+
 .testimonial-marquee-track {
   animation: testimonial-marquee-scroll 26s linear infinite;
   will-change: transform;
