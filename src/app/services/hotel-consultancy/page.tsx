@@ -2,7 +2,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, BarChart3, BriefcaseBusiness, ChefHat, Lightbulb, Megaphone, UsersRound } from "lucide-react";
 import { consultancyServices } from "@/lib/hotel-consultancy";
-import ServiceRatings from "@/components/ServiceRatings";
 
 const icons = [Lightbulb, BriefcaseBusiness, Megaphone, UsersRound, ChefHat, BarChart3];
 
@@ -52,7 +51,6 @@ export default function HotelConsultancyPage() {
         </div>
       </section>
 
-      <ServiceRatings serviceSlug="hotel-consultancy" />
 
       <section className="bg-[#07345d] px-5 py-16 text-white lg:px-8">
         <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-8 md:flex-row md:items-center">
