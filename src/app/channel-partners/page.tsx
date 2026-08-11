@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowRight, Building2, Bus, ShieldCheck, HeartHandshake, Stethoscope, Landmark, Phone, ExternalLink } from "lucide-react";
+import { ArrowRight, Building2, Bus, ShieldCheck, HeartHandshake, Stethoscope, Landmark, Phone, Search, X } from "lucide-react";
 import { cmsService, type ChannelPartner } from "@/lib/api/cms";
 import PartnerLogo from "@/components/PartnerLogo";
 
@@ -107,7 +107,7 @@ interface Partner {
   description: string;
   logo: React.ComponentType;
   accentColor: string;
-  features: string[];
+  features?: string[];
 }
 
 const partnersList: Partner[] = [
@@ -211,6 +211,7 @@ const partnersList: Partner[] = [
 
 export default function ChannelPartnersPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [apiPartners, setApiPartners] = useState<ChannelPartner[]>([]);
 
   useEffect(() => {
@@ -218,7 +219,7 @@ export default function ChannelPartnersPage() {
       try {
         const res = await cmsService.getChannelPartners();
         console.log("Channel Partners API Response:", res);
-        setApiPartners(res.filter((partner) => partner.is_active !== false).sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0)));
+        setApiPartners(res.filter((partner) => partner.is_active !== false));
       } catch (err) {
         console.warn("Failed to fetch channel partners", err);
       }
@@ -271,37 +272,50 @@ export default function ChannelPartnersPage() {
       description: ap.description || "",
       logo: LogoComponent,
       accentColor,
-      features: ap.website_url ? ["Website Support", "Direct Integration"] : ["MoU Rates Activated"],
       websiteUrl: ap.website_url
     };
   });
 
   const allPartners = mappedApiPartners;
 
-  const filteredPartners = selectedCategory === "all"
-    ? allPartners
-    : allPartners.filter(p => p.category === selectedCategory);
+  const filteredPartners = useMemo(() => {
+    const normalizedQuery = searchQuery.trim().toLowerCase();
+    return allPartners.filter((partner) => {
+      const matchesCategory = selectedCategory === "all" || partner.category === selectedCategory;
+      const matchesSearch = !normalizedQuery || `${partner.name} ${partner.categoryName} ${partner.tagline} ${partner.description}`.toLowerCase().includes(normalizedQuery);
+      return matchesCategory && matchesSearch;
+    });
+  }, [allPartners, searchQuery, selectedCategory]);
 
   return (
     <div className="bg-[#f5f9fc] text-[#122b42] min-h-screen">
       {/* Hero Header Section */}
-      <section className="relative overflow-hidden bg-[#062b50] px-5 py-24 text-white lg:px-8">
+      <section className="relative overflow-hidden bg-[#062b50] px-5 py-9 text-white sm:py-11 lg:px-8 lg:py-12">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(215,181,109,.18),transparent_35%)]" />
         <div className="relative mx-auto max-w-7xl">
           <p className="text-xs font-bold uppercase tracking-[.25em] text-[#13a5d8]">Trusted Network</p>
-          <h1 className="mt-5 max-w-4xl font-serif text-5xl leading-tight md:text-7xl">
+          <h1 className="mt-2 max-w-4xl font-serif text-3xl leading-tight sm:text-4xl lg:text-5xl">
             Our Channel Partners
           </h1>
-          <p className="mt-6 max-w-2xl text-lg leading-8 text-white/60">
-            Collaborating with India's leading hotel chains, transportation networks, medical providers, and civic services to deliver hospitality and travel support without boundaries.
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-white/60 sm:text-base">
+            Collaborating with India&apos;s leading hotel chains, transportation networks, medical providers, and civic services to deliver hospitality and travel support without boundaries.
           </p>
         </div>
       </section>
 
       {/* Main Content & Interactive Filter Section */}
-      <section className="mx-auto max-w-7xl px-5 py-16 lg:px-8">
+      <section className="mx-auto max-w-7xl px-5 py-10 sm:py-12 lg:px-8 lg:py-14">
+        <div className="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+          <label className="relative block w-full max-w-xl">
+            <span className="sr-only">Search channel partners</span>
+            <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-[#087fbe]" />
+            <input type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Search channel partners..." className="h-12 w-full rounded-2xl border border-[#087fbe]/15 bg-white pl-11 pr-11 text-sm font-semibold outline-none shadow-sm transition focus:border-[#13a5d8] focus:ring-4 focus:ring-[#13a5d8]/10" />
+            {searchQuery && <button type="button" onClick={() => setSearchQuery("")} aria-label="Clear partner search" className="absolute right-3 top-1/2 grid size-7 -translate-y-1/2 place-items-center rounded-full text-slate-400 hover:bg-slate-100"><X className="size-4" /></button>}
+          </label>
+          <p className="text-xs font-bold text-slate-400">{filteredPartners.length} partner{filteredPartners.length === 1 ? "" : "s"}</p>
+        </div>
         {/* Category Tabs */}
-        <div className="flex flex-wrap gap-2 border-b border-black/10 pb-6 mb-12">
+        <div className="mb-8 flex flex-wrap gap-1.5 border-b border-black/10 pb-4">
           {categories.map(cat => {
             const Icon = cat.icon;
             const isActive = selectedCategory === cat.id;
@@ -309,13 +323,13 @@ export default function ChannelPartnersPage() {
               <button
                 key={cat.id}
                 onClick={() => setSelectedCategory(cat.id)}
-                className={`flex items-center gap-2.5 px-5 py-3 rounded-full text-sm font-semibold transition border duration-300 ${
+                className={`flex items-center gap-1.5 rounded-full border px-3 py-2 text-xs font-semibold transition duration-300 ${
                   isActive
                     ? "bg-[#062b50] text-white border-[#062b50] shadow-md"
                     : "bg-white text-[#344a5c] border-black/8 hover:border-[#13a5d8]/75 hover:bg-slate-50"
                 }`}
               >
-                <Icon className="size-4" />
+                <Icon className="size-3.5" />
                 {cat.label}
               </button>
             );
@@ -323,56 +337,43 @@ export default function ChannelPartnersPage() {
         </div>
 
         {/* Partners Grid */}
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid items-start gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          {filteredPartners.length === 0 && <div className="col-span-full rounded-2xl border border-dashed border-[#087fbe]/25 bg-white px-6 py-14 text-center"><Search className="mx-auto size-7 text-[#087fbe]" /><h2 className="mt-3 font-serif text-2xl">No matching partners</h2><p className="mt-2 text-sm text-slate-500">Try another partner name, category, or keyword.</p></div>}
           {filteredPartners.map(partner => {
             const Logo = partner.logo;
             return (
               <div
                 key={partner.id}
-                className={`group flex flex-col justify-between overflow-hidden rounded-3xl border border-black/10 bg-white p-7 border-l-4 ${partner.accentColor} transition duration-500 hover:shadow-xl hover:-translate-y-1.5`}
+                className={`group flex flex-col overflow-hidden rounded-2xl border border-black/10 bg-white p-4 border-l-[3px] ${partner.accentColor} transition duration-500 hover:-translate-y-1 hover:shadow-lg`}
               >
                 <div>
                   {/* Logo Container */}
-                  <div className="flex h-24 items-center justify-center rounded-2xl bg-[#f8fafc] border border-black/[0.04] p-4 mb-6">
+                  <div className="mb-4 flex h-20 items-center justify-center rounded-xl border border-black/[0.04] bg-[#f8fafc] p-8 ">
                     <Logo />
                   </div>
 
-                  {/* Partner Category Badge */}
-                  <span className="inline-block rounded-full bg-[#edf6fc] px-3.5 py-1 text-[11px] font-bold text-[#087fbe] uppercase tracking-wider mb-3">
-                    {partner.badge}
-                  </span>
 
                   {/* Title & Tagline */}
-                  <h3 className="font-serif text-2xl font-semibold text-[#062b50] group-hover:text-[#087fbe] transition-colors mb-1.5">
+                  <h3 className="mb-1 font-serif text-lg font-semibold leading-tight text-[#062b50] transition-colors group-hover:text-[#087fbe]">
                     {partner.name}
                   </h3>
-                  <p className="text-xs font-semibold text-[#13a5d8] mb-4">
+                  <p className="mb-2 line-clamp-2 text-[11px] font-semibold leading-4 text-[#13a5d8]">
                     {partner.tagline}
                   </p>
 
-                  {/* Description */}
-                  <p className="text-sm leading-6 text-black/55 mb-6">
-                    {partner.description}
-                  </p>
+
                 </div>
 
                 {/* Key Features & CTA */}
-                <div className="border-t border-black/5 pt-5">
-                  <div className="flex flex-wrap gap-1.5 mb-5">
-                    {partner.features.map(f => (
-                      <span key={f} className="inline-block rounded bg-slate-50 border border-slate-100 px-2 py-0.5 text-[10px] font-medium text-black/45">
-                        • {f}
-                      </span>
-                    ))}
-                  </div>
+                {/* <div className="border-t border-black/5 pt-3">
                   <Link
                     href="/contact-us"
-                    className="inline-flex w-full items-center justify-between rounded-xl bg-[#f8fafc] px-4 py-3 text-xs font-bold text-[#087fbe] transition group-hover:bg-[#087fbe] group-hover:text-white"
+                    className="inline-flex w-full items-center justify-between rounded-lg bg-[#f8fafc] px-3 py-2.5 text-[11px] font-bold text-[#087fbe] transition group-hover:bg-[#087fbe] group-hover:text-white"
                   >
                     <span>Request Booking / Rates</span>
                     <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
                   </Link>
-                </div>
+                </div> */}
               </div>
             );
           })}
@@ -387,7 +388,7 @@ export default function ChannelPartnersPage() {
             Expand Your Reach with BHLI
           </h2>
           <p className="mt-4 max-w-xl mx-auto leading-8 text-black/55">
-            Are you a hotel operator, transport provider, or clinical network looking to serve government, defence, and corporate travel clients? Let's build a partnership.
+            Are you a hotel operator, transport provider, or clinical network looking to serve government, defence, and corporate travel clients? Let&apos;s build a partnership.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-4">
             <Link

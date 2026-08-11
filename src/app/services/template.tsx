@@ -11,6 +11,7 @@ export default function ServicesTemplate({ children }: { children: ReactNode }) 
   const serviceSlug = documentedRouteAliases[routeSlug] || routeSlug;
   const usesCustomServicePage =
     routeSlug === "hotel-reservations" ||
+    serviceSlug === "bus-ticket-booking" ||
     serviceSlug === "holiday-packages" ||
     serviceSlug === "event-management" ||
     serviceSlug === "flight-booking" ||

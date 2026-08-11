@@ -3,6 +3,7 @@ import { apiClient, getErrorMessage } from "@/lib/api/client";
 import { baseService, type ContactLead, type ContactLeadPayload } from "@/lib/api/base";
 import { cmsService } from "@/lib/api/cms";
 import { authService, type UserProfile } from "@/lib/api/auth";
+import { busService, type BusBookingPayload, type BusBookingResponse, type BusCity } from "@/lib/api/bus";
 import {
   portalService,
   type Airport,
@@ -107,11 +108,32 @@ export const websiteApi = createApi({
       queryFn: async () => { try { return { data: (await apiClient.get<CruisePortResponse>("/api/bookings/cruise/ports/")).data }; } catch (error) { return failure(error); } },
       keepUnusedDataFor: 1800,
     }),
+    busCities: builder.query<BusCity[], string | void>({
+      queryFn: async (search) => {
+        try {
+          const response = await busService.cities(search || "");
+          if (!response.success) return { error: { message: "Bus cities could not be loaded." } };
+          return { data: response.data };
+        } catch (error) { return failure(error); }
+      },
+      keepUnusedDataFor: 1800,
+    }),
+    createBusBooking: builder.mutation<BusBookingResponse, BusBookingPayload>({
+      queryFn: async (payload) => {
+        try {
+          const response = await busService.createBooking(payload);
+          if (!response.success) return { error: { message: response.message || "Bus ticket request could not be submitted." } };
+          return { data: response };
+        } catch (error) { return failure(error); }
+      },
+    }),
   }),
 });
 
 export const {
   useAirportsQuery,
+  useBusCitiesQuery,
+  useCreateBusBookingMutation,
   useCreateContactLeadMutation,
   useCruiseDestinationsQuery,
   useCruisePortsQuery,

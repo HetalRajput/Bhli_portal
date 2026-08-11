@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, ShieldAlert, Award, Plane, Trophy, Briefcase, Phone, Mail, Landmark } from "lucide-react";
+import { ArrowRight, ShieldAlert, Award, Plane, Trophy, Briefcase, Phone, Mail, Landmark, Search, X } from "lucide-react";
 import { cmsService, type ClientCategory, type OurClient } from "@/lib/api/cms";
 
 interface InstitutionalClient {
@@ -321,6 +321,7 @@ const publicSectorClients: InstitutionalClient[] = [
 
 export default function ClientsPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [displayClients, setDisplayClients] = useState<ClientItem[]>([]);
   const [clientCategories, setClientCategories] = useState<ClientCategory[]>([]);
 
@@ -332,7 +333,6 @@ export default function ClientsPage() {
 
       const mappedClients = clients
         .filter((client) => client.is_active !== false && Boolean(client.logo))
-        .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0))
         .map((client: OurClient): ClientItem => ({
           id: String(client.id),
           name: client.name,
@@ -347,7 +347,7 @@ export default function ClientsPage() {
         }));
 
       setDisplayClients(mappedClients);
-      setClientCategories(categories.filter((category) => category.is_active !== false).sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0) || a.name.localeCompare(b.name)));
+      setClientCategories(categories.filter((category) => category.is_active !== false));
     });
 
     return () => {
@@ -372,21 +372,26 @@ export default function ClientsPage() {
     })),
   ];
 
-  const filteredClients = selectedCategory === "all"
-    ? displayClients
-    : displayClients.filter(c => c.category === selectedCategory);
+  const filteredClients = useMemo(() => {
+    const normalizedQuery = searchQuery.trim().toLowerCase();
+    return displayClients.filter((client) => {
+      const matchesCategory = selectedCategory === "all" || client.category === selectedCategory;
+      const matchesSearch = !normalizedQuery || `${client.name} ${client.categoryName} ${client.badge} ${client.description}`.toLowerCase().includes(normalizedQuery);
+      return matchesCategory && matchesSearch;
+    });
+  }, [displayClients, searchQuery, selectedCategory]);
 
   return (
     <div className="bg-[#f5f9fc] text-[#122b42] min-h-screen">
       {/* Hero Header Section */}
-      <section className="relative overflow-hidden bg-[#062b50] px-5 py-24 text-white lg:px-8">
+      <section className="relative overflow-hidden bg-[#062b50] px-5 py-9 text-white sm:py-11 lg:px-8 lg:py-12">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(215,181,109,.18),transparent_35%)]" />
         <div className="relative mx-auto max-w-7xl">
           <p className="text-xs font-bold uppercase tracking-[.25em] text-[#13a5d8]">Trusted Relationships</p>
-          <h1 className="mt-5 max-w-4xl font-serif text-5xl leading-tight md:text-7xl">
+          <h1 className="mt-2 max-w-4xl font-serif text-3xl leading-tight sm:text-4xl lg:text-5xl">
             Our Client Portfolio
           </h1>
-          <p className="mt-6 max-w-2xl text-lg leading-8 text-white/65">
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-white/65 sm:text-base">
             Proudly serving defence commands, government ministries, multinational corporations, professional athletic clubs, and leading global airlines.
           </p>
         </div>
@@ -424,9 +429,24 @@ export default function ClientsPage() {
         </div>
       </section>}
       {/* Main Content & Interactive Filter Section */}
-      <section className="mx-auto max-w-7xl px-5 py-16 lg:px-8">
+      <section className="mx-auto max-w-7xl px-5 py-10 sm:py-12 lg:px-8 lg:py-14">
+        <div className="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+          <label className="relative block w-full max-w-xl">
+            <span className="sr-only">Search clients</span>
+            <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-[#087fbe]" />
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Search clients..."
+              className="h-12 w-full rounded-2xl border border-[#087fbe]/15 bg-white pl-11 pr-11 text-sm font-semibold outline-none shadow-sm transition focus:border-[#13a5d8] focus:ring-4 focus:ring-[#13a5d8]/10"
+            />
+            {searchQuery && <button type="button" onClick={() => setSearchQuery("")} aria-label="Clear client search" className="absolute right-3 top-1/2 grid size-7 -translate-y-1/2 place-items-center rounded-full text-slate-400 hover:bg-slate-100"><X className="size-4" /></button>}
+          </label>
+          <p className="text-xs font-bold text-slate-400">{filteredClients.length} client{filteredClients.length === 1 ? "" : "s"}</p>
+        </div>
         {/* Category Tabs */}
-        <div className="flex flex-wrap gap-2 border-b border-black/10 pb-6 mb-12">
+        <div className="mb-8 flex flex-wrap gap-1.5 border-b border-black/10 pb-4">
           {categories.map(cat => {
             const Icon = cat.icon;
             const isActive = selectedCategory === cat.id;
@@ -434,13 +454,13 @@ export default function ClientsPage() {
               <button
                 key={cat.id}
                 onClick={() => setSelectedCategory(cat.id)}
-                className={`flex items-center gap-2.5 px-5 py-3 rounded-full text-sm font-semibold transition border duration-300 ${
+                className={`flex items-center gap-1.5 rounded-full border px-3 py-2 text-xs font-semibold transition duration-300 ${
                   isActive
                     ? "bg-[#062b50] text-white border-[#062b50] shadow-md"
                     : "bg-white text-[#344a5c] border-black/8 hover:border-[#13a5d8]/75 hover:bg-slate-50"
                 }`}
               >
-                <Icon className="size-4" />
+                <Icon className="size-3.5" />
                 {cat.label}
               </button>
             );
@@ -448,39 +468,30 @@ export default function ClientsPage() {
         </div>
 
         {/* Clients Grid */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filteredClients.length === 0 && (
             <div className="col-span-full rounded-3xl border border-dashed border-[#087fbe]/25 bg-white px-6 py-16 text-center">
-              <h2 className="font-serif text-2xl font-semibold text-[#062b50]">No clients available</h2>
-              <p className="mt-2 text-sm text-[#607789]">Client information will appear here when it is added.</p>
+              <h2 className="font-serif text-2xl font-semibold text-[#062b50]">No matching clients</h2>
+              <p className="mt-2 text-sm text-[#607789]">Try another client name, category, or keyword.</p>
             </div>
           )}
           {filteredClients.map(client => {
             return (
               <article
                 key={client.id}
-                className="group relative flex min-h-[360px] flex-col overflow-hidden rounded-[2rem] border border-[#dce8ef] bg-white shadow-[0_10px_35px_rgba(6,43,80,.06)] transition duration-500 hover:-translate-y-1.5 hover:border-[#13a5d8]/40 hover:shadow-[0_24px_55px_rgba(6,43,80,.14)]"
+                className="group relative flex min-h-[285px] flex-col overflow-hidden rounded-[1.5rem] border border-[#dce8ef] bg-white shadow-[0_8px_26px_rgba(6,43,80,.06)] transition duration-500 hover:-translate-y-1 hover:border-[#13a5d8]/40 hover:shadow-[0_18px_42px_rgba(6,43,80,.12)]"
               >
                 <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#087fbe] via-[#13a5d8] to-[#6dd5f5] opacity-70 transition group-hover:opacity-100" />
-                <div className="relative flex h-36 items-center justify-center bg-gradient-to-br from-[#f8fbfd] via-white to-[#edf7fc] p-7">
-                  <div className="absolute left-5 top-5 rounded-full border border-[#087fbe]/15 bg-white/85 px-3 py-1 text-[9px] font-bold uppercase tracking-[.16em] text-[#087fbe] shadow-sm backdrop-blur">
-                    {client.categoryName}
-                  </div>
-                  <img src={client.image} alt={`${client.name} logo`} className="mt-5 max-h-20 max-w-[75%] object-contain drop-shadow-sm transition duration-500 group-hover:scale-105" loading="lazy" />
+                <div className="relative flex h-28 items-center justify-center bg-gradient-to-br from-[#f8fbfd] via-white to-[#edf7fc] p-5">
+                  <img src={client.image} alt={`${client.name} logo`} className="max-h-16 max-w-[70%] object-contain drop-shadow-sm transition duration-500 group-hover:scale-105" loading="lazy" />
                 </div>
 
-                <div className="flex flex-1 flex-col p-6">
-                  <span className="w-fit rounded-full bg-[#edf6fc] px-3 py-1 text-[9px] font-bold uppercase tracking-[.14em] text-[#087fbe]">{client.badge}</span>
-                  <h3 className="mt-4 font-serif text-xl font-semibold leading-tight text-[#062b50] transition-colors group-hover:text-[#087fbe]">{client.name}</h3>
-                  <p className="mt-3 line-clamp-3 text-xs leading-5 text-[#607789]">{client.description}</p>
+                <div className="flex flex-1 flex-col p-4 sm:p-5">
+                  <span className="w-fit rounded-full bg-[#edf6fc] px-2.5 py-1 text-[8px] font-bold uppercase tracking-[.12em] text-[#087fbe]">{client.badge}</span>
+                  <h3 className="mt-3 font-serif text-lg font-semibold leading-tight text-[#062b50] transition-colors group-hover:text-[#087fbe]">{client.name}</h3>
+                  <p className="mt-2 line-clamp-2 text-[11px] leading-5 text-[#607789]">{client.description}</p>
 
-                  <div className="mt-auto flex items-center justify-between border-t border-[#e4edf2] pt-4">
-                    <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[.1em] text-[#4d6b7f]">
-                      <span className={`size-2 rounded-full ${client.hasActiveAccount ? "bg-emerald-500 shadow-[0_0_0_4px_rgba(16,185,129,.12)]" : "bg-slate-300"}`} />
-                      {client.accountStatus}
-                    </div>
-                    {client.websiteUrl && <a href={client.websiteUrl} target="_blank" rel="noreferrer" aria-label={`Visit ${client.name} website`} className="grid size-9 place-items-center rounded-full bg-[#062b50] text-white transition hover:bg-[#087fbe]"><ArrowRight className="size-4 -rotate-45" /></a>}
-                  </div>
+                  {client.websiteUrl && <div className="mt-auto flex justify-end pt-3"><a href={client.websiteUrl} target="_blank" rel="noreferrer" aria-label={`Visit ${client.name} website`} className="grid size-8 place-items-center rounded-full bg-[#062b50] text-white transition hover:bg-[#087fbe]"><ArrowRight className="size-3.5 -rotate-45" /></a></div>}
                 </div>
               </article>
             );

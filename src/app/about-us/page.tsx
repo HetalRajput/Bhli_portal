@@ -105,18 +105,18 @@ export default async function About() {
   return (
     <div className="bg-[#f5f9fc] text-[#122b42]">
       {/* Hero Section */}
-      <section className="relative grid min-h-[620px] items-end overflow-hidden bg-[#07345d] text-white">
+      <section className="relative grid min-h-[360px] items-end overflow-hidden bg-[#07345d] text-white sm:min-h-[400px]">
         <img
           src="https://images.pexels.com/photos/3184418/pexels-photo-3184418.jpeg?auto=compress&cs=tinysrgb&w=1800"
           alt="Professional hospitality team"
           className="absolute inset-0 h-full w-full object-cover opacity-35"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#051b33] via-[#051b33]/55 to-transparent" />
-        <div className="relative mx-auto w-full max-w-7xl px-5 pb-20 lg:px-8">
+        <div className="relative mx-auto w-full max-w-7xl px-5 pb-10 sm:pb-12 lg:px-8">
           <p className="text-xs font-bold uppercase tracking-[.25em] text-[#13a5d8]">
             About BHLI LLP
           </p>
-          <h1 className="mt-5 max-w-4xl font-serif text-5xl leading-tight md:text-7xl">
+          <h1 className="mt-2 max-w-4xl font-serif text-3xl leading-tight sm:text-4xl lg:text-5xl">
             Built on trust. Designed for journeys that matter.
           </h1>
         </div>
@@ -134,13 +134,13 @@ export default async function About() {
         </div>
         <div className="space-y-5 leading-8 text-black/60">
           <p>
-            Established in 2020 by seasoned hospitality professionals, Booking
+            Established in <strong className="inline-flex rounded-lg bg-[#dff3fb] px-2 py-0.5 font-extrabold text-[#087fbe]">2020</strong> by seasoned hospitality professionals, Booking
             Hospitality & Leisure Infra LLP is a one-stop travel management
             company covering hotels, resorts, service apartments, holidays,
             catering, events, car rentals and travel assistance.
           </p>
           <p>
-            Our network includes 7,500+ domestic and international hotels and
+            Our network includes <strong className="inline-flex rounded-lg bg-[#dff3fb] px-2 py-0.5 font-extrabold text-[#087fbe]">7,500+</strong> domestic and international hotels and
             service apartments, supported through channel partners in Bengaluru,
             Mumbai, Delhi, Chennai and other major cities.
           </p>
@@ -288,7 +288,7 @@ export default async function About() {
                     <h3 className="font-serif text-xl font-bold text-[#062b50] group-hover:text-[#087fbe] transition-colors">
                       {member.name}
                     </h3>
-                    <p className="mt-1 text-xs font-semibold uppercase tracking-wider text-[#087fbe]">
+                    <p className="mt-1 text-xs font-semibold uppercase tracking-wider text-black">
                       {member.designation}
                     </p>
                     {member.subtitle && (
@@ -299,25 +299,16 @@ export default async function About() {
                   </div>
                 </div>
 
-                <div className="mt-6 border-t border-black/5 pt-4 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    {member.email ? (
-                      <a
-                        href={`mailto:${member.email}`}
-                        className="p-2 rounded-full bg-white border border-black/5 text-[#087dbd] hover:bg-[#087dbd] hover:text-white transition-all shadow-xs"
-                        title="Send Email"
-                      >
-                        <Mail className="size-3.5" />
-                      </a>
-                    ) : null}
-                  </div>
-
-                  <Link
-                    href="/our-team"
-                    className="text-xs font-bold text-[#087dbd] hover:text-[#062b50] flex items-center gap-1 transition-colors"
-                  >
-                    View Profile <ArrowRight className="size-3" />
-                  </Link>
+                <div className="mt-6 flex items-center justify-center border-t border-black/5 pt-4">
+                  {member.email ? (
+                    <a
+                      href={`mailto:${member.email}`}
+                      className="rounded-full border border-black/5 bg-white p-2 text-[#087dbd] shadow-xs transition-all hover:bg-[#087dbd] hover:text-white"
+                      title="Send Email"
+                    >
+                      <Mail className="size-3.5" />
+                    </a>
+                  ) : null}
                 </div>
               </div>
             ))}

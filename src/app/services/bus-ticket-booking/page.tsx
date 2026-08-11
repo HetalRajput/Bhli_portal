@@ -1,11 +1,11 @@
-import GenericServiceEnquiry from "@/components/GenericServiceEnquiry";
 import { Suspense } from "react";
 import ServicePageSkeleton from "@/components/ServicePageSkeleton";
+import BusTicketRequestForm from "@/components/BusTicketRequestForm";
 
 export default function ServicePage() {
   return (
     <Suspense fallback={<ServicePageSkeleton />}>
-      <GenericServiceEnquiry serviceSlug="bus-ticket-booking" />
+      <BusTicketRequestForm />
     </Suspense>
   );
 }

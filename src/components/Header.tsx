@@ -154,12 +154,12 @@ export default function Header() {
               Log in
             </Link>
           )}
-          <Link
+          {/* <Link
             href="/contact-us"
             className="rounded-full bg-gradient-to-r from-[#168dcc] to-[#0871b2] px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-[#003b70]/20 transition hover:-translate-y-0.5 hover:brightness-110"
           >
             Plan a journey
-          </Link>
+          </Link> */}
         </div>
         <button
           aria-label="Toggle menu"
