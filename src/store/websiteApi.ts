@@ -24,6 +24,7 @@ type ReferenceResponse = Record<string, unknown> | unknown[];
 type FaqResponse = Awaited<ReturnType<typeof cmsService.getFaqs>>;
 export type CruiseDestinationResponse = { success?: boolean; data?: Array<{ region_name: string; destinations: Array<{ name: string }> }> };
 export type CruisePortResponse = { success?: boolean; data?: Array<{ region_name: string; ports: Array<{ name: string }> }> };
+export type CurrencyMaster = { id: number; code: string; name: string; symbol: string; display_name: string };
 
 const failure = (error: unknown) => ({ error: { message: getErrorMessage(error) } });
 
@@ -45,6 +46,31 @@ export const websiteApi = createApi({
     airports: builder.query<PaginatedResponse<Airport>, QueryParams | void>({
       queryFn: async (params) => { try { return { data: await portalService.airports(params || undefined) }; } catch (error) { return failure(error); } },
       keepUnusedDataFor: 600,
+    }),
+    currencies: builder.query<CurrencyMaster[], string | void>({
+      queryFn: async (search) => {
+        try {
+          const response = await apiClient.get("/api/bookings/currencies/", { params: search ? { search } : undefined });
+          const rawCurrencies: Partial<CurrencyMaster>[] = Array.isArray(response.data?.data) ? response.data.data : [];
+          const currencies: CurrencyMaster[] = rawCurrencies
+            .filter((item: Partial<CurrencyMaster>) => Number.isInteger(Number(item.id)) && Boolean(item.code) && Boolean(item.name))
+            .map((item) => ({
+              id: Number(item.id),
+              code: String(item.code),
+              name: String(item.name),
+              symbol: String(item.symbol || ""),
+              display_name: item.display_name || `${item.code} - ${item.name}${item.symbol ? ` (${item.symbol})` : ""}`,
+            }));
+          console.info("[Currency API Review] Currency master loaded", {
+            success: response.data?.success,
+            reportedCount: response.data?.count,
+            receivedCount: currencies.length,
+            sample: currencies.slice(0, 3).map(({ id, code, display_name }) => ({ id, code, display_name })),
+          });
+          return { data: currencies };
+        } catch (error) { return failure(error); }
+      },
+      keepUnusedDataFor: 1800,
     }),
     ratings: builder.query<PaginatedResponse<ServiceRating>, { service_slug: string; page_size?: number }>({
       queryFn: async (params) => { try { return { data: await portalService.ratings(params) }; } catch (error) { return failure(error); } },
@@ -161,6 +187,7 @@ export const {
   useAirportsQuery,
   useBusCitiesQuery,
   useCateringCitiesQuery,
+  useCurrenciesQuery,
   useCreateCateringBookingMutation,
   useCreateBusBookingMutation,
   useCreateContactLeadMutation,

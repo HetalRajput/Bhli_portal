@@ -17,6 +17,7 @@ export default function ServicesTemplate({ children }: { children: ReactNode }) 
     serviceSlug === "event-management" ||
     serviceSlug === "flight-booking" ||
     serviceSlug === "catering-services" ||
+    serviceSlug === "currency-exchange" ||
     serviceSlug === "visa-assistance" ||
     serviceSlug === "hotel-consultancy";
   const replaceWithUnifiedForm =

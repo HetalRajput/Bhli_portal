@@ -1,5 +1,5 @@
-import GenericServiceEnquiry from "@/components/GenericServiceEnquiry";
+import CurrencyExchangeRequestForm from "@/components/CurrencyExchangeRequestForm";
 
 export default function ServicePage() {
-  return <GenericServiceEnquiry serviceSlug="currency-exchange" />;
+  return <CurrencyExchangeRequestForm />;
 }
