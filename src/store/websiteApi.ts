@@ -77,9 +77,16 @@ export const websiteApi = createApi({
     createContactLead: builder.mutation<ContactLead, ContactLeadPayload>({
       queryFn: async (payload) => { try { return { data: await baseService.createContactLead(payload) }; } catch (error) { return failure(error); } },
     }),
-    submitServiceBooking: builder.mutation<Record<string, unknown>, { serviceSlug: string; payload: Record<string, unknown> }>({
+    submitServiceBooking: builder.mutation<Record<string, unknown>, { serviceSlug: string; payload: Record<string, unknown> | FormData }>({
       queryFn: async ({ serviceSlug, payload }) => {
-        try { return { data: (await apiClient.post(`/api/bookings/${encodeURIComponent(serviceSlug)}/`, payload)).data }; }
+        try {
+          const isMultipart = typeof FormData !== "undefined" && payload instanceof FormData;
+          return { data: (await apiClient.post(
+            `/api/bookings/${encodeURIComponent(serviceSlug)}/`,
+            payload,
+            isMultipart ? { headers: { "Content-Type": "multipart/form-data" } } : undefined,
+          )).data };
+        }
         catch (error) { return failure(error); }
       },
     }),

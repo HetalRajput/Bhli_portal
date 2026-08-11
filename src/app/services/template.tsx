@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { documentedBookingConfigs, documentedRouteAliases } from "@/components/DocumentedBookingForm";
 import UnifiedBookingForm from "@/components/UnifiedBookingForm";
+import CorporateTravelRequestForm from "@/components/CorporateTravelRequestForm";
 
 export default function ServicesTemplate({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -24,5 +25,6 @@ export default function ServicesTemplate({ children }: { children: ReactNode }) 
     Boolean(documentedBookingConfigs[serviceSlug]);
 
   if (!replaceWithUnifiedForm) return children;
+  if (serviceSlug === "corporate-travel") return <CorporateTravelRequestForm />;
   return <><div className="hidden">{children}</div><UnifiedBookingForm serviceSlug={serviceSlug} /></>;
 }
