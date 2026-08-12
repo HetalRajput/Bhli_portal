@@ -1,5 +1,5 @@
-import HolidayPackageDetail from "@/components/HolidayPackageDetail";
+import HolidayTierSelection from "@/components/HolidayTierSelection";
 
 export default function DomesticHolidayPackagesPage() {
-  return <HolidayPackageDetail packageType="domestic" />;
+  return <HolidayTierSelection collection="domestic" />;
 }

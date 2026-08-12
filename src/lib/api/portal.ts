@@ -113,10 +113,13 @@ export type RatingInput = {
 };
 
 export type HolidayCollection = { id: number; name: string; slug: string; title: string; short_description: string; description: string; banner_image: string | null; is_featured: boolean };
+export type HolidayTier = { id: number; name: string; slug: string; collection: string; collection_slug: string; description: string; display_order: number };
 export type HolidayCategory = { id: number; name: string; slug: string; short_description: string; description: string; image: string | null };
 export type HolidayDestination = { id: number; name: string; slug: string; collection: string; collection_slug: string; categories: HolidayCategory[]; country: string; state: string; city: string; short_description: string; description: string; image: string | null; starting_price: string | null; is_featured: boolean; highlights: unknown[] };
-export type HolidayPackage = { id: number; name: string; slug: string; destination: string | HolidayDestination; destination_slug?: string; short_description: string; description?: string; nights: number; days: number; image: string | null; is_featured?: boolean; starting_price?: string | null; variants?: HolidayVariant[] };
-export type HolidayVariant = { id: number; tier: string; tier_label: string; title: string; hotel_category: string; comfort_level: string; price: string; taxes_included: boolean; default_adults: number; default_children: number; inclusions: { id: number; name: string; icon: string | null; description: string }[] };
+export type HolidayPackage = { id: number; name: string; slug: string; destination: string | HolidayDestination; destination_slug?: string; short_description: string; description?: string; nights: number; days: number; image: string | null; is_featured?: boolean; starting_price?: string | number | null; variants?: HolidayVariant[] };
+export type HolidayInclusion = { id: number; name: string; icon: string | null; description: string };
+export type HolidayHotel = { id: number; hotel_id: number; title: string; slug: string; city: string; location: string; rating: string; image: string | null; price: string; room_category: string; meal_plan: string; notes: string; is_default: boolean };
+export type HolidayVariant = { id: number; tier: string; tier_ref?: number; tier_slug?: string; tier_label: string; title: string; hotel_category: string; comfort_level: string; price: string; taxes_included: boolean; default_adults: number; default_children: number; inclusions: HolidayInclusion[]; hotels?: HolidayHotel[] };
 
 const data = <T>(payload: ApiEnvelope<T> | T): T =>
   payload && typeof payload === "object" && "data" in payload ? (payload as ApiEnvelope<T>).data : payload as T;
@@ -132,6 +135,7 @@ export const portalService = {
   ratings: async (params?: { service?: number; service_slug?: string; rating?: number; page?: number; page_size?: number }) => (await apiClient.get<PaginatedResponse<ServiceRating>>("/api/base/ratings/", { params })).data,
   submitRating: async (payload: RatingInput) => (await apiClient.post<ApiEnvelope<ServiceRating>>("/api/base/ratings/", payload)).data,
   holidayCollections: async () => data<HolidayCollection[]>((await apiClient.get("/api/bookings/holidays/collections/")).data),
+  holidayTiers: async (collection: string) => data<HolidayTier[]>((await apiClient.get("/api/bookings/holidays/tiers/", { params: { collection } })).data),
   holidayCategories: async (collection?: string) => data<HolidayCategory[]>((await apiClient.get("/api/bookings/holidays/categories/", { params: { collection } })).data),
   holidayDestinations: async (params?: { collection?: string; category?: string; featured?: boolean; search?: string }) => data<HolidayDestination[]>((await apiClient.get("/api/bookings/holidays/destinations/", { params })).data),
   holidayDestination: async (slug: string) => data<HolidayDestination>((await apiClient.get(`/api/bookings/holidays/destinations/${encodeURIComponent(slug)}/`)).data),

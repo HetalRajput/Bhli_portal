@@ -43,12 +43,29 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
   const pathname = usePathname();
   const router = useRouter();
   const selectedItemId = serviceSlug === "hotel-reservations" ? params.get("id") || "" : "";
-  const selectedItemName = serviceSlug === "hotel-reservations" ? params.get("name") || "Selected hotel" : "";
+  const selectedItemName = serviceSlug === "hotel-reservations"
+    ? params.get("name") || "Selected hotel"
+    : isHolidayPackage
+      ? params.get("packageName") || "Selected holiday package"
+      : "";
   const selectedImage = serviceSlug === "hotel-reservations" ? params.get("image") || "" : "";
   const initialServiceId = params.get("service") || "";
   const { data: serviceMeta, isLoading: loadingService } = useServiceQuery(serviceApiSlug);
   const serviceId = initialServiceId || String(serviceMeta?.id || "");
-  const [values, setValues] = useState<Record<string, string | boolean>>(() => Object.fromEntries(config.fields.map((field) => [field.key, field.defaultValue ?? ""])));
+  const [values, setValues] = useState<Record<string, string | boolean>>(() => {
+    const defaults = Object.fromEntries(config.fields.map((field) => [field.key, field.defaultValue ?? ""])) as Record<string, string | boolean>;
+    if (isHolidayPackage) {
+      defaults.package_category = params.get("type") || "";
+      defaults.destination = params.get("destination") || "";
+      defaults.duration_days = params.get("days") || defaults.duration_days || "";
+      defaults.number_of_adults = params.get("adults") || defaults.number_of_adults || "1";
+      defaults.number_of_children = params.get("children") || defaults.number_of_children || "0";
+      defaults.ltc_tier = params.get("tier") || "";
+      defaults.budget_category = params.get("tier") || "";
+      defaults.hotel_preference = params.get("hotelName") || "";
+    }
+    return defaults;
+  });
   const [guests, setGuests] = useState<Guest[]>([newGuest()]);
   const [message, setMessage] = useState("");
   const [consent, setConsent] = useState(false);
@@ -129,6 +146,7 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
     }
 
     if (step === 2) {
+      if (isHolidayPackage) return true;
       if (isCorporateTravel) {
         if (!config.fields.some((field) => field.kind === "checkbox" && Boolean(values[field.key]))) {
           setError("Select at least one service your organisation needs.");
@@ -170,7 +188,8 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
     event.preventDefault();
     setError("");
     if (!localStorage.getItem("access_token")) {
-      router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
+      const query = params.toString();
+      router.push(`/login?redirect=${encodeURIComponent(`${pathname}${query ? `?${query}` : ""}`)}`);
       return;
     }
     if (!serviceId || !Number.isInteger(Number(serviceId))) return setError("This service is not available for booking right now.");
@@ -185,7 +204,7 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
       message: message.trim(),
       consent_to_contact: consent,
     };
-    if (!isEventManagement) payload.guests = guests.map((guest) => ({ name: guest.name.trim(), age: Number(guest.age), gender: guest.gender }));
+    if (!isEventManagement && !isHolidayPackage) payload.guests = guests.map((guest) => ({ name: guest.name.trim(), age: Number(guest.age), gender: guest.gender }));
     if (selectedItemId) payload.service_item = Number(selectedItemId);
 
     if (isCruiseBooking) {
@@ -263,6 +282,12 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
         .map((field) => field.label);
       payload.message = message.trim() || String(values.requirements || "");
     } else if (isHolidayPackage) {
+      const packageId = Number(params.get("package"));
+      const variantId = Number(params.get("variant"));
+      const selectedHotelId = Number(params.get("selected_hotel"));
+      if (Number.isInteger(packageId) && packageId > 0) payload.package = packageId;
+      if (Number.isInteger(variantId) && variantId > 0) payload.variant = variantId;
+      if (Number.isInteger(selectedHotelId) && selectedHotelId > 0) payload.selected_hotel = selectedHotelId;
       config.fields.forEach((field) => {
         const value = values[field.key];
         if (value === "" || value === undefined) return;
@@ -302,6 +327,10 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
     { number: 1, title: "Event details", desc: "Contact, date & scope" },
     { number: 2, title: "Review request", desc: "Confirm event plan" },
     { number: 3, title: "Send request", desc: "Consent & submit" },
+  ] : isHolidayPackage ? [
+    { number: 1, title: "Travel details", desc: "Contact, dates & travellers" },
+    { number: 2, title: "Package review", desc: "Confirm your selection" },
+    { number: 3, title: "Send request", desc: "Preferences & consent" },
   ] : [
     { number: 1, title: isCruiseBooking ? "Cruise Search" : "Service Details", desc: "Requirements & specs" },
     { number: 2, title: "Traveller Details", desc: "Guest names & ages" },
@@ -312,7 +341,7 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
     <BookingSuccessModal
       reference={reference}
       serviceName={selectedTitle}
-      itemLabel={selectedItemName ? "Selected hotel" : "Selected service"}
+      itemLabel={isHolidayPackage ? "Selected package" : selectedItemName ? "Selected hotel" : "Selected service"}
       heading="Your response is recorded"
       description="Our sales representative will get in touch with a personalised response."
       backHref="/services"
@@ -475,7 +504,16 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
 
               {/* STEP 2: Traveller information */}
               {currentStep === 2 && (
-                isCorporateTravel ? <FormSection number="02" title="Services and planning preferences" description="Choose the support you need. Planning and billing details are optional, but help us tailor your proposal.">
+                isHolidayPackage ? <FormSection number="02" title="Review package selection" description="Confirm the package choices carried forward from the holiday catalogue.">
+                  <div className="grid gap-3 rounded-2xl border border-[#087fbe]/15 bg-[#f2f9fc] p-5 text-sm text-[#456078] sm:grid-cols-2">
+                    <p>Package: <b className="text-[#061f3b]">{selectedItemName}</b></p>
+                    <p>Destination: <b className="text-[#061f3b]">{String(values.destination || "Not selected")}</b></p>
+                    <p>Tier: <b className="capitalize text-[#061f3b]">{String(values.budget_category || values.ltc_tier || "Not selected")}</b></p>
+                    <p>Hotel: <b className="text-[#061f3b]">{String(values.hotel_preference || "No preference")}</b></p>
+                    <p>Adults: <b className="text-[#061f3b]">{String(values.number_of_adults || "0")}</b></p>
+                    <p>Children: <b className="text-[#061f3b]">{String(values.number_of_children || "0")}</b></p>
+                  </div>
+                </FormSection> : isCorporateTravel ? <FormSection number="02" title="Services and planning preferences" description="Choose the support you need. Planning and billing details are optional, but help us tailor your proposal.">
                   <div className="rounded-2xl border border-slate-200 bg-[#fbfdff] p-4 md:p-5">
                     <MultiSelectServicesDropdown fields={config.fields.filter((field) => field.kind === "checkbox")} values={values} update={update} />
                   </div>

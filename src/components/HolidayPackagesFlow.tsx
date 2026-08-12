@@ -1,122 +1,113 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, CheckCircle2, Globe2, MapPinned } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import HolidayPackageDetail, { type HolidayPackageType } from "@/components/HolidayPackageDetail";
+import { ArrowRight, CircleAlert, Globe2, LoaderCircle, MapPinned, PackageOpen, RefreshCcw } from "lucide-react";
 import UnifiedBookingForm from "@/components/UnifiedBookingForm";
+import { getErrorMessage } from "@/lib/api/client";
+import { portalService, type HolidayCollection } from "@/lib/api/portal";
 
-const packageTypes = {
-  domestic: {
-    title: "Domestic holiday packages",
-    eyebrow: "Explore India",
-    description:
-      "Discover hill stations, heritage cities, beaches, wildlife, pilgrimage destinations and complete LTC package details.",
-    meta: "India travel collection",
-    tags: ["India-wide tours", "LTC options", "Family trips"],
-    highlights: ["Nature and hill retreats", "Heritage and pilgrimage", "Silver, Gold and Platinum options"],
-    icon: MapPinned,
-    image: "https://images.pexels.com/photos/3225531/pexels-photo-3225531.jpeg?auto=compress&cs=tinysrgb&w=900",
-  },
-  international: {
-    title: "International holiday packages",
-    eyebrow: "Explore the world",
-    description:
-      "Browse popular, budget-friendly, honeymoon, luxury, European and emerging international destinations.",
-    meta: "Global travel collection",
-    tags: ["Worldwide tours", "Honeymoon", "Luxury escapes"],
-    highlights: ["Popular and value destinations", "Beach and honeymoon escapes", "Luxury and European tours"],
-    icon: Globe2,
-    image: "https://images.pexels.com/photos/358319/pexels-photo-358319.jpeg?auto=compress&cs=tinysrgb&w=900",
-  },
+const collectionImages = {
+  domestic: "/holiday-packages/domestic/domestic-01.jpg",
+  international: "/holiday-packages/international/international-01.jpg",
 } as const;
-
-type PackageType = keyof typeof packageTypes;
 
 export default function HolidayPackagesFlow() {
   const searchParams = useSearchParams();
-  const requestedType = searchParams.get("type");
-  const selectedType: HolidayPackageType | null =
-    requestedType === "domestic" || requestedType === "international" ? requestedType : null;
+  const [collections, setCollections] = useState<HolidayCollection[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [requestVersion, setRequestVersion] = useState(0);
 
-  if (selectedType && searchParams.get("step") === "enquire") {
+  useEffect(() => {
+    let active = true;
+    portalService.holidayCollections()
+      .then((rows) => {
+        if (active) setCollections(rows);
+      })
+      .catch((requestError) => {
+        if (!active) return;
+        setCollections([]);
+        setError(getErrorMessage(requestError));
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => { active = false; };
+  }, [requestVersion]);
+
+  if (searchParams.get("step") === "enquire") {
     return <UnifiedBookingForm serviceSlug="holiday-packages" />;
   }
 
-  if (selectedType) {
-    return <HolidayPackageDetail packageType={selectedType} />;
+  function retry() {
+    setLoading(true);
+    setError("");
+    setRequestVersion((current) => current + 1);
   }
 
   return (
-    <main className="min-h-screen bg-[#edf5f9] text-[#122b42]">
-      <section className="relative overflow-hidden bg-[#061f3b] px-5 py-20 text-center text-white lg:px-8">
-        <div className="absolute -left-28 top-10 size-72 rounded-full bg-[#087fbe]/15 blur-3xl" />
-        <div className="absolute -right-20 bottom-0 size-64 rounded-full bg-[#13a5d8]/10 blur-3xl" />
-        <div className="absolute inset-0 opacity-[.05] [background-image:linear-gradient(rgba(255,255,255,.8)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.8)_1px,transparent_1px)] [background-size:52px_52px]" />
-        <div className="relative mx-auto max-w-5xl">
-          <p className="text-[11px] font-extrabold uppercase tracking-[.28em] text-[#13a5d8]">Plan your next escape</p>
-          <h1 className="mx-auto mt-4 max-w-4xl font-serif text-5xl leading-tight md:text-7xl">Choose your holiday package</h1>
-          <p className="mx-auto mt-5 max-w-2xl text-sm leading-7 text-white/60">Explore curated Domestic and International holiday ideas, then let our travel desk personalise your journey.</p>
+    <main className="min-h-screen bg-[#f4f8fb] text-[#061f3b]">
+      <section className="bg-[#061f3b] px-5 py-14 text-white lg:px-8 lg:py-18">
+        <div className="mx-auto max-w-7xl">
+          <span className="grid size-11 place-items-center rounded-xl bg-[#13a5d8]/15 text-[#55d0f2]">
+            <PackageOpen className="size-5" />
+          </span>
+          <p className="mt-6 text-xs font-extrabold uppercase tracking-[.2em] text-[#55d0f2]">Holiday packages</p>
+          <h1 className="mt-3 max-w-3xl text-4xl font-extrabold leading-tight sm:text-5xl">Choose your holiday collection</h1>
+          <p className="mt-4 max-w-2xl text-sm leading-7 text-white/65">Select Domestic or International to browse the packages currently available in that collection.</p>
         </div>
       </section>
 
-      <section className="mx-auto grid max-w-7xl gap-7 px-5 py-12 md:grid-cols-2 lg:px-8 lg:py-16">
-        {(Object.entries(packageTypes) as [PackageType, (typeof packageTypes)[PackageType]][]).map(([key, item]) => {
-          const Icon = item.icon;
-          return (
-            <Link key={key} href={`/services/holiday-packages/${key}`} className="group overflow-hidden rounded-[2rem] border border-white/80 bg-white shadow-[0_18px_55px_rgba(6,31,59,.10)] ring-1 ring-slate-900/[.03] transition duration-300 hover:-translate-y-1.5 hover:shadow-[0_28px_75px_rgba(6,31,59,.18)]">
-              
-              {/* Image Header */}
-              <div className="relative h-[240px] w-full overflow-hidden">
-                <img src={item.image} alt={item.title} className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#061f3b]/70 via-black/10 to-transparent" />
-                
-                <div className="absolute left-6 right-6 top-6 flex items-start justify-between">
-                  <span className="grid size-12 place-items-center rounded-xl bg-white/20 text-white shadow-sm ring-1 ring-white/30 backdrop-blur-md">
-                    <Icon className="size-6" />
-                  </span>
-                  <span className="rounded-full border border-white/30 bg-black/40 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm backdrop-blur-md">
-                    {item.meta}
-                  </span>
-                </div>
-              </div>
+      <section className="mx-auto max-w-7xl px-5 py-12 lg:px-8 lg:py-16" aria-label="Holiday package collections">
+        {loading && (
+          <div className="flex min-h-64 items-center justify-center gap-2 text-sm font-bold text-slate-500">
+            <LoaderCircle className="size-5 animate-spin text-[#087fbe]" />Loading holiday collections...
+          </div>
+        )}
 
-              {/* Content Body */}
-              <div className="flex min-h-[340px] flex-col p-6 sm:p-8">
-                <div className="mb-4">
-                  <p className="text-[10px] font-extrabold uppercase tracking-[.24em] text-[#087fbe]">{item.eyebrow}</p>
-                  <h2 className="mt-2 font-serif text-3xl text-[#061f3b] sm:text-4xl">{item.title}</h2>
-                </div>
-                
-                <p className="text-sm leading-7 text-slate-500">{item.description}</p>
-                
-                <div className="mt-5 space-y-2.5">
-                  {item.highlights.map((highlight) => (
-                    <p key={highlight} className="flex items-center gap-2.5 text-xs font-semibold text-slate-600">
-                      <CheckCircle2 className="size-4 shrink-0 text-[#13a5d8]" />
-                      {highlight}
-                    </p>
-                  ))}
-                </div>
-                
-                <div className="mt-6 flex flex-wrap gap-2">
-                  {item.tags.map((tag) => (
-                    <span key={tag} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] font-bold text-slate-600">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-                
-                <div className="mt-auto flex items-center justify-between border-t border-slate-100 pt-6">
-                  <span className="text-sm font-extrabold text-[#087fbe]">Explore holiday packages</span>
-                  <span className="grid size-11 place-items-center rounded-full bg-gradient-to-r from-[#0875b7] to-[#13a5d8] text-white shadow-lg transition duration-300 group-hover:translate-x-1">
-                    <ArrowRight className="size-5" />
-                  </span>
-                </div>
-              </div>
-            </Link>
-          );
-        })}
+        {!loading && error && (
+          <div role="alert" className="mx-auto max-w-xl rounded-2xl border border-red-100 bg-white px-6 py-10 text-center shadow-sm">
+            <CircleAlert className="mx-auto size-7 text-red-500" />
+            <h2 className="mt-3 text-lg font-extrabold">Collections could not be loaded</h2>
+            <p className="mt-2 text-sm text-slate-500">{error}</p>
+            <button type="button" onClick={retry} className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#087fbe] px-5 py-3 text-sm font-bold text-white">
+              <RefreshCcw className="size-4" />Try again
+            </button>
+          </div>
+        )}
+
+        {!loading && !error && collections.length === 0 && (
+          <div className="rounded-2xl border border-slate-200 bg-white px-6 py-10 text-center text-sm text-slate-500">No holiday collections are currently available.</div>
+        )}
+
+        {!loading && !error && collections.length > 0 && (
+          <div className="grid gap-6 md:grid-cols-2">
+            {collections.map((collection) => {
+              const isInternational = collection.slug === "international";
+              const Icon = isInternational ? Globe2 : MapPinned;
+              const image = collection.banner_image || collectionImages[isInternational ? "international" : "domestic"];
+              return (
+                <Link key={collection.id} href={`/services/holiday-packages/${encodeURIComponent(collection.slug)}`} className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_35px_rgba(6,31,59,.08)] transition duration-300 hover:-translate-y-1 hover:border-[#13a5d8]/50 hover:shadow-[0_20px_50px_rgba(6,31,59,.14)]">
+                  <div className="relative h-56 overflow-hidden bg-[#07345d]">
+                    <img src={image} alt={collection.title || collection.name} className="h-full w-full object-cover transition duration-700 group-hover:scale-105" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#061f3b]/80 via-[#061f3b]/15 to-transparent" />
+                    <span className="absolute bottom-5 left-5 grid size-11 place-items-center rounded-xl bg-white text-[#087fbe] shadow"><Icon className="size-5" /></span>
+                  </div>
+                  <div className="flex items-center justify-between gap-5 p-6">
+                    <div>
+                      <p className="text-[10px] font-extrabold uppercase tracking-[.18em] text-[#087fbe]">{collection.name}</p>
+                      <h2 className="mt-2 text-2xl font-extrabold">{collection.title || collection.name}</h2>
+                      <p className="mt-2 text-sm leading-6 text-slate-500">{collection.short_description || collection.description}</p>
+                    </div>
+                    <span className="grid size-11 shrink-0 place-items-center rounded-full bg-[#087fbe] text-white transition group-hover:translate-x-1"><ArrowRight className="size-5" /></span>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </section>
     </main>
   );
