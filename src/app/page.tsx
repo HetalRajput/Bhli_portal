@@ -1,4 +1,4 @@
-import HeroBackground from "@/components/HeroBackground"; import BookingSearch from "@/components/BookingSearch"; import UpcomingEventCard from "@/components/UpcomingEventCard"; import EventGalleryCarousel from "@/components/EventGalleryCarousel"; import Link from "next/link"; import { ArrowRight, Building2, CheckCircle2, Plane, ShieldCheck, Sparkles, Star } from "lucide-react";
+import HeroBackground from "@/components/HeroBackground"; import BookingSearch from "@/components/HomeBookingSearchWithImpact"; import UpcomingEventCard from "@/components/UpcomingEventCard"; import EventGalleryCarousel from "@/components/EventGalleryCarousel"; import Link from "next/link"; import { ArrowRight, Building2, CheckCircle2, Plane, ShieldCheck, Sparkles, Star } from "lucide-react";
 import { cmsService } from "@/lib/api/cms";
 import type { Banner, ChannelPartner } from "@/lib/api/cms";
 import HomeFaqSection, { type HomeFaq } from "@/components/HomeFaqSection";

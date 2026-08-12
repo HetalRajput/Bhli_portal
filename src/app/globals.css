@@ -25,6 +25,44 @@ body {
 
 html { scroll-behavior: smooth; }
 
+.flight-search-midpoint {
+  --flight-hero-bottom-space: 1.75rem;
+  transform: translateY(calc(50% + var(--flight-hero-bottom-space)));
+}
+
+@media (min-width: 640px) {
+  .flight-search-midpoint {
+    --flight-hero-bottom-space: 2.25rem;
+  }
+}
+
+@media (max-width: 639px) {
+  .flight-booking-shell {
+    width: 100vw;
+  }
+
+  .flight-search-card {
+    width: calc(100vw - 1.5rem);
+  }
+
+  .compact-flight-search {
+    width: calc(100vw - 1.5rem);
+  }
+
+  .flight-booking-page *,
+  .flight-booking-page section,
+  .flight-booking-page form {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .flight-booking-page input,
+  .flight-booking-page select {
+    min-width: 0;
+    max-width: 100%;
+  }
+}
+
 .travel-solution-card[href="#"] {
   pointer-events: none;
   animation: home-skeleton-pulse 1.5s ease-in-out infinite;

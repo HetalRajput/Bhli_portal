@@ -14,6 +14,7 @@ import TeamAvatar from "@/components/TeamAvatar";
 import AboutGallerySlider from "@/components/AboutGallerySlider";
 import LegalTrustSection from "@/components/LegalTrustSection";
 import TestimonialsSlider from "@/components/TestimonialsSlider";
+import TravelImpactSlider from "@/components/TravelImpactSlider";
 
 interface TeamMember {
   id: number;
@@ -151,6 +152,8 @@ export default async function About() {
           </p>
         </div>
       </section>
+
+      <TravelImpactSlider />
 
       {/* Vision, Mission, Values */}
       <section className="bg-white">
