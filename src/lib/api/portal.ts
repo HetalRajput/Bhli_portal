@@ -125,7 +125,14 @@ const data = <T>(payload: ApiEnvelope<T> | T): T =>
   payload && typeof payload === "object" && "data" in payload ? (payload as ApiEnvelope<T>).data : payload as T;
 
 export const portalService = {
-  airports: async (params?: QueryParams) => (await apiClient.get<PaginatedResponse<Airport>>("/api/base/airports/", { params })).data,
+  airports: async (params?: QueryParams) => {
+    const response = (await apiClient.get<PaginatedResponse<Airport>>("/api/bookings/flight/airports/", {
+      params,
+      timeout: 20_000,
+    })).data;
+    if (!response.success) throw new Error(response.message || "Airport lookup failed.");
+    return response;
+  },
   services: async () => (await apiClient.get<PaginatedResponse<PortalService>>("/api/base/services/")).data,
   service: async (slug: string) => data<PortalService>((await apiClient.get(`/api/base/services/${encodeURIComponent(slug)}/`)).data),
   searchServiceItems: async (slug: string, params?: QueryParams) => (await apiClient.get<PaginatedResponse<ServiceItem>>(`/api/base/services/${encodeURIComponent(slug)}/search/`, { params })).data,

@@ -48,12 +48,17 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { useAirportsQuery, useServiceQuery } from "@/store/websiteApi";
 import {
   clearFlightError,
+  clearFareDetails,
+  clearSeatDetails,
   clearSearch,
   clearSelectedFare,
-  loadFlightFare,
+  loadFlightFares,
+  loadFlightSeats,
   resetFlightBooking,
   searchFlights as searchFlightsRequest,
+  selectFlightFare,
   submitFlightBooking,
+  type FlightFareOption,
   type JsonRecord,
 } from "@/store/flightBookingSlice";
 
@@ -109,19 +114,29 @@ const firstArray = (record: JsonRecord | null, keys: string[]) => {
   return [] as unknown[];
 };
 
-function onwardDetails(flight: JsonRecord) {
+function directionDetails(flight: JsonRecord, direction: "Onward" | "Return") {
   const flights = asRecord(flight.Flights) || asRecord(flight.flights);
-  const onward = asRecord(flights?.Onward) || asRecord(flights?.onward) || asRecord(flight.onward);
-  const keyedSegments = onward
-    ? Object.entries(onward)
+  const directionRecord = direction === "Onward"
+    ? asRecord(flights?.Onward) || asRecord(flights?.onward) || asRecord(flight.onward)
+    : asRecord(flights?.Return) || asRecord(flights?.return) || asRecord(flight.Return) || asRecord(flight.return);
+  const keyedSegments = directionRecord
+    ? Object.entries(directionRecord)
         .filter(([key, value]) => /^\d+$/.test(key) && Boolean(asRecord(value)))
         .sort(([left], [right]) => Number(left) - Number(right))
         .map(([, value]) => asRecord(value) as JsonRecord)
     : [];
-  const arraySegments = firstArray(flight, ["segments", "segment", "legs", "itinerary"])
+  const arrayKeys = direction === "Onward"
+    ? ["segments", "segment", "legs", "itinerary", "onwardSegments"]
+    : ["returnSegments", "return_segments", "inboundSegments"];
+  const arraySegments = firstArray(flight, arrayKeys)
     .map(asRecord)
     .filter((item): item is JsonRecord => Boolean(item));
-  return { onward, segments: keyedSegments.length ? keyedSegments : arraySegments };
+  return { record: directionRecord, segments: keyedSegments.length ? keyedSegments : arraySegments };
+}
+
+function onwardDetails(flight: JsonRecord) {
+  const details = directionDetails(flight, "Onward");
+  return { onward: details.record, segments: details.segments };
 }
 
 function firstSegment(flight: JsonRecord) {
@@ -132,8 +147,8 @@ function flightIdentity(flight: JsonRecord, fallback: string) {
   const segment = firstSegment(flight);
   return stringValue(
     segment,
-    ["flightID", "flightId", "flight_id", "id", "resultIndex", "key"],
-    stringValue(flight, ["flightID", "flightId", "flight_id", "id"], fallback),
+    ["flightID", "flightId", "flight_id"],
+    stringValue(flight, ["flightID", "flightId", "flight_id"], fallback),
   );
 }
 
@@ -187,6 +202,46 @@ function cleanBaggage(value: string) {
   return value.replace(/\|+/g, " ").replace(/\s+/g, " ").trim();
 }
 
+function fareRecords(flight: JsonRecord) {
+  const fare = asRecord(flight.Fare) || asRecord(flight.fare) || asRecord(flight.price) || {};
+  const onward = asRecord(fare.Onward) || asRecord(fare.onward) || fare;
+  const total = asRecord(fare.total) || asRecord(fare.Total) || fare;
+  const validation = asRecord(flight.Validation) || asRecord(flight.validation) || {};
+  return { fare, onward, total, validation };
+}
+
+function optionalValue(records: Array<JsonRecord | null>, keys: string[]) {
+  for (const record of records) {
+    const value = stringValue(record, keys, "");
+    if (value) return value;
+  }
+  return "";
+}
+
+function getFareInfo(flight: JsonRecord) {
+  const segment = firstSegment(flight);
+  const { fare, onward, total, validation } = fareRecords(flight);
+  const records = [onward, fare, total, segment, flight];
+  const mealRaw = optionalValue([validation, onward, fare, segment, flight], ["freeMeal", "meal", "mealInfo", "mealType", "meal_type", "mealCharge", "mealIncluded"]);
+  const seatRaw = optionalValue(records, ["seat", "seatInfo", "seatType", "seat_type", "seatCharge", "seatIncluded"]);
+  const normalizeAmenity = (value: string, fallback: string) => {
+    if (!value) return fallback;
+    if (/^(1|y|yes|true|included|free)$/i.test(value)) return "Free";
+    if (/^(0|n|no|false|paid|chargeable)$/i.test(value)) return "Paid / not included";
+    return value;
+  };
+  const cabinCode = optionalValue(records, ["cabinName", "cabinClass", "cabin", "className", "travelClass"]);
+  const cabinLabels: Record<string, string> = { E: "Economy", P: "Premium economy", B: "Business", F: "First class" };
+  return {
+    cabin: cabinLabels[cabinCode.toUpperCase()] || cabinCode || "Economy",
+    seats: optionalValue([onward, fare, segment, flight], ["seats", "seatCount", "availableSeats", "available_seats", "seatsAvailable", "seatLeft", "seatsLeft"]),
+    meal: normalizeAmenity(mealRaw, "As per airline"),
+    seat: normalizeAmenity(seatRaw, "Check availability"),
+    incentive: optionalValue([total, fare], ["inc", "incentive", "incentiveAmount", "commission", "discount"]),
+    netFare: optionalValue([total, fare], ["netfare", "netFare", "net_fare", "netAmount", "agentFare", "offeredFare"]),
+  };
+}
+
 function getFlightSummary(flight: JsonRecord, index: number) {
   const { onward, segments } = onwardDetails(flight);
   const first = segments[0] || flight;
@@ -210,11 +265,10 @@ function getFlightSummary(flight: JsonRecord, index: number) {
   const stopCount = stringValue(onward, ["stops"], String(Math.max(segments.length - 1, 0)));
   const stopLabel = stopCount === "0" ? "Non-stop" : `${stopCount} stop${stopCount === "1" ? "" : "s"}`;
   const totalDuration = formatDuration(stringValue(onward, ["durTotal"], stringValue(first, ["duration"], "")));
-  const fare = asRecord(flight.Fare) || asRecord(flight.fare) || asRecord(flight.price) || {};
-  const fareTotal = asRecord(fare.total) || fare;
+  const { onward: fareOnward, total: fareTotal } = fareRecords(flight);
   const price = stringValue(fareTotal, ["total", "totalFare", "grandTotal", "amount", "price", "netFare"], "");
-  const refundType = stringValue(fare, ["refundType"], "");
-  const refundability = refundType === "N" ? "Non-refundable" : refundType === "P" ? "Partially refundable" : refundType ? "Refundable" : "";
+  const refundType = stringValue(fareOnward, ["refundType"], "");
+  const refundability = refundType === "N" ? "Non-refundable" : refundType === "P" ? "Refundable / partially refundable" : refundType ? "Refundable" : "";
 
   return {
     airline,
@@ -230,9 +284,9 @@ function getFlightSummary(flight: JsonRecord, index: number) {
     duration: [totalDuration, stopLabel].filter(Boolean).join(" · "),
     stops: stopCount,
     price,
-    fareType: stringValue(fare, ["fareTypeDesc"], ""),
-    checkInBaggage: cleanBaggage(stringValue(fare, ["bagCkin"], "")),
-    cabinBaggage: cleanBaggage(stringValue(fare, ["bagCbin"], "")),
+    fareType: stringValue(fareOnward, ["fareTypeDesc"], ""),
+    checkInBaggage: cleanBaggage(stringValue(fareOnward, ["bagCkin"], "")),
+    cabinBaggage: cleanBaggage(stringValue(fareOnward, ["bagCbin"], "")),
     refundability,
     segmentCount: segments.length,
     airlineCode,
@@ -266,7 +320,7 @@ function findPrice(value: unknown, depth = 0): number | null {
   if (depth > 4) return null;
   const record = asRecord(value);
   if (!record) return null;
-  for (const key of ["total", "grandTotal", "totalFare", "netFare", "amount", "price"]) {
+  for (const key of ["total", "grandTotal", "totalFare", "netFare", "amount", "price", "result"]) {
     const candidate = record[key];
     if (typeof candidate === "number" && candidate > 0) return candidate;
     if (typeof candidate === "string" && Number(candidate) > 0) return Number(candidate);
@@ -274,6 +328,35 @@ function findPrice(value: unknown, depth = 0): number | null {
   for (const nested of Object.values(record)) {
     const result = findPrice(nested, depth + 1);
     if (result) return result;
+  }
+  return null;
+}
+
+function journeyDurationMinutes(flight: JsonRecord) {
+  const { record, segments } = directionDetails(flight, "Onward");
+  const documentedTotal = Number(stringValue(record, ["durTotal"], ""));
+  if (Number.isFinite(documentedTotal) && documentedTotal > 0) return documentedTotal;
+  return segments.reduce((total, segment) => {
+    const duration = Number(stringValue(segment, ["duration", "dur"], "0"));
+    return total + (Number.isFinite(duration) ? duration : 0);
+  }, 0) || Number.MAX_SAFE_INTEGER;
+}
+
+function findBoolean(value: unknown, keys: string[], depth = 0): boolean | null {
+  if (depth > 4) return null;
+  const record = asRecord(value);
+  if (!record) return null;
+  for (const key of keys) {
+    const candidate = record[key];
+    if (typeof candidate === "boolean") return candidate;
+    if (typeof candidate === "number" && (candidate === 0 || candidate === 1)) return candidate === 1;
+    if (typeof candidate === "string" && /^(true|false|yes|no|1|0)$/i.test(candidate.trim())) {
+      return /^(true|yes|1)$/i.test(candidate.trim());
+    }
+  }
+  for (const nested of Object.values(record)) {
+    const result = findBoolean(nested, keys, depth + 1);
+    if (result !== null) return result;
   }
   return null;
 }
@@ -286,7 +369,7 @@ const formatMoney = (value: number) =>
   }).format(value);
 
 const hasLoginSession = () =>
-  Boolean(window.localStorage.getItem("access_token") && window.localStorage.getItem("bhli-auth"));
+  Boolean(window.localStorage.getItem("access_token"));
 
 function makePassenger(type: PassengerType): PassengerForm {
   return {
@@ -294,7 +377,7 @@ function makePassenger(type: PassengerType): PassengerForm {
     first_name: "",
     last_name: "",
     passenger_type: type,
-    gender: "M",
+    gender: "male",
     date_of_birth: "",
     passport_number: "",
     passport_issue_date: null,
@@ -336,7 +419,7 @@ export default function FlightBookingFlow() {
   const [includeGst, setIncludeGst] = useState(false);
   const [gst, setGst] = useState({ gstNo: "", gstCompany: "", gstEmail: "", gstMobile: "", gstAddress: "" });
   const [validationError, setValidationError] = useState("");
-  const [fareCategory, setFareCategory] = useState<"regular" | "student" | "senior">("regular");
+  const [acceptedPriceChange, setAcceptedPriceChange] = useState(false);
   const [sortBy, setSortBy] = useState("price-asc");
   const [stopFilters, setStopFilters] = useState<string[]>([]);
   const [airlineFilters, setAirlineFilters] = useState<string[]>([]);
@@ -348,17 +431,33 @@ export default function FlightBookingFlow() {
   const flightServiceId = flightServiceRecord?.id ?? null;
   const {
     searchContext,
+    fareDetails,
+    fareOptions,
     selectedFare,
+    seatDetails,
     bookingResult,
     searchStatus,
+    verificationStatus,
+    seatStatus,
     bookingStatus,
     loadingFareId,
     error: requestError,
+    fareRulesWarning,
+    seatError,
   } = useAppSelector((state) => state.flightBooking);
   const error = validationError || requestError;
 
-  const updateForm = (key: keyof SearchForm, value: string) =>
+  const updateForm = (key: keyof SearchForm, value: string) => {
+    if (bookingStatus === "pending") return;
+    if (searchContext) dispatch(clearSearch());
     setForm((current) => ({ ...current, [key]: value }));
+  };
+
+  const swapAirports = () => {
+    if (bookingStatus === "pending") return;
+    if (searchContext) dispatch(clearSearch());
+    setForm((current) => ({ ...current, dep_city: current.arr_city, arr_city: current.dep_city }));
+  };
 
   function validateSearch() {
     if (!/^[A-Z]{3}$/.test(form.dep_city)) return "Enter a valid 3-letter departure airport code.";
@@ -375,6 +474,7 @@ export default function FlightBookingFlow() {
 
   async function searchFlights(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (bookingStatus === "pending") return;
     const validation = validateSearch();
     if (validation) return setValidationError(validation);
 
@@ -393,18 +493,29 @@ export default function FlightBookingFlow() {
     };
 
     setValidationError("");
+    setAcceptedPriceChange(false);
+    setPassengers([]);
     dispatch(clearFlightError());
     try {
       await dispatch(searchFlightsRequest(payload)).unwrap();
-      setPassengers(buildPassengers(form));
       window.setTimeout(() => document.getElementById("flight-results")?.scrollIntoView({ behavior: "smooth" }), 50);
     } catch { /* The slice exposes a user-friendly request error. */ }
   }
 
   async function searchAnotherDate(date: string) {
-    const nextForm = { ...form, on_date: date };
+    if (date < dateAfter(0)) {
+      setValidationError("Departure date cannot be in the past.");
+      return;
+    }
+    const nextForm = {
+      ...form,
+      on_date: date,
+      re_date: form.trip_type === "1" && form.re_date < date ? date : form.re_date,
+    };
     setForm(nextForm);
     dispatch(clearSelectedFare());
+    dispatch(clearFareDetails());
+    setAcceptedPriceChange(false);
     dispatch(clearFlightError());
     const payload: FlightSearchPayload = {
       trip_type: Number(nextForm.trip_type) as 0 | 1,
@@ -426,37 +537,69 @@ export default function FlightBookingFlow() {
 
   async function selectFlight(flight: JsonRecord, index: number) {
     if (!searchContext) return;
-    const searchFlightId = flightIdentity(flight, searchContext.fallbackFlightId);
+    const fallbackId = searchContext.flights.length === 1 ? searchContext.fallbackFlightId : "";
+    const searchFlightId = flightIdentity(flight, fallbackId);
     if (!searchFlightId) return setValidationError("This result does not contain a selectable flight ID.");
 
     setValidationError("");
+    setAcceptedPriceChange(false);
     dispatch(clearFlightError());
     try {
-      await dispatch(loadFlightFare({ refId: searchContext.refId, searchFlightId, flight })).unwrap();
-      window.setTimeout(() => document.getElementById("traveller-details")?.scrollIntoView({ behavior: "smooth" }), 50);
+      await dispatch(loadFlightFares({ refId: searchContext.refId, searchFlightId, flight })).unwrap();
+      window.setTimeout(() => document.getElementById("flight-fare-options")?.scrollIntoView({ behavior: "smooth" }), 50);
     } catch { /* The slice exposes a user-friendly request error. */ }
     void index;
   }
 
-  const updatePassenger = (index: number, key: keyof PassengerForm, value: string | null) =>
+  async function chooseFare(fareOption: FlightFareOption) {
+    if (!searchContext || !fareDetails) return;
+    if (!hasLoginSession()) {
+      router.push(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
+      return;
+    }
+    setValidationError("");
+    setAcceptedPriceChange(false);
+    dispatch(clearSeatDetails());
+    dispatch(clearFlightError());
+    try {
+      await dispatch(selectFlightFare({ refId: searchContext.refId, fareDetails, fareOption })).unwrap();
+      setPassengers(buildPassengers({
+        ...form,
+        adults: String(searchContext.request.adults),
+        children: String(searchContext.request.children),
+        infants: String(searchContext.request.infants),
+      }));
+      window.setTimeout(() => document.getElementById("traveller-details")?.scrollIntoView({ behavior: "smooth" }), 50);
+    } catch { /* The slice exposes a user-friendly request error. */ }
+  }
+
+  const updatePassenger = (index: number, key: keyof PassengerForm, value: string | null) => {
+    dispatch(clearSeatDetails());
     setPassengers((current) =>
       current.map((passenger, passengerIndex) =>
         passengerIndex === index ? { ...passenger, [key]: value } : passenger,
       ),
     );
+  };
 
-  function validatePassengers() {
+  function validatePassengerData() {
     for (let index = 0; index < passengers.length; index += 1) {
       const passenger = passengers[index];
       if (!passenger.first_name.trim() || !passenger.last_name.trim()) return `Enter the full name for passenger ${index + 1}.`;
       if (!passenger.date_of_birth) return `Enter the date of birth for passenger ${index + 1}.`;
-      if (form.service_type === "2") {
+      if (searchContext?.request.service_type === 2) {
         if (!passenger.passport_number.trim()) return `Enter the passport number for passenger ${index + 1}.`;
         if (!passenger.passport_issue_date || !passenger.passport_expiry_date || !passenger.passport_nationality.trim()) {
           return `Complete the passport details for passenger ${index + 1}.`;
         }
       }
     }
+    return "";
+  }
+
+  function validatePassengers() {
+    const passengerValidation = validatePassengerData();
+    if (passengerValidation) return passengerValidation;
     if (mobile && !/^\d{10,15}$/.test(mobile)) return "Enter a valid contact mobile number.";
     if (email && !/^\S+@\S+\.\S+$/.test(email)) return "Enter a valid contact email address.";
     if (pan && !/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(pan)) return "Enter a valid PAN number.";
@@ -464,11 +607,47 @@ export default function FlightBookingFlow() {
     return "";
   }
 
+  async function checkSeats() {
+    if (!searchContext || !selectedFare) return;
+    const validation = validatePassengerData();
+    if (validation) return setValidationError(validation);
+    setValidationError("");
+    dispatch(clearFlightError());
+    try {
+      await dispatch(loadFlightSeats({
+        refId: searchContext.refId,
+        flightId: selectedFare.bookingFlightId,
+        passengers,
+      })).unwrap();
+    } catch { /* Seat errors are optional and shown separately. */ }
+  }
+
+  const originalFarePrice = selectedFare ? findPrice(fareRecords(selectedFare.fareRow).total) : null;
+  const verifiedPrice = selectedFare ? findPrice(selectedFare.priceDetails) : null;
+  const providerReportedPriceChange = selectedFare
+    ? findBoolean(selectedFare.priceDetails, ["priceChanged", "price_changed"])
+    : null;
+  const priceHasChanged = Boolean(
+    selectedFare && (
+      providerReportedPriceChange === true ||
+      (originalFarePrice !== null && verifiedPrice !== null && Math.abs(originalFarePrice - verifiedPrice) > 0.01)
+    ),
+  );
+  const unresolvedPriceChange = priceHasChanged && verifiedPrice === null;
+  const displayedVerifiedPrice = verifiedPrice ?? (!priceHasChanged ? originalFarePrice : null);
+
   async function bookFlight(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (bookingStatus === "pending") return;
     if (!searchContext || !selectedFare) return;
     const validation = validatePassengers();
     if (validation) return setValidationError(validation);
+    if (priceHasChanged && verifiedPrice === null) {
+      return setValidationError("The provider changed this fare but did not return the updated total. Choose another fare or run a new search.");
+    }
+    if (priceHasChanged && !acceptedPriceChange) {
+      return setValidationError("The provider changed this fare. Review and accept the updated total before booking.");
+    }
     if (!hasLoginSession()) {
       router.push(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`);
       return;
@@ -499,15 +678,17 @@ export default function FlightBookingFlow() {
   if (bookingResult) {
     const pnr = stringValue(bookingResult, ["pnr"], "Pending");
     const ticket = stringValue(bookingResult, ["ticket_number", "ticketNumber"], "Will be shared shortly");
-    const status = stringValue(bookingResult, ["status", "booking_status"], "confirmed");
+    const status = stringValue(bookingResult, ["status", "booking_status", "provider_status"], "pending");
+    const isConfirmed = /^(confirmed|booked|ticketed|success)$/i.test(status);
     return (
       <main className="grid min-h-screen place-items-center bg-[#edf5f9] px-4 py-10 sm:px-5 sm:py-16 text-[#122b42]">
         <section className="w-full max-w-2xl rounded-[1.5rem] bg-white p-6 text-center shadow-[0_28px_90px_rgba(6,31,59,.16)] sm:rounded-[2rem] sm:p-12">
-          <span className="mx-auto grid size-20 place-items-center rounded-full bg-emerald-50 text-emerald-600">
-            <CheckCircle2 className="size-10" />
+          <span className={`mx-auto grid size-20 place-items-center rounded-full ${isConfirmed ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-600"}`}>
+            {isConfirmed ? <CheckCircle2 className="size-10" /> : <Clock3 className="size-10" />}
           </span>
-          <p className="mt-7 text-[11px] font-extrabold uppercase tracking-[.24em] text-[#087fbe]">Booking successful</p>
-          <h1 className="mt-3 font-serif text-3xl text-[#061f3b] sm:text-5xl">Your flight is booked</h1>
+          <p className="mt-7 text-[11px] font-extrabold uppercase tracking-[.24em] text-[#087fbe]">{isConfirmed ? "Booking confirmed" : "Booking submitted"}</p>
+          <h1 className="mt-3 font-serif text-3xl text-[#061f3b] sm:text-5xl">{isConfirmed ? "Your flight is booked" : "Your booking is being processed"}</h1>
+          {!isConfirmed && <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-slate-500">The request was accepted, but the provider has not confirmed the flight yet. Check your bookings for the latest status.</p>}
           <div className="mt-8 grid gap-3 sm:grid-cols-3">
             <ResultFact label="PNR" value={pnr} />
             <ResultFact label="Ticket" value={ticket} />
@@ -522,12 +703,15 @@ export default function FlightBookingFlow() {
     );
   }
 
-  const verifiedPrice = selectedFare ? findPrice(selectedFare.priceDetails) : null;
   const allFlightRows = (searchContext?.flights || []).map((flight, index) => ({
     flight,
     index,
     summary: getFlightSummary(flight, index),
   }));
+  const allSearchPrices = allFlightRows
+    .map(({ summary }) => Number(summary.price))
+    .filter((price) => Number.isFinite(price) && price > 0);
+  const cheapestSearchPrice = allSearchPrices.length ? Math.min(...allSearchPrices) : null;
   const airlineOptions = Array.from(new Set(allFlightRows.map(({ summary }) => summary.airline))).sort();
   const filteredFlightRows = allFlightRows
     .filter(({ summary }) => !stopFilters.length || stopFilters.includes(summary.stops === "0" ? "0" : summary.stops === "1" ? "1" : "2"))
@@ -554,7 +738,7 @@ export default function FlightBookingFlow() {
       const rightPrice = Number(right.summary.price) || Number.MAX_SAFE_INTEGER;
       if (sortBy === "price-desc") return rightPrice - leftPrice;
       if (sortBy === "departure") return minutesFromTime(left.summary.departure) - minutesFromTime(right.summary.departure);
-      if (sortBy === "duration") return Number(stringValue(firstSegment(left.flight), ["durTotal", "duration"], "99999")) - Number(stringValue(firstSegment(right.flight), ["durTotal", "duration"], "99999"));
+      if (sortBy === "duration") return journeyDurationMinutes(left.flight) - journeyDurationMinutes(right.flight);
       return leftPrice - rightPrice;
     });
 
@@ -601,12 +785,11 @@ export default function FlightBookingFlow() {
           </div>
           <CompactFlightSearch
             form={form}
-            fareCategory={fareCategory}
             searchStatus={searchStatus}
+            disabled={bookingStatus === "pending"}
             onSubmit={searchFlights}
             onUpdate={updateForm}
-            onFareCategory={setFareCategory}
-            onSwap={() => setForm((current) => ({ ...current, dep_city: current.arr_city, arr_city: current.dep_city }))}
+            onSwap={swapAirports}
           />
         </div>
       </section>
@@ -730,17 +913,18 @@ export default function FlightBookingFlow() {
           </form>
         </div>
 
-        {error && (
+        {error && !selectedFare && (
           <div role="alert" className="mt-5 flex items-start gap-3 rounded-2xl border border-red-100 bg-white px-5 py-4 text-sm font-semibold text-red-600 shadow-lg shadow-red-950/5">
             <CircleAlert className="mt-0.5 size-5 shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
-        {searchContext && !selectedFare && (
+        {searchContext && !fareDetails && !selectedFare && (
           <FlightResultsWorkspace
             rows={filteredFlightRows}
             totalCount={searchContext.flights.length}
+            cheapestPrice={cheapestSearchPrice}
             reference={searchContext.refId}
             currentDate={form.on_date}
             searchStatus={searchStatus}
@@ -767,6 +951,16 @@ export default function FlightBookingFlow() {
             onDate={searchAnotherDate}
             onChangeSearch={() => { dispatch(clearSearch()); setValidationError(""); }}
             onSelect={selectFlight}
+          />
+        )}
+
+        {searchContext && fareDetails && !selectedFare && (
+          <FlightFareOptionsPanel
+            fareDetailsFlight={fareDetails.flight}
+            options={fareOptions}
+            status={verificationStatus}
+            onBack={() => { dispatch(clearFareDetails()); setValidationError(""); }}
+            onSelect={chooseFare}
           />
         )}
 
@@ -859,8 +1053,8 @@ export default function FlightBookingFlow() {
                 <p className="mt-2 break-all text-xs text-white/50">Booking flight ID: {selectedFare.bookingFlightId}</p>
               </div>
               <div className="flex w-full items-center justify-between gap-3 sm:w-auto sm:gap-5">
-                <div className="text-right"><p className="text-[10px] uppercase tracking-wider text-white/45">Verified total</p><p className="mt-1 text-xl font-extrabold sm:text-2xl">{verifiedPrice ? formatMoney(verifiedPrice) : "Confirmed by provider"}</p></div>
-                <button type="button" onClick={() => dispatch(clearSelectedFare())} className="grid size-11 place-items-center rounded-full border border-white/15 bg-white/10" aria-label="Choose another flight"><RotateCcw className="size-4" /></button>
+                <div className="text-right"><p className="text-[10px] uppercase tracking-wider text-white/45">Verified total fare</p><p className="mt-1 text-xl font-extrabold sm:text-2xl">{displayedVerifiedPrice ? formatMoney(displayedVerifiedPrice) : unresolvedPriceChange ? "Updated total unavailable" : "Verified by provider"}</p></div>
+                <button type="button" disabled={bookingStatus === "pending"} onClick={() => dispatch(clearSelectedFare())} className="grid size-11 place-items-center rounded-full border border-white/15 bg-white/10 disabled:cursor-not-allowed disabled:opacity-50" aria-label="Choose another flight"><RotateCcw className="size-4" /></button>
               </div>
             </div>
 
@@ -872,9 +1066,46 @@ export default function FlightBookingFlow() {
               </header>
 
               <div className="space-y-5 p-4 sm:p-8">
+                {priceHasChanged && (
+                  <section role="alert" className="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-amber-950 sm:p-5">
+                    <div className="flex items-start gap-3">
+                      <CircleAlert className="mt-0.5 size-5 shrink-0 text-amber-600" />
+                      <div>
+                        <h3 className="font-extrabold">The fare changed during verification</h3>
+                        <p className="mt-1 text-sm leading-6 text-amber-800">
+                          {originalFarePrice ? `${formatMoney(originalFarePrice)} was updated` : "The selected fare was updated"}{verifiedPrice ? ` to ${formatMoney(verifiedPrice)}` : " by the provider"}. Review the new total before continuing.
+                        </p>
+                        {unresolvedPriceChange ? (
+                          <p className="mt-3 rounded-xl bg-white/70 p-3 text-sm font-bold">The provider did not return the new amount, so this fare cannot be booked safely. Choose another fare or run a new search.</p>
+                        ) : (
+                          <label className="mt-3 flex cursor-pointer items-start gap-2 rounded-xl bg-white/70 p-3 text-sm font-bold">
+                            <input type="checkbox" checked={acceptedPriceChange} onChange={(event) => { setAcceptedPriceChange(event.target.checked); setValidationError(""); }} className="mt-0.5 size-4 accent-amber-600" />
+                            I accept the updated total fare shown above.
+                          </label>
+                        )}
+                      </div>
+                    </div>
+                  </section>
+                )}
+
                 {passengers.map((passenger, index) => (
-                  <PassengerCard key={`${passenger.passenger_type}-${index}`} passenger={passenger} index={index} international={form.service_type === "2"} update={updatePassenger} />
+                  <PassengerCard key={`${passenger.passenger_type}-${index}`} passenger={passenger} index={index} international={searchContext.request.service_type === 2} update={updatePassenger} />
                 ))}
+
+                <section className="rounded-2xl border border-slate-200 bg-[#fbfdff] p-4 sm:p-5">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <h3 className="font-bold text-[#061f3b]">Seat availability <span className="font-medium text-slate-400">(optional)</span></h3>
+                      <p className="mt-1 text-xs leading-5 text-slate-500">Complete the passenger names and dates of birth before asking the provider for seats.</p>
+                    </div>
+                    <button type="button" disabled={seatStatus === "pending" || bookingStatus === "pending"} onClick={checkSeats} className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#087fbe] bg-white px-4 py-2.5 text-xs font-extrabold text-[#087fbe] transition hover:bg-[#edf8fc] disabled:opacity-60">
+                      {seatStatus === "pending" && <LoaderCircle className="size-4 animate-spin" />}
+                      {seatStatus === "pending" ? "Checking seats..." : seatDetails ? "Refresh seats" : "Check seats"}
+                    </button>
+                  </div>
+                  {seatError && <p role="alert" className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold leading-5 text-amber-800">{seatError} Seat lookup is optional and does not stop you from booking.</p>}
+                  {seatDetails && <SeatDetailsContent details={seatDetails} />}
+                </section>
 
                 <section className="rounded-2xl border border-slate-200 bg-[#fbfdff] p-4 sm:p-5">
                   <div className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-xl bg-[#e5f5fb] text-[#087fbe]"><UserRound className="size-5" /></span><div><h3 className="font-bold text-[#061f3b]">Contact & billing</h3><p className="mt-0.5 text-xs text-slate-400">Optional if already available in your profile</p></div></div>
@@ -894,17 +1125,30 @@ export default function FlightBookingFlow() {
                   )}
                 </section>
 
+                {fareRulesWarning && (
+                  <p role="alert" className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold leading-6 text-amber-800">
+                    Fare rules could not be loaded: {fareRulesWarning} You can choose another fare or continue if you understand the airline policy may need separate confirmation.
+                  </p>
+                )}
+
                 {selectedFare.fareRules && (
                   <details className="group rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
                     <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-bold text-[#061f3b]">Fare rules and policy<ChevronDown className="size-4 transition group-open:rotate-180" /></summary>
-                    <pre className="mt-4 max-h-72 overflow-auto whitespace-pre-wrap rounded-xl bg-slate-50 p-4 text-xs leading-6 text-slate-600">{JSON.stringify(selectedFare.fareRules, null, 2)}</pre>
+                    <FareRulesContent rules={selectedFare.fareRules} />
                   </details>
+                )}
+
+                {error && (
+                  <div role="alert" className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-semibold leading-6 text-red-700">
+                    <CircleAlert className="mt-0.5 size-5 shrink-0" />
+                    <span>{error}</span>
+                  </div>
                 )}
               </div>
 
               <footer className="flex flex-col gap-4 border-t border-slate-100 bg-[#fbfdff] px-4 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-8">
                 <p className="flex items-center gap-2 text-xs text-slate-500"><ShieldCheck className="size-4 text-[#087fbe]" />The backend verifies the price again before final booking.</p>
-                <button disabled={bookingStatus === "pending"} className="inline-flex w-full items-center justify-center sm:w-auto sm:min-w-52 gap-2 rounded-xl bg-gradient-to-r from-[#0875b7] to-[#13a5d8] px-6 py-3.5 text-sm font-bold text-white shadow-lg disabled:opacity-60">
+                <button disabled={bookingStatus === "pending" || unresolvedPriceChange || (priceHasChanged && !acceptedPriceChange)} className="inline-flex w-full items-center justify-center sm:w-auto sm:min-w-52 gap-2 rounded-xl bg-gradient-to-r from-[#0875b7] to-[#13a5d8] px-6 py-3.5 text-sm font-bold text-white shadow-lg disabled:opacity-60">
                   {bookingStatus === "pending" ? <LoaderCircle className="size-4 animate-spin" /> : <Plane className="size-4" />}
                   {bookingStatus === "pending" ? "Booking..." : "Confirm flight booking"}
                 </button>
@@ -923,17 +1167,78 @@ type FlightResultRow = {
   summary: ReturnType<typeof getFlightSummary>;
 };
 
+type FlightFareOptionsPanelProps = {
+  fareDetailsFlight: JsonRecord;
+  options: FlightFareOption[];
+  status: string;
+  onBack: () => void;
+  onSelect: (option: FlightFareOption) => void;
+};
+
+function FlightFareOptionsPanel({ fareDetailsFlight, options, status, onBack, onSelect }: FlightFareOptionsPanelProps) {
+  const flightSummary = getFlightSummary(fareDetailsFlight, 0);
+  return (
+    <section id="flight-fare-options" className="scroll-mt-6 py-8 sm:py-10">
+      <div className="overflow-hidden rounded-2xl border border-[#0d6095]/20 bg-white shadow-[0_18px_55px_rgba(6,31,59,.12)]">
+        <header className="flex flex-col gap-3 border-b border-slate-200 bg-[#f8fcff] p-4 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+          <div>
+            <p className="text-[10px] font-extrabold uppercase tracking-[.2em] text-[#087fbe]">Step 02 · Select an exact fare</p>
+            <h2 className="mt-1 text-xl font-extrabold text-[#0d466e] sm:text-2xl">{flightSummary.from} <ArrowRight className="mx-1 inline size-5 text-orange-500" /> {flightSummary.to}</h2>
+            <p className="mt-1 text-xs text-slate-500">{flightSummary.airline} · {flightSummary.flightNumber} · {options.length} provider fare{options.length === 1 ? "" : "s"}</p>
+          </div>
+          <button type="button" onClick={onBack} className="inline-flex items-center gap-2 self-start rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-[#087fbe]"><ArrowLeft className="size-4" />Back to flights</button>
+        </header>
+
+        <details className="group border-b border-slate-200 bg-white">
+          <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-xs font-extrabold text-[#07568b] sm:px-6">View complete outbound and return itinerary<ChevronDown className="size-4 transition group-open:rotate-180" /></summary>
+          <div className="bg-[#fbfdff] p-4 sm:p-6"><FlightItineraryDetails flight={fareDetailsFlight} /></div>
+        </details>
+
+        <div className="hidden grid-cols-[1.05fr_.95fr_1fr_1fr_1.15fr] border-b border-slate-200 bg-[#eaf4fa] text-[10px] font-extrabold text-[#17293b] sm:grid">
+          <span className="px-4 py-3">Fares</span><span className="px-4 py-3">Fare Rules</span><span className="px-4 py-3">Baggage</span><span className="px-4 py-3">Meal &amp; Seat</span><span className="px-4 py-3 text-right">Total / Action</span>
+        </div>
+
+        <div className="divide-y divide-slate-100">
+          {options.map((option) => {
+            const summary = getFlightSummary(option.row, option.index);
+            const fareInfo = getFareInfo(option.row);
+            const missingCanonicalId = !option.bookingFlightId && options.length !== 1;
+            return (
+              <article key={`${option.bookingFlightId || "fare"}-${option.index}`} className="grid gap-4 p-4 text-xs transition hover:bg-[#fbfdff] sm:grid-cols-[1.05fr_.95fr_1fr_1fr_1.15fr] sm:gap-2 sm:p-0">
+                <FareInfoCell label="Fares">
+                  <div className="sm:px-4 sm:py-5"><span className="inline-flex rounded-lg bg-orange-500 px-2.5 py-1.5 text-[10px] font-extrabold text-white">{summary.fareType || `Fare option ${option.index + 1}`}</span><p className="mt-2 font-semibold text-slate-600">{fareInfo.cabin}</p>{fareInfo.seats && <p className="mt-1 text-[10px] font-bold text-[#0d6095]">{fareInfo.seats} seats left</p>}</div>
+                </FareInfoCell>
+                <FareInfoCell label="Fare Rules">
+                  <div className="sm:px-4 sm:py-5"><p className={`font-bold ${summary.refundability === "Non-refundable" ? "text-amber-700" : "text-emerald-700"}`}>{summary.refundability || "Airline rules apply"}</p><p className="mt-2 text-[10px] leading-4 text-slate-500">Full cancellation, reissue and no-show rules load after selection.</p></div>
+                </FareInfoCell>
+                <FareInfoCell label="Baggage">
+                  <div className="sm:px-4 sm:py-5"><p className="font-semibold text-slate-700">Check-in: {summary.checkInBaggage || "Airline policy"}</p><p className="mt-1 text-slate-500">Cabin: {summary.cabinBaggage || "Airline policy"}</p></div>
+                </FareInfoCell>
+                <FareInfoCell label="Meal & Seat">
+                  <div className="sm:px-4 sm:py-5"><p className="font-semibold text-slate-700">Meal – <span className="text-[#0d6095]">{fareInfo.meal}</span></p><p className="mt-1 font-semibold text-slate-700">Seat – <span className="text-[#0d6095]">{fareInfo.seat}</span></p></div>
+                </FareInfoCell>
+                <FareInfoCell label="Total / Action" right>
+                  <div className="sm:px-4 sm:py-5">{fareInfo.incentive && <p className="text-[10px] text-slate-500">Inc {formatMoney(Number(fareInfo.incentive))}</p>}{fareInfo.netFare && <p className="mt-1 text-[10px] text-slate-500">Net <b className="text-emerald-600">{formatMoney(Number(fareInfo.netFare))}</b></p>}<p className="mt-1 text-lg font-extrabold text-[#30343a]">{summary.price ? formatMoney(Number(summary.price)) : "Verify total"}</p><p className="text-[9px] uppercase tracking-wide text-slate-400">total fare</p><button type="button" disabled={status === "pending" || missingCanonicalId} onClick={() => onSelect(option)} className="mt-2 inline-flex min-w-32 items-center justify-center gap-2 rounded-lg bg-orange-500 px-4 py-2.5 text-[11px] font-extrabold text-white transition hover:bg-orange-600 disabled:opacity-60">{status === "pending" && <LoaderCircle className="size-4 animate-spin" />}{missingCanonicalId ? "Unavailable" : "Select & verify"}</button></div>
+                </FareInfoCell>
+              </article>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 type CompactFlightSearchProps = {
   form: SearchForm;
-  fareCategory: "regular" | "student" | "senior";
   searchStatus: string;
+  disabled: boolean;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onUpdate: (key: keyof SearchForm, value: string) => void;
-  onFareCategory: (value: "regular" | "student" | "senior") => void;
   onSwap: () => void;
 };
 
-function CompactFlightSearch({ form, fareCategory, searchStatus, onSubmit, onUpdate, onFareCategory, onSwap }: CompactFlightSearchProps) {
+function CompactFlightSearch({ form, searchStatus, disabled, onSubmit, onUpdate, onSwap }: CompactFlightSearchProps) {
   const travellerCount = Number(form.adults) + Number(form.children) + Number(form.infants);
   return (
     <form onSubmit={onSubmit} className="compact-flight-search flight-search-midpoint relative z-30 mt-4 w-full min-w-0 rounded-lg border border-[#13a5d8]/25 bg-[#061f3b] p-4 shadow-[0_26px_75px_rgba(2,18,35,.38)] sm:mt-5 sm:p-5" noValidate>
@@ -966,8 +1271,8 @@ function CompactFlightSearch({ form, fareCategory, searchStatus, onSubmit, onUpd
       </div>
 
       <div className="mt-4 flex flex-col gap-4 pb-6 sm:flex-row sm:items-center sm:justify-between sm:pb-0">
-        <div className="flex flex-wrap items-center gap-2"><span className="mr-1 text-[10px] font-extrabold uppercase text-white">Select fare type</span>{([['regular','Regular'],['student','Student'],['senior','Senior citizen']] as const).map(([value, label]) => <button key={value} type="button" onClick={() => onFareCategory(value)} className={`relative h-9 rounded-full px-5 text-[11px] font-bold uppercase transition-all duration-300 ${fareCategory === value ? "bg-[#dff3fb] text-[#061f3b] shadow" : "bg-white/10 text-white/75 hover:bg-white/15 hover:text-white"}`}>{value !== "regular" && <span className="absolute -top-4 left-1/2 -translate-x-1/2 rounded-full bg-[#13a5d8] px-2 py-0.5 text-[8px] font-extrabold text-[#061f3b]">New</span>}{label}</button>)}</div>
-        <button disabled={searchStatus === "pending"} className="group relative z-50 inline-flex h-14 w-full touch-manipulation items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#0875b7] to-[#13a5d8] px-12 text-sm font-extrabold text-white opacity-100 shadow-[0_12px_30px_rgba(8,126,186,.38)] transition-[transform,box-shadow,background-color] duration-300 hover:-translate-y-0.5 hover:shadow-[0_17px_38px_rgba(8,126,186,.48)] active:scale-[.98] disabled:translate-y-0 disabled:cursor-wait disabled:opacity-70 sm:absolute sm:-bottom-7 sm:left-1/2 sm:w-auto sm:-translate-x-1/2 sm:hover:-translate-x-1/2">{searchStatus === "pending" ? <LoaderCircle className="size-4 animate-spin" /> : <Search className="size-4 transition-transform group-hover:scale-110" />}{searchStatus === "pending" ? "Searching live fares..." : "Search flights"}</button>
+        <div className="inline-flex items-center gap-2 text-xs font-semibold text-white/70"><Sparkles className="size-4 text-[#13a5d8]" />All available provider fares will be compared.</div>
+        <button disabled={disabled || searchStatus === "pending"} className="group relative z-50 inline-flex h-14 w-full touch-manipulation items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#0875b7] to-[#13a5d8] px-12 text-sm font-extrabold text-white opacity-100 shadow-[0_12px_30px_rgba(8,126,186,.38)] transition-[transform,box-shadow,background-color] duration-300 hover:-translate-y-0.5 hover:shadow-[0_17px_38px_rgba(8,126,186,.48)] active:scale-[.98] disabled:translate-y-0 disabled:cursor-wait disabled:opacity-70 sm:absolute sm:-bottom-7 sm:left-1/2 sm:w-auto sm:-translate-x-1/2 sm:hover:-translate-x-1/2">{searchStatus === "pending" || disabled ? <LoaderCircle className="size-4 animate-spin" /> : <Search className="size-4 transition-transform group-hover:scale-110" />}{disabled ? "Booking in progress..." : searchStatus === "pending" ? "Searching live fares..." : "Search flights"}</button>
       </div>
     </form>
   );
@@ -982,12 +1287,13 @@ function CompactAirport({ label, value, onChange }: { label: string; value: stri
   const selected = remoteSelection?.[0] === value ? remoteSelection : airportOptions.find(([code]) => code === value);
   const normalizedQuery = query.trim().toLowerCase();
   const fallbackSuggestions = airportOptions.filter(([code, city, airport]) => !normalizedQuery || `${code} ${city} ${airport}`.toLowerCase().includes(normalizedQuery)).slice(0, 8);
-  const { data: airportResponse, isFetching } = useAirportsQuery(
+  const { data: airportResponse, isFetching, isError: airportLookupFailed } = useAirportsQuery(
     { search: debouncedQuery, page: 1, page_size: 8 },
     { skip: !open || debouncedQuery.length < 2 },
   );
-  const remoteSuggestions = airportResponse?.data.map((airport) => [airport.airport_code, airport.airport_city, airport.airport_name] as [string, string, string]) || [];
-  const suggestions = remoteSuggestions.length ? remoteSuggestions : fallbackSuggestions;
+  const remoteSuggestions = airportResponse?.data.map((airport) => [airport.airport_code, airport.airport_city, airport.display_name || airport.airport_name] as [string, string, string]) || [];
+  const remoteLookupActive = open && normalizedQuery.length >= 2 && debouncedQuery.length >= 2;
+  const suggestions = remoteLookupActive && airportResponse && !airportLookupFailed ? remoteSuggestions : fallbackSuggestions;
   const listId = `compact-airport-${label.toLowerCase()}`;
 
   useEffect(() => {
@@ -1040,6 +1346,7 @@ function CompactAirport({ label, value, onChange }: { label: string; value: stri
       {open && (
         <div id={listId} role="listbox" className="absolute inset-x-0 top-[calc(100%+.5rem)] z-[70] max-h-80 overflow-y-auto rounded-xl border border-[#13a5d8]/20 bg-white p-2 shadow-[0_24px_60px_rgba(6,31,59,.22)]">
           <div className="flex items-center justify-between px-2 pb-2 pt-1"><span className="text-[9px] font-extrabold uppercase text-[#087fbe]">{query ? "Matching airports" : "Popular airports"}</span>{isFetching && <LoaderCircle className="size-3.5 animate-spin text-[#13a5d8]" />}</div>
+          {airportLookupFailed && <p role="alert" className="mx-2 mb-2 rounded-lg bg-amber-50 px-2.5 py-2 text-[10px] font-semibold leading-4 text-amber-800">Live airport lookup is unavailable. Showing saved airports; try again if your airport is missing.</p>}
           {suggestions.length ? suggestions.map(([code, city, airport], index) => (
             <button key={code} type="button" role="option" aria-selected={value === code} onMouseDown={(event) => { event.preventDefault(); chooseAirport([code, city, airport]); }} onMouseEnter={() => setActiveIndex(index)} className={`flex w-full items-center gap-3 rounded-lg px-2.5 py-2.5 text-left transition ${activeIndex === index ? "bg-[#edf8fc]" : "hover:bg-slate-50"}`}>
               <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-[#e5f5fb] text-xs font-extrabold text-[#087fbe]">{code}</span>
@@ -1065,6 +1372,7 @@ function CompactCount({ label, value, min, onChange }: { label: string; value: s
 type FlightResultsWorkspaceProps = {
   rows: FlightResultRow[];
   totalCount: number;
+  cheapestPrice: number | null;
   reference: string;
   currentDate: string;
   searchStatus: string;
@@ -1116,8 +1424,8 @@ function FlightResultsWorkspace(props: FlightResultsWorkspaceProps) {
               </div>
             </div>
             <div className="flex gap-2 overflow-x-auto p-3">
-              <DateArrow direction="previous" disabled={props.searchStatus === "pending"} onClick={() => props.onDate(shiftDate(props.currentDate, -1))} />
-              {[-3,-2,-1,0,1,2,3].map((offset) => { const date = shiftDate(props.currentDate, offset); return <button key={date} type="button" disabled={offset === 0 || props.searchStatus === "pending"} onClick={() => props.onDate(date)} className={`h-10 min-w-20 shrink-0 rounded-lg border px-3 text-xs font-extrabold transition-all duration-300 ${offset === 0 ? "border-[#13a5d8] bg-[#edf8fc] text-[#087fbe] shadow-sm" : "border-slate-200 hover:border-[#13a5d8] hover:text-[#087fbe]"}`}>{dateLabel(date)}</button>; })}
+              <DateArrow direction="previous" disabled={props.searchStatus === "pending" || shiftDate(props.currentDate, -1) < dateAfter(0)} onClick={() => props.onDate(shiftDate(props.currentDate, -1))} />
+              {[-3,-2,-1,0,1,2,3].map((offset) => { const date = shiftDate(props.currentDate, offset); const unavailable = date < dateAfter(0); return <button key={date} type="button" disabled={offset === 0 || unavailable || props.searchStatus === "pending"} onClick={() => props.onDate(date)} className={`h-10 min-w-20 shrink-0 rounded-lg border px-3 text-xs font-extrabold transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-45 ${offset === 0 ? "border-[#13a5d8] bg-[#edf8fc] text-[#087fbe] shadow-sm" : "border-slate-200 hover:border-[#13a5d8] hover:text-[#087fbe]"}`}>{dateLabel(date)}</button>; })}
               <DateArrow direction="next" disabled={props.searchStatus === "pending"} onClick={() => props.onDate(shiftDate(props.currentDate, 1))} />
             </div>
           </div>
@@ -1125,12 +1433,13 @@ function FlightResultsWorkspace(props: FlightResultsWorkspaceProps) {
           <label className="mt-3 block sm:hidden"><select value={props.sortBy} onChange={(event) => props.onSort(event.target.value)} className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold"><option value="price-asc">Price: low to high</option><option value="price-desc">Price: high to low</option><option value="departure">Departure time</option><option value="duration">Journey duration</option></select></label>
 
           <div className="mt-4 space-y-3">
-            {props.rows.map(({ flight, index, summary }, visibleIndex) => {
-              const resultFlightId = flightIdentity(flight, props.fallbackFlightId);
+            {props.rows.map(({ flight, index, summary }) => {
+              const resultFlightId = flightIdentity(flight, props.totalCount === 1 ? props.fallbackFlightId : "");
               const stopLabel = summary.stops === "0" ? "Non Stop" : `${summary.stops} Stop${summary.stops === "1" ? "" : "s"}`;
+              const fareInfo = getFareInfo(flight);
+              const isCheapest = props.cheapestPrice !== null && Number(summary.price) === props.cheapestPrice;
               return <article key={`${resultFlightId}-${index}`} className="relative overflow-visible rounded-2xl border border-[#0d6095]/20 bg-white shadow-[0_10px_30px_rgba(15,35,55,.10)] transition-all duration-300 hover:border-[#0d6095]/45 hover:shadow-[0_16px_38px_rgba(6,31,59,.14)]">
-                {visibleIndex === 0 && <span className="absolute -top-3 left-5 z-10 inline-flex items-center gap-1 rounded-full border border-emerald-500 bg-white px-2.5 py-1 text-[10px] font-extrabold text-emerald-600 shadow-sm"><Sparkles className="size-3" />Cheapest</span>}
-                <span className="absolute -top-3 right-5 z-10 rounded-full bg-[#0d6095] px-3.5 py-1 text-[10px] font-extrabold text-white shadow-sm">Sale</span>
+                {isCheapest && <span className="absolute -top-3 left-5 z-10 inline-flex items-center gap-1 rounded-full border border-emerald-500 bg-white px-2.5 py-1 text-[10px] font-extrabold text-emerald-600 shadow-sm"><Sparkles className="size-3" />Cheapest</span>}
 
                 <div className="grid gap-4 p-4 pt-6 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:p-5 sm:pt-6">
                   <div className="grid min-w-0 gap-5 md:grid-cols-[170px_minmax(0,1fr)] md:items-center">
@@ -1142,7 +1451,7 @@ function FlightResultsWorkspace(props: FlightResultsWorkspaceProps) {
                     <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_105px_minmax(0,1fr)] items-center gap-2 sm:gap-4">
                       <FlightTime time={summary.departure} code={summary.fromCode} place={summary.from} date={summary.departureDate} />
                       <div className="min-w-0 text-center">
-                        <p className="text-xs font-semibold text-slate-600">{summary.duration?.split(" Â· ")[0] || summary.duration || "Flight"}</p>
+                        <p className="text-xs font-semibold text-slate-600">{summary.duration?.split(" · ")[0] || summary.duration || "Flight"}</p>
                         <div className="mx-auto mt-1 h-0.5 w-16 rounded-full bg-gradient-to-r from-transparent via-amber-400 to-transparent" />
                         <p className="mt-1 text-[11px] font-medium text-slate-600">{stopLabel}</p>
                       </div>
@@ -1151,8 +1460,8 @@ function FlightResultsWorkspace(props: FlightResultsWorkspaceProps) {
                   </div>
 
                   <div className="flex items-center justify-between gap-4 border-t border-slate-100 pt-3 sm:min-w-40 sm:flex-col sm:items-end sm:border-t-0 sm:pt-0 sm:text-right">
-                    <div>{summary.price && <p className="text-2xl font-extrabold text-[#30343a]">{formatMoney(Number(summary.price))}</p>}<p className="mt-0.5 text-[9px] font-semibold uppercase tracking-wide text-slate-400">per traveller</p></div>
-                    <button type="button" disabled={Boolean(props.loadingFareId)} onClick={() => props.onSelect(flight, index)} className="group inline-flex min-w-32 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#ff850d] to-[#ff6f00] px-4 py-2.5 text-xs font-extrabold text-white shadow-[0_8px_20px_rgba(255,111,0,.24)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_26px_rgba(255,111,0,.34)] disabled:translate-y-0 disabled:opacity-60">{props.loadingFareId === resultFlightId && <LoaderCircle className="size-4 animate-spin" />}View Price<ChevronDown className="size-4 transition-transform group-hover:translate-y-0.5" /></button>
+                    <div>{summary.price && <p className="text-2xl font-extrabold text-[#30343a]">{formatMoney(Number(summary.price))}</p>}<p className="mt-0.5 text-[9px] font-semibold uppercase tracking-wide text-slate-400">total fare</p></div>
+                    <button type="button" disabled={Boolean(props.loadingFareId) || !resultFlightId} onClick={() => props.onSelect(flight, index)} className="group inline-flex min-w-32 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#ff850d] to-[#ff6f00] px-4 py-2.5 text-xs font-extrabold text-white shadow-[0_8px_20px_rgba(255,111,0,.24)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_26px_rgba(255,111,0,.34)] disabled:translate-y-0 disabled:opacity-60">{props.loadingFareId === resultFlightId && <LoaderCircle className="size-4 animate-spin" />}View fare options<ChevronDown className="size-4 transition-transform group-hover:translate-y-0.5" /></button>
                   </div>
                 </div>
 
@@ -1161,20 +1470,21 @@ function FlightResultsWorkspace(props: FlightResultsWorkspaceProps) {
                   <div className="border-t border-[#0d6095]/15 bg-[#fbfdff] p-3 sm:p-5">
                     <div className="flex flex-wrap items-center justify-between gap-3 px-1 pb-4">
                       <div><h3 className="text-lg font-extrabold text-[#0d466e]">{summary.from} <ArrowRight className="mx-1 inline size-5 text-orange-500" /> {summary.to}</h3><p className="mt-1 text-xs text-slate-500">{summary.departureDate}</p></div>
-                      <details className="group/rules relative"><summary className="cursor-pointer list-none rounded-lg border border-[#0d6095] px-3 py-2 text-xs font-bold text-[#0d466e] transition hover:bg-[#0d6095] hover:text-white">Fare Rule</summary><div className="absolute right-0 top-[calc(100%+6px)] z-20 w-64 rounded-xl border border-slate-200 bg-white p-4 text-left text-xs leading-5 text-slate-600 shadow-xl"><p className="font-bold text-[#0d466e]">{summary.refundability || "Fare policy"}</p><p className="mt-1">Final cancellation and change rules are verified with the airline before booking.</p></div></details>
+                      <details className="group/rules relative"><summary className="cursor-pointer list-none rounded-lg border border-[#0d6095] px-3 py-2 text-xs font-bold text-[#0d466e] transition hover:bg-[#0d6095] hover:text-white">Fare preview</summary><div className="absolute right-0 top-[calc(100%+6px)] z-20 w-64 rounded-xl border border-slate-200 bg-white p-4 text-left text-xs leading-5 text-slate-600 shadow-xl"><p className="font-bold text-[#0d466e]">{summary.refundability || "Airline fare"}</p><p className="mt-1">Select View fare options to load the provider&apos;s current fare rows. Full rules are requested only after you choose one.</p></div></details>
                     </div>
-                    <div className="grid gap-4 rounded-xl border border-slate-200 bg-white p-4 md:grid-cols-[150px_1fr] md:items-center">
-                      <div className="text-center md:border-r md:border-slate-100"><span className="mx-auto grid size-12 place-items-center rounded-xl bg-orange-50 text-orange-500"><Plane className="size-6 -rotate-12" /></span><p className="mt-2 text-sm font-bold text-[#17293b]">{summary.airline}</p><p className="text-xs text-slate-500">{summary.flightNumber}</p></div>
-                      <div className="grid min-w-0 grid-cols-[1fr_110px_1fr] items-center gap-2 sm:gap-5">
-                        <FlightTime time={summary.departure} code={summary.fromCode} place={summary.from} date={summary.departureDate} terminal={summary.departureTerminal} />
-                        <div className="text-center">
-                          <details className="group/bag"><summary className="cursor-pointer list-none rounded-lg border border-[#0d6095] px-2 py-1.5 text-[10px] font-bold text-[#0d466e]">View Baggage <ChevronDown className="inline size-3 transition group-open/bag:rotate-180" /></summary><div className="mt-2 rounded-lg bg-slate-50 p-2 text-[9px] leading-4 text-slate-600">Check-in: {summary.checkInBaggage || "Airline policy"}<br />Cabin: {summary.cabinBaggage || "Airline policy"}</div></details>
-                          <div className="mt-3 flex items-center"><span className="size-2 rounded-full bg-slate-400" /><span className="h-px flex-1 border-t border-dashed border-slate-300" /><Plane className="size-5 rotate-90 text-slate-400" /></div>
-                          <p className="mt-2 text-[10px] font-bold text-slate-500">{summary.duration || stopLabel}</p>
-                        </div>
-                        <FlightTime time={summary.arrival} code={summary.toCode} place={summary.to} date={summary.arrivalDate} terminal={summary.arrivalTerminal} right />
+                    <div className="mb-4 overflow-hidden rounded-xl border border-[#0d6095]/20 bg-white">
+                      <div className="hidden grid-cols-[1.05fr_.95fr_1fr_1fr_1.15fr] border-b border-slate-200 bg-[#eaf4fa] text-[10px] font-extrabold text-[#17293b] sm:grid">
+                        <span className="px-4 py-3">Fares</span><span className="px-4 py-3">Fare Rules</span><span className="px-4 py-3">Baggage</span><span className="px-4 py-3">Meal &amp; Seat</span><span className="px-4 py-3 text-right">Price / Actions</span>
+                      </div>
+                      <div className="grid gap-4 p-4 text-xs sm:grid-cols-[1.05fr_.95fr_1fr_1fr_1.15fr] sm:gap-2">
+                        <FareInfoCell label="Fares"><span className="inline-flex rounded-lg bg-orange-500 px-2.5 py-1.5 text-[10px] font-extrabold text-white">{summary.fareType || "Regular Fare"}</span><p className="mt-2 font-semibold text-slate-600">{fareInfo.cabin}</p></FareInfoCell>
+                        <FareInfoCell label="Fare Rules"><p className={`font-bold ${summary.refundability === "Non-refundable" ? "text-amber-700" : "text-emerald-700"}`}>{summary.refundability || "Airline rules apply"}</p><button type="button" disabled={Boolean(props.loadingFareId) || !resultFlightId} onClick={() => props.onSelect(flight, index)} className="mt-2 inline-flex items-center gap-1 font-bold text-[#07568b] hover:text-[#087fbe]">View fare options <ChevronRight className="size-3.5" /></button></FareInfoCell>
+                        <FareInfoCell label="Baggage"><p className="font-semibold text-slate-700">Check-in: {summary.checkInBaggage || "Airline policy"}</p><p className="mt-1 text-slate-500">Cabin: {summary.cabinBaggage || "Airline policy"}</p>{fareInfo.seats && <p className="mt-1 font-bold text-[#0d6095]">Seats left: {fareInfo.seats}</p>}</FareInfoCell>
+                        <FareInfoCell label="Meal & Seat"><p className="font-semibold text-slate-700">Meal – <span className={fareInfo.meal === "Paid" ? "text-rose-500" : "text-[#0d6095]"}>{fareInfo.meal}</span></p><p className="mt-1 font-semibold text-slate-700">Seat – <span className={fareInfo.seat === "Paid" || fareInfo.seat === "Paid selection" ? "text-rose-500" : "text-[#0d6095]"}>{fareInfo.seat}</span></p></FareInfoCell>
+                        <FareInfoCell label="Price / Actions" right>{fareInfo.incentive && <p className="text-[10px] text-slate-500">Incentive {formatMoney(Number(fareInfo.incentive))}</p>}{fareInfo.netFare && <p className="mt-1 text-[10px] text-slate-500">Net <b className="text-emerald-600">{formatMoney(Number(fareInfo.netFare))}</b></p>}<p className="mt-1 text-lg font-extrabold text-[#30343a]">{summary.price ? formatMoney(Number(summary.price)) : "Load fares"}</p><button type="button" disabled={Boolean(props.loadingFareId) || !resultFlightId} onClick={() => props.onSelect(flight, index)} className="mt-2 rounded-lg bg-orange-500 px-4 py-2 text-[11px] font-extrabold text-white transition hover:bg-orange-600 disabled:opacity-60">View fare options</button></FareInfoCell>
                       </div>
                     </div>
+                    <FlightItineraryDetails flight={flight} />
                   </div>
                 </details>
               </article>;
@@ -1187,12 +1497,117 @@ function FlightResultsWorkspace(props: FlightResultsWorkspaceProps) {
   );
 }
 
+function FareInfoCell({ label, right = false, children }: { label: string; right?: boolean; children: ReactNode }) {
+  return <div className={`${right ? "sm:text-right" : ""}`}><p className="mb-2 text-[9px] font-extrabold uppercase tracking-wider text-slate-400 sm:hidden">{label}</p>{children}</div>;
+}
+
+function readableLabel(key: string) {
+  return key.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/[_-]+/g, " ").replace(/^./, (letter) => letter.toUpperCase());
+}
+
+function ReadableProviderValue({ value, depth = 0 }: { value: unknown; depth?: number }) {
+  if (value === null || value === undefined || value === "") return <span className="text-slate-400">Not provided</span>;
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+    return <span className="whitespace-pre-wrap">{typeof value === "boolean" ? (value ? "Yes" : "No") : String(value)}</span>;
+  }
+  if (Array.isArray(value)) {
+    if (!value.length) return <span className="text-slate-400">No entries returned</span>;
+    return <ul className="space-y-2">{value.map((item, index) => <li key={index} className="rounded-lg border border-slate-100 bg-white p-2"><ReadableProviderValue value={item} depth={depth + 1} /></li>)}</ul>;
+  }
+  const record = asRecord(value);
+  if (!record) return <span>{String(value)}</span>;
+  const entries = Object.entries(record).filter(([key, item]) => !["success", "refID", "ref_id", "flightID", "flight_id"].includes(key) && item !== null && item !== "");
+  if (!entries.length) return <span className="text-slate-400">No detailed text returned</span>;
+  return (
+    <dl className={`${depth ? "space-y-2" : "grid gap-3 sm:grid-cols-2"}`}>
+      {entries.map(([key, item]) => (
+        <div key={key} className="rounded-lg bg-slate-50 p-3">
+          <dt className="text-[10px] font-extrabold uppercase tracking-wide text-[#0d6095]">{readableLabel(key)}</dt>
+          <dd className="mt-1 text-xs leading-5 text-slate-600"><ReadableProviderValue value={item} depth={depth + 1} /></dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+function FareRulesContent({ rules }: { rules: JsonRecord }) {
+  const directRules = rules.rules;
+  const fareRule = rules.farerule ?? rules.fareRule;
+  const policy = rules.policy;
+  const hasNamedSections = directRules !== undefined || fareRule !== undefined || policy !== undefined;
+  return (
+    <div className="mt-4 space-y-4 rounded-xl bg-slate-50 p-4">
+      {directRules !== undefined && <section><h4 className="mb-2 text-xs font-extrabold text-[#061f3b]">Provider rules</h4><ReadableProviderValue value={directRules} /></section>}
+      {fareRule !== undefined && <section><h4 className="mb-2 text-xs font-extrabold text-[#061f3b]">Fare conditions</h4><ReadableProviderValue value={fareRule} /></section>}
+      {policy !== undefined && <section><h4 className="mb-2 text-xs font-extrabold text-[#061f3b]">Cancellation, reissue and no-show policy</h4><ReadableProviderValue value={policy} /></section>}
+      {!hasNamedSections && <ReadableProviderValue value={rules} />}
+    </div>
+  );
+}
+
+function SeatDetailsContent({ details }: { details: JsonRecord }) {
+  const nestedResult = asRecord(details.result);
+  const seats = details.seats ?? nestedResult?.seats;
+  const seatList = Array.isArray(seats) ? seats : null;
+  return (
+    <div className="mt-4 rounded-xl border border-[#087fbe]/15 bg-white p-4">
+      <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#087fbe]">Provider seat response</p>
+      {seatList?.length === 0 ? (
+        <p className="mt-2 text-xs leading-5 text-slate-500">No selectable seats were returned for this fare. Seat assignment may be completed by the airline later.</p>
+      ) : seats !== undefined ? (
+        <div className="mt-3 max-h-72 overflow-auto"><ReadableProviderValue value={seats} /></div>
+      ) : (
+        <p className="mt-2 text-xs leading-5 text-slate-500">The provider completed the check but did not include a seat list.</p>
+      )}
+    </div>
+  );
+}
+
 function DateArrow({ direction, disabled, onClick }: { direction: "previous" | "next"; disabled: boolean; onClick: () => void }) {
   return <button type="button" disabled={disabled} onClick={onClick} aria-label={`${direction} date`} className="grid size-10 shrink-0 place-items-center rounded-lg border border-[#0b5588] text-[#0b5588] disabled:opacity-50">{direction === "previous" ? <ChevronLeft className="size-5" /> : <ChevronRight className="size-5" />}</button>;
 }
 
 function FlightTime({ time, code, place, date, terminal, right = false }: { time: string; code: string; place: string; date: string; terminal?: string; right?: boolean }) {
   return <div className={right ? "text-right" : ""}><p className="text-sm font-extrabold sm:text-base">{right ? `${time} ${code}` : `${code} ${time}`}</p><p className="mt-1 truncate text-[9px] font-bold text-slate-600">{place}</p><p className="mt-1 text-[9px] text-slate-400">{date}</p>{terminal && <p className="mt-1 text-[9px] font-extrabold text-[#0d6095]">{terminal}</p>}</div>;
+}
+
+function FlightItineraryDetails({ flight }: { flight: JsonRecord }) {
+  const directions = (["Onward", "Return"] as const)
+    .map((label) => ({ label, ...directionDetails(flight, label) }))
+    .filter(({ segments }) => segments.length > 0);
+  const displayedDirections = directions.length ? directions : [{ label: "Onward" as const, record: null, segments: [flight] }];
+  return (
+    <div className="space-y-4">
+      {displayedDirections.map(({ label, record, segments }) => {
+        const first = getFlightSummary(segments[0], 0);
+        const last = getFlightSummary(segments.at(-1) || segments[0], segments.length - 1);
+        const duration = formatDuration(stringValue(record, ["durTotal"], ""));
+        return (
+          <section key={label} className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+            <header className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 bg-slate-50 px-4 py-3">
+              <div><p className="text-[9px] font-extrabold uppercase tracking-wider text-[#087fbe]">{label === "Onward" ? "Outbound journey" : "Return journey"}</p><h4 className="mt-1 text-sm font-extrabold text-[#17293b]">{first.from} <ArrowRight className="mx-1 inline size-4 text-orange-500" /> {last.to}</h4></div>
+              <p className="text-[10px] font-bold text-slate-500">{duration || `${segments.length} flight segment${segments.length === 1 ? "" : "s"}`}</p>
+            </header>
+            <div className="divide-y divide-slate-100">
+              {segments.map((segment, index) => {
+                const segmentSummary = getFlightSummary(segment, index);
+                return (
+                  <div key={`${segmentSummary.flightNumber}-${index}`} className="grid gap-4 p-4 md:grid-cols-[145px_1fr] md:items-center">
+                    <div className="flex items-center gap-3 md:border-r md:border-slate-100"><span className="grid size-10 shrink-0 place-items-center rounded-xl bg-orange-50 text-orange-500"><Plane className="size-5 -rotate-12" /></span><div className="min-w-0"><p className="truncate text-xs font-bold text-[#17293b]">{segmentSummary.airline}</p><p className="text-[10px] text-slate-500">{segmentSummary.flightNumber}</p>{segments.length > 1 && <p className="mt-0.5 text-[9px] font-bold text-[#087fbe]">Segment {index + 1} of {segments.length}</p>}</div></div>
+                    <div className="grid min-w-0 grid-cols-[1fr_90px_1fr] items-center gap-2 sm:gap-5">
+                      <FlightTime time={segmentSummary.departure} code={segmentSummary.fromCode} place={segmentSummary.from} date={segmentSummary.departureDate} terminal={segmentSummary.departureTerminal} />
+                      <div className="text-center"><div className="flex items-center"><span className="size-2 rounded-full bg-slate-400" /><span className="h-px flex-1 border-t border-dashed border-slate-300" /><Plane className="size-5 rotate-90 text-slate-400" /></div><p className="mt-2 text-[9px] font-bold text-slate-500">{segmentSummary.duration || "Flight"}</p></div>
+                      <FlightTime time={segmentSummary.arrival} code={segmentSummary.toCode} place={segmentSummary.to} date={segmentSummary.arrivalDate} terminal={segmentSummary.arrivalTerminal} right />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        );
+      })}
+    </div>
+  );
 }
 
 function FlightFilters(props: FlightResultsWorkspaceProps) {
@@ -1237,12 +1652,12 @@ function AirportField({ label, value, icon, onChange }: { label: string; value: 
         airport.toLowerCase().includes(normalizedQuery);
     })
     .slice(0, 8);
-  const { data: airportResponse } = useAirportsQuery(
+  const { data: airportResponse, isError: airportLookupFailed } = useAirportsQuery(
     { search: debouncedQuery, page: 1, page_size: 8 },
     { skip: !open || debouncedQuery.length < 2 },
   );
-  const remoteSuggestions = airportResponse?.data.map((airport) => [airport.airport_code, airport.airport_city, airport.airport_name] as [string, string, string]);
-  const suggestions = open && normalizedQuery.length >= 2 && remoteSuggestions
+  const remoteSuggestions = airportResponse?.data.map((airport) => [airport.airport_code, airport.airport_city, airport.display_name || airport.airport_name] as [string, string, string]);
+  const suggestions = open && normalizedQuery.length >= 2 && remoteSuggestions && !airportLookupFailed
     ? remoteSuggestions
     : fallbackSuggestions;
 
@@ -1298,6 +1713,7 @@ function AirportField({ label, value, icon, onChange }: { label: string; value: 
 
       {open && (
         <div id={listId} role="listbox" className="absolute inset-x-0 top-[calc(100%+.45rem)] z-50 max-h-64 overflow-y-auto sm:max-h-80 rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_22px_55px_rgba(6,31,59,.18)]">
+          {airportLookupFailed && <p role="alert" className="m-1 mb-2 rounded-lg bg-amber-50 px-3 py-2 text-[10px] font-semibold leading-4 text-amber-800">Live airport lookup failed. Showing saved airports.</p>}
           {suggestions.length ? suggestions.map(([code, city, airport]) => (
             <button
               key={code}
@@ -1369,7 +1785,7 @@ function PassengerCard({ passenger, index, international, update }: { passenger:
         <SelectField label="Title" value={passenger.title} onChange={(value) => update(index, "title", value)} options={[["Mr", "Mr"], ["Ms", "Ms"], ["Mrs", "Mrs"], ["Master", "Master"]]} />
         <InputField label="First name" value={passenger.first_name} onChange={(value) => update(index, "first_name", value)} />
         <InputField label="Last name" value={passenger.last_name} onChange={(value) => update(index, "last_name", value)} />
-        <SelectField label="Gender" value={passenger.gender} onChange={(value) => update(index, "gender", value)} options={[["M", "Male"], ["F", "Female"], ["O", "Other"]]} />
+        <SelectField label="Gender" value={passenger.gender} onChange={(value) => update(index, "gender", value)} options={[["male", "Male"], ["female", "Female"], ["other", "Other"]]} />
         <InputField label="Date of birth" type="date" value={passenger.date_of_birth} onChange={(value) => update(index, "date_of_birth", value)} />
         {international && (
           <>

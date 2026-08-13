@@ -4,6 +4,26 @@ const BASE_URL = 'https://bhli-backend.onrender.com';
 let apiRequestSequence = 0;
 let refreshRequest: Promise<{ access: string; refresh?: string }> | null = null;
 
+const normalizeLogKey = (key: string) => key.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+const SENSITIVE_LOG_KEYS = new Set([
+  'authorization', 'password', 'token', 'access', 'refresh', 'apikey', 'api_key',
+  'passengers', 'passport_number', 'passport_issue_date', 'passport_expiry_date',
+  'date_of_birth', 'first_pax_pan_no', 'pan', 'gst', 'gstno', 'mobile', 'email',
+  'pnr', 'ticket_number', 'booking_response_payload', 'request_payload', 'response_payload',
+  'first_name', 'last_name', 'username', 'phone', 'address', 'client_id',
+].map(normalizeLogKey));
+
+function redactForLog(value: unknown, depth = 0): unknown {
+  if (depth > 5 || value === null || value === undefined) return value;
+  if (Array.isArray(value)) return value.map((item) => redactForLog(item, depth + 1));
+  if (typeof value !== 'object') return value;
+  return Object.fromEntries(Object.entries(value as Record<string, unknown>).map(([key, item]) => [
+    key,
+    SENSITIVE_LOG_KEYS.has(normalizeLogKey(key)) ? '[REDACTED]' : redactForLog(item, depth + 1),
+  ]));
+}
+
 export const API_ERROR_EVENT = 'bhli:api-error';
 
 export interface ApiErrorEventDetail {
@@ -104,20 +124,26 @@ apiClient.interceptors.request.use(
 
     const fullUrl = config.url?.startsWith('http') ? config.url : `${config.baseURL || ''}${config.url || ''}`;
     const requestNumber = ++apiRequestSequence;
-    console.log(`[API ${requestNumber}] ${config.method?.toUpperCase()} ${fullUrl}`);
-    console.log(
-      `🚀 [API Request] ${config.method?.toUpperCase()} ${fullUrl}`,
-      {
-        params: config.params,
-        data: config.data,
-      }
-    );
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[API ${requestNumber}] ${config.method?.toUpperCase()} ${fullUrl}`);
+      console.log(
+        `🚀 [API Request] ${config.method?.toUpperCase()} ${fullUrl}`,
+        {
+          params: redactForLog(config.params),
+          data: redactForLog(config.data),
+        }
+      );
+    }
 
     if (typeof window !== 'undefined') window.dispatchEvent(new Event('bhli:network-start'));
     return config;
   },
   (error) => {
-    console.warn('[API Request Error]', error);
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn('[API Request Error]', {
+        message: error instanceof Error ? error.message : 'Request configuration failed.',
+      });
+    }
     showApiError(error);
     return Promise.reject(error);
   }
@@ -127,10 +153,12 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => {
     const fullUrl = `${response.config.baseURL || ''}${response.config.url || ''}`;
-    console.log(
-      `✅ [API Response] ${response.config.method?.toUpperCase()} ${fullUrl} [Status: ${response.status}]`,
-      response.data
-    );
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(
+        `✅ [API Response] ${response.config.method?.toUpperCase()} ${fullUrl} [Status: ${response.status}]`,
+        redactForLog(response.data)
+      );
+    }
     if (response.data && typeof response.data === 'object' && response.data.success === false) {
       showApiError({ response: { status: response.status, data: response.data } });
     }
@@ -166,7 +194,7 @@ apiClient.interceptors.response.use(
     if (!isEmptySearchPage && !isHandledServiceFailure && !isInactiveLogoutSession && !isRejectedRefreshToken) {
       console.warn(
       `❌ [API Response Error] ${error.config?.method?.toUpperCase()} ${fullUrl} ${status}`,
-      error.response?.data || error.message
+      redactForLog(error.response?.data) || error.message
     );
     }
     
@@ -254,6 +282,7 @@ export function getErrorMessage(error: unknown): string {
   if (typeof error === 'string') return error;
 
   const apiError = error as {
+    code?: unknown;
     errors?: unknown;
     response?: { data?: unknown };
     message?: unknown;
@@ -290,6 +319,9 @@ export function getErrorMessage(error: unknown): string {
 
   // Handle standard Error object
   if (typeof apiError.message === 'string') {
+    if (apiError.code === 'ECONNABORTED' || /timeout/i.test(apiError.message)) {
+      return 'The request timed out. Please retry; if it happens again, run a new search.';
+    }
     if (apiError.message.includes('Network Error')) {
       return 'Network connection lost. Please check your internet connection or server status.';
     }
