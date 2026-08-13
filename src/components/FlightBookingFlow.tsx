@@ -29,6 +29,7 @@ import {
   Share2,
   ShieldCheck,
   SlidersHorizontal,
+  Sparkles,
   Sunrise,
   Sunset,
   UserRound,
@@ -142,6 +143,23 @@ function nestedLabel(value: unknown) {
   return stringValue(item, ["name", "city", "code", "airportCode", "airport"], "");
 }
 
+function terminalValue(segment: JsonRecord, direction: "departure" | "arrival") {
+  const directKeys = direction === "departure"
+    ? ["depTerminal", "depTerm", "departureTerminal", "departure_terminal", "originTerminal", "fromTerminal", "terminalFrom"]
+    : ["arrTerminal", "arrTerm", "arrivalTerminal", "arrival_terminal", "destinationTerminal", "toTerminal", "terminalTo"];
+  const nestedKeys = direction === "departure"
+    ? ["departureAirport", "departure_airport", "departure", "origin", "from", "depAirport"]
+    : ["arrivalAirport", "arrival_airport", "arrival", "destination", "to", "arrAirport"];
+  const direct = stringValue(segment, directKeys, "");
+  if (direct) return /^terminal\b/i.test(direct) ? direct : `Terminal ${direct}`;
+  for (const key of nestedKeys) {
+    const nested = asRecord(segment[key]);
+    const value = stringValue(nested, ["terminal", "terminalName", "terminal_name", "terminalCode", "terminal_code"], "");
+    if (value) return /^terminal\b/i.test(value) ? value : `Terminal ${value}`;
+  }
+  return "";
+}
+
 function formatProviderDate(value: string) {
   if (!/^\d{12}$/.test(value)) return { time: value || "Time on selection", date: "" };
   const year = value.slice(0, 4);
@@ -187,6 +205,8 @@ function getFlightSummary(flight: JsonRecord, index: number) {
   const toCity = stringValue(last, ["arrCName", "arrCity", "arrivalAirport"], "Arrival");
   const departureInfo = formatProviderDate(stringValue(first, ["depDate", "departureTime", "depTime", "departure"], ""));
   const arrivalInfo = formatProviderDate(stringValue(last, ["arrDate", "arrivalTime", "arrTime", "arrival"], ""));
+  const departureTerminal = terminalValue(first, "departure");
+  const arrivalTerminal = terminalValue(last, "arrival");
   const stopCount = stringValue(onward, ["stops"], String(Math.max(segments.length - 1, 0)));
   const stopLabel = stopCount === "0" ? "Non-stop" : `${stopCount} stop${stopCount === "1" ? "" : "s"}`;
   const totalDuration = formatDuration(stringValue(onward, ["durTotal"], stringValue(first, ["duration"], "")));
@@ -205,6 +225,8 @@ function getFlightSummary(flight: JsonRecord, index: number) {
     departureDate: departureInfo.date,
     arrival: arrivalInfo.time,
     arrivalDate: arrivalInfo.date,
+    departureTerminal,
+    arrivalTerminal,
     duration: [totalDuration, stopLabel].filter(Boolean).join(" · "),
     stops: stopCount,
     price,
@@ -1105,23 +1127,56 @@ function FlightResultsWorkspace(props: FlightResultsWorkspaceProps) {
           <div className="mt-4 space-y-3">
             {props.rows.map(({ flight, index, summary }, visibleIndex) => {
               const resultFlightId = flightIdentity(flight, props.fallbackFlightId);
-              return <article key={`${resultFlightId}-${index}`} className="relative rounded-lg border border-transparent bg-white shadow-[0_8px_22px_rgba(15,35,55,.09)] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#13a5d8]/25 hover:shadow-[0_14px_34px_rgba(6,31,59,.13)]">
-                {visibleIndex === 0 && <span className="absolute -top-3 left-4 rounded-full border border-emerald-500 bg-white px-2 py-1 text-[9px] font-bold text-emerald-600">Cheapest</span>}
-                <span className="absolute -top-3 right-4 rounded-full bg-[#0d6095] px-3 py-1 text-[9px] font-bold text-white">Sale</span>
-                <div className="grid gap-4 p-4 sm:grid-cols-[1fr_auto] sm:items-center sm:p-5">
-                  <div className="grid min-w-0 gap-4 md:grid-cols-[190px_1fr] md:items-center">
-                    <div>
-                      <div className="flex items-center gap-3"><span className="grid size-11 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-[#0875b7] to-[#13a5d8] text-white shadow-sm"><Plane className="size-5" /></span><div className="min-w-0"><p className="truncate font-bold text-[#061f3b]">{summary.airline}</p><p className="mt-1 text-[10px] font-semibold text-slate-400">{summary.flightNumber}</p></div></div>
-                      <details className="group mt-3"><summary className="flex cursor-pointer list-none items-center gap-1 text-[11px] font-bold text-[#07568b]">Flight details<ChevronDown className="size-3.5 transition-transform duration-300 group-open:rotate-180" /></summary><div className="mt-3 flex flex-wrap gap-1.5">{summary.fareType && <span className="rounded-full bg-[#edf8fc] px-2.5 py-1 text-[9px] font-bold text-[#087fbe]">{summary.fareType}</span>}{summary.checkInBaggage && <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[9px] font-bold text-slate-500">Check-in {summary.checkInBaggage}</span>}{summary.refundability && <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[9px] font-bold text-emerald-700">{summary.refundability}</span>}</div></details>
+              const stopLabel = summary.stops === "0" ? "Non Stop" : `${summary.stops} Stop${summary.stops === "1" ? "" : "s"}`;
+              return <article key={`${resultFlightId}-${index}`} className="relative overflow-visible rounded-2xl border border-[#0d6095]/20 bg-white shadow-[0_10px_30px_rgba(15,35,55,.10)] transition-all duration-300 hover:border-[#0d6095]/45 hover:shadow-[0_16px_38px_rgba(6,31,59,.14)]">
+                {visibleIndex === 0 && <span className="absolute -top-3 left-5 z-10 inline-flex items-center gap-1 rounded-full border border-emerald-500 bg-white px-2.5 py-1 text-[10px] font-extrabold text-emerald-600 shadow-sm"><Sparkles className="size-3" />Cheapest</span>}
+                <span className="absolute -top-3 right-5 z-10 rounded-full bg-[#0d6095] px-3.5 py-1 text-[10px] font-extrabold text-white shadow-sm">Sale</span>
+
+                <div className="grid gap-4 p-4 pt-6 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:p-5 sm:pt-6">
+                  <div className="grid min-w-0 gap-5 md:grid-cols-[170px_minmax(0,1fr)] md:items-center">
+                    <div className="flex items-center gap-3">
+                      <span className="grid size-12 shrink-0 place-items-center rounded-xl border border-orange-100 bg-gradient-to-br from-orange-50 to-white text-orange-500 shadow-sm"><Plane className="size-6 -rotate-12" /></span>
+                      <div className="min-w-0"><p className="truncate text-base font-bold text-[#17293b]">{summary.airline}</p><p className="mt-0.5 text-xs font-medium text-slate-500">{summary.flightNumber}</p></div>
                     </div>
-                    <div className="grid min-w-0 grid-cols-[1fr_70px_1fr] items-center gap-2 sm:gap-4">
+
+                    <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_105px_minmax(0,1fr)] items-center gap-2 sm:gap-4">
                       <FlightTime time={summary.departure} code={summary.fromCode} place={summary.from} date={summary.departureDate} />
-                      <div className="min-w-0 text-center"><p className="text-[9px] font-bold text-slate-500">{summary.duration || "Flight"}</p><div className="mt-1 h-px bg-[#13a5d8]" /></div>
+                      <div className="min-w-0 text-center">
+                        <p className="text-xs font-semibold text-slate-600">{summary.duration?.split(" Â· ")[0] || summary.duration || "Flight"}</p>
+                        <div className="mx-auto mt-1 h-0.5 w-16 rounded-full bg-gradient-to-r from-transparent via-amber-400 to-transparent" />
+                        <p className="mt-1 text-[11px] font-medium text-slate-600">{stopLabel}</p>
+                      </div>
                       <FlightTime time={summary.arrival} code={summary.toCode} place={summary.to} date={summary.arrivalDate} right />
                     </div>
                   </div>
-                  <div className="border-t border-slate-100 pt-3 sm:min-w-36 sm:border-t-0 sm:pt-0 sm:text-right">{summary.price && <p className="text-xl font-extrabold">{formatMoney(Number(summary.price))}</p>}<p className="mt-1 text-[9px] text-slate-400">per traveller</p><button type="button" disabled={Boolean(props.loadingFareId)} onClick={() => props.onSelect(flight, index)} className="group mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#0875b7] to-[#13a5d8] px-4 py-2.5 text-xs font-bold text-white shadow-[0_7px_18px_rgba(8,126,186,.25)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_10px_24px_rgba(8,126,186,.38)] disabled:translate-y-0 disabled:opacity-60 sm:w-auto">{props.loadingFareId === resultFlightId && <LoaderCircle className="size-4 animate-spin" />}View fare<ChevronDown className="size-4 transition-transform group-hover:translate-y-0.5" /></button></div>
+
+                  <div className="flex items-center justify-between gap-4 border-t border-slate-100 pt-3 sm:min-w-40 sm:flex-col sm:items-end sm:border-t-0 sm:pt-0 sm:text-right">
+                    <div>{summary.price && <p className="text-2xl font-extrabold text-[#30343a]">{formatMoney(Number(summary.price))}</p>}<p className="mt-0.5 text-[9px] font-semibold uppercase tracking-wide text-slate-400">per traveller</p></div>
+                    <button type="button" disabled={Boolean(props.loadingFareId)} onClick={() => props.onSelect(flight, index)} className="group inline-flex min-w-32 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#ff850d] to-[#ff6f00] px-4 py-2.5 text-xs font-extrabold text-white shadow-[0_8px_20px_rgba(255,111,0,.24)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_26px_rgba(255,111,0,.34)] disabled:translate-y-0 disabled:opacity-60">{props.loadingFareId === resultFlightId && <LoaderCircle className="size-4 animate-spin" />}View Price<ChevronDown className="size-4 transition-transform group-hover:translate-y-0.5" /></button>
+                  </div>
                 </div>
+
+                <details className="group border-t border-slate-100">
+                  <summary className="flex cursor-pointer list-none items-center gap-1.5 px-5 py-3 text-xs font-extrabold text-[#07568b] transition hover:bg-sky-50/60">Flight Details<ChevronDown className="size-4 transition-transform duration-300 group-open:rotate-180" /></summary>
+                  <div className="border-t border-[#0d6095]/15 bg-[#fbfdff] p-3 sm:p-5">
+                    <div className="flex flex-wrap items-center justify-between gap-3 px-1 pb-4">
+                      <div><h3 className="text-lg font-extrabold text-[#0d466e]">{summary.from} <ArrowRight className="mx-1 inline size-5 text-orange-500" /> {summary.to}</h3><p className="mt-1 text-xs text-slate-500">{summary.departureDate}</p></div>
+                      <details className="group/rules relative"><summary className="cursor-pointer list-none rounded-lg border border-[#0d6095] px-3 py-2 text-xs font-bold text-[#0d466e] transition hover:bg-[#0d6095] hover:text-white">Fare Rule</summary><div className="absolute right-0 top-[calc(100%+6px)] z-20 w-64 rounded-xl border border-slate-200 bg-white p-4 text-left text-xs leading-5 text-slate-600 shadow-xl"><p className="font-bold text-[#0d466e]">{summary.refundability || "Fare policy"}</p><p className="mt-1">Final cancellation and change rules are verified with the airline before booking.</p></div></details>
+                    </div>
+                    <div className="grid gap-4 rounded-xl border border-slate-200 bg-white p-4 md:grid-cols-[150px_1fr] md:items-center">
+                      <div className="text-center md:border-r md:border-slate-100"><span className="mx-auto grid size-12 place-items-center rounded-xl bg-orange-50 text-orange-500"><Plane className="size-6 -rotate-12" /></span><p className="mt-2 text-sm font-bold text-[#17293b]">{summary.airline}</p><p className="text-xs text-slate-500">{summary.flightNumber}</p></div>
+                      <div className="grid min-w-0 grid-cols-[1fr_110px_1fr] items-center gap-2 sm:gap-5">
+                        <FlightTime time={summary.departure} code={summary.fromCode} place={summary.from} date={summary.departureDate} terminal={summary.departureTerminal} />
+                        <div className="text-center">
+                          <details className="group/bag"><summary className="cursor-pointer list-none rounded-lg border border-[#0d6095] px-2 py-1.5 text-[10px] font-bold text-[#0d466e]">View Baggage <ChevronDown className="inline size-3 transition group-open/bag:rotate-180" /></summary><div className="mt-2 rounded-lg bg-slate-50 p-2 text-[9px] leading-4 text-slate-600">Check-in: {summary.checkInBaggage || "Airline policy"}<br />Cabin: {summary.cabinBaggage || "Airline policy"}</div></details>
+                          <div className="mt-3 flex items-center"><span className="size-2 rounded-full bg-slate-400" /><span className="h-px flex-1 border-t border-dashed border-slate-300" /><Plane className="size-5 rotate-90 text-slate-400" /></div>
+                          <p className="mt-2 text-[10px] font-bold text-slate-500">{summary.duration || stopLabel}</p>
+                        </div>
+                        <FlightTime time={summary.arrival} code={summary.toCode} place={summary.to} date={summary.arrivalDate} terminal={summary.arrivalTerminal} right />
+                      </div>
+                    </div>
+                  </div>
+                </details>
               </article>;
             })}
             {!props.rows.length && <div className="rounded-lg bg-white p-8 text-center"><SlidersHorizontal className="mx-auto size-7 text-slate-300" /><h3 className="mt-3 text-sm font-bold">No flights match these filters</h3><button type="button" onClick={props.onReset} className="mt-3 text-xs font-bold text-[#0b5d91]">Reset all filters</button></div>}
@@ -1136,8 +1191,8 @@ function DateArrow({ direction, disabled, onClick }: { direction: "previous" | "
   return <button type="button" disabled={disabled} onClick={onClick} aria-label={`${direction} date`} className="grid size-10 shrink-0 place-items-center rounded-lg border border-[#0b5588] text-[#0b5588] disabled:opacity-50">{direction === "previous" ? <ChevronLeft className="size-5" /> : <ChevronRight className="size-5" />}</button>;
 }
 
-function FlightTime({ time, code, place, date, right = false }: { time: string; code: string; place: string; date: string; right?: boolean }) {
-  return <div className={right ? "text-right" : ""}><p className="text-sm font-extrabold sm:text-base">{right ? `${time} ${code}` : `${code} ${time}`}</p><p className="mt-1 truncate text-[9px] font-bold text-slate-600">{place}</p><p className="mt-1 text-[9px] text-slate-400">{date}</p></div>;
+function FlightTime({ time, code, place, date, terminal, right = false }: { time: string; code: string; place: string; date: string; terminal?: string; right?: boolean }) {
+  return <div className={right ? "text-right" : ""}><p className="text-sm font-extrabold sm:text-base">{right ? `${time} ${code}` : `${code} ${time}`}</p><p className="mt-1 truncate text-[9px] font-bold text-slate-600">{place}</p><p className="mt-1 text-[9px] text-slate-400">{date}</p>{terminal && <p className="mt-1 text-[9px] font-extrabold text-[#0d6095]">{terminal}</p>}</div>;
 }
 
 function FlightFilters(props: FlightResultsWorkspaceProps) {
