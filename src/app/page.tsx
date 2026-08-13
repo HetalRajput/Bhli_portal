@@ -1,4 +1,4 @@
-import HeroBackground from "@/components/HeroBackground"; import BookingSearch from "@/components/HomeBookingSearchWithImpact"; import UpcomingEventCard from "@/components/UpcomingEventCard"; import EventGalleryCarousel from "@/components/EventGalleryCarousel"; import Link from "next/link"; import { ArrowRight, Building2, CheckCircle2, Plane, ShieldCheck, Sparkles, Star } from "lucide-react";
+import HeroBackground from "@/components/HeroBackground"; import BookingSearch from "@/components/HomeBookingSearchWithImpact"; import UpcomingEventCard from "@/components/UpcomingEventCard"; import EventGalleryCarousel from "@/components/EventGalleryCarousel"; import Link from "next/link"; import { ArrowRight, Building2, Bus, CalendarDays, Car, CheckCircle2, Coins, Compass, Map, Plane, ShieldCheck, Ship, Sparkles, Star, Ticket, Train, UtensilsCrossed } from "lucide-react";
 import { cmsService } from "@/lib/api/cms";
 import type { Banner, ChannelPartner } from "@/lib/api/cms";
 import HomeFaqSection, { type HomeFaq } from "@/components/HomeFaqSection";
@@ -166,11 +166,19 @@ export default async function Home() {
   }
 
   const getIcon = (slug: string, serviceType?: string) => {
-    const normalized = (slug || "").toLowerCase();
-    const type = (serviceType || "").toLowerCase();
-    if (normalized.includes("hotel") || type.includes("hotel")) return Building2;
-    if (normalized.includes("flight") || type.includes("flight")) return Plane;
-    if (normalized.includes("holiday") || type.includes("holiday")) return Sparkles;
+    const identity = `${slug || ""} ${serviceType || ""}`.toLowerCase();
+    if (identity.includes("flight")) return Plane;
+    if (identity.includes("train") || identity.includes("rail")) return Train;
+    if (identity.includes("bus")) return Bus;
+    if (identity.includes("taxi") || identity.includes("car") || identity.includes("transfer")) return Car;
+    if (identity.includes("cruise")) return Ship;
+    if (identity.includes("holiday") || identity.includes("package") || identity.includes("tour")) return Map;
+    if (identity.includes("visa")) return Ticket;
+    if (identity.includes("insurance")) return ShieldCheck;
+    if (identity.includes("currency") || identity.includes("forex") || identity.includes("exchange")) return Coins;
+    if (identity.includes("event")) return CalendarDays;
+    if (identity.includes("catering") || identity.includes("food")) return UtensilsCrossed;
+    if (identity.includes("consultancy") || identity.includes("consulting")) return Compass;
     return Building2;
   };
 

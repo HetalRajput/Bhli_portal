@@ -15,6 +15,8 @@ import {
   ChevronRight,
   Download,
   Sparkles,
+  SlidersHorizontal,
+  Star,
   X
 } from "lucide-react";
 import { cmsService } from "@/lib/api/cms";
@@ -421,20 +423,30 @@ function HotelReservationsContent() {
       </section>
 
       {/* Filter and Search Bar */}
-      <section className="relative z-20 mx-auto max-w-6xl px-5 pt-8 lg:px-8">
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_8px_30px_rgba(15,45,65,.06)] sm:p-5">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <h2 className="text-base font-bold text-[#102f47]">Search hotels</h2>
-              <p className="mt-0.5 text-xs text-slate-500">Search and refine available properties</p>
+      <section className="relative z-20 mx-auto max-w-7xl px-5 pt-8 lg:px-8">
+        <div className="relative rounded-[2rem] border border-[#087fbe]/15 bg-white p-4 shadow-[0_22px_65px_rgba(6,43,80,.10)] sm:p-6">
+          <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-[#13a5d8] to-transparent" />
+          <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-[#062b50] to-[#087dbd] text-white shadow-lg shadow-[#087dbd]/20">
+                <SlidersHorizontal className="size-5" />
+              </span>
+              <div>
+                <p className="text-[10px] font-extrabold uppercase tracking-[.2em] text-[#087dbd]">Find your stay</p>
+                <h2 className="mt-1 font-serif text-2xl font-semibold text-[#102f47]">Search and refine hotels</h2>
+                <p className="mt-1 text-xs text-slate-500">Search by property or destination, then narrow the results.</p>
+              </div>
             </div>
-            <p className="rounded-full bg-slate-50 px-3 py-1.5 text-[11px] font-semibold text-slate-500">
-              <span className="font-bold text-[#087dbd]">{totalItems.toLocaleString("en-IN")}</span>{" "}
-              {totalItems === 1 ? "property" : "properties"}
-            </p>
+            <div className="flex items-center gap-2 rounded-2xl border border-[#087fbe]/10 bg-[#f3f9fc] px-4 py-2.5">
+              <Building2 className="size-4 text-[#087dbd]" />
+              <p className="text-xs font-semibold text-slate-500">
+                <span className="font-extrabold text-[#062b50]">{totalItems.toLocaleString("en-IN")}</span>{" "}
+                {totalItems === 1 ? "property available" : "properties available"}
+              </p>
+            </div>
           </div>
 
-          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-12 lg:items-end">
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-12 lg:items-stretch">
             <form
               onSubmit={(event) => {
                 event.preventDefault();
@@ -444,11 +456,10 @@ function HotelReservationsContent() {
               }}
               className="min-w-0 md:col-span-2 lg:col-span-4"
             >
-              <label htmlFor="hotel-search" className="mb-1.5 block text-[10px] font-bold uppercase tracking-[.12em] text-slate-500">
-                Hotel or destination
-              </label>
-              <div className="relative z-30">
-                <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+              <div className="relative z-30 h-full rounded-2xl border border-[#087fbe]/15 bg-gradient-to-br from-[#f5fbfe] to-white px-4 py-2.5 transition focus-within:border-[#13a5d8] focus-within:bg-white focus-within:shadow-[0_0_0_4px_rgba(19,165,216,.10)]">
+                <label htmlFor="hotel-search" className="flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-[.16em] text-[#087dbd]">
+                  <Search className="size-3" /> Hotel or destination
+                </label>
                 <input
                   id="hotel-search"
                   type="search"
@@ -466,7 +477,7 @@ function HotelReservationsContent() {
                   role="combobox"
                   aria-expanded={showSuggestions}
                   aria-controls="hotel-search-suggestions"
-                  className="h-10 w-full rounded-lg border border-slate-200 bg-white pl-10 pr-9 text-sm font-medium text-[#122b42] outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-[#087dbd] focus:ring-3 focus:ring-[#087dbd]/10"
+                  className="mt-1 h-7 w-full bg-transparent pr-8 text-sm font-bold text-[#122b42] outline-none placeholder:font-medium placeholder:text-slate-400"
                 />
                 {searchInput && (
                   <button
@@ -477,14 +488,14 @@ function HotelReservationsContent() {
                       setCurrentPage(1);
                     }}
                     aria-label="Clear hotel search"
-                    className="absolute right-2.5 top-1/2 grid size-6 -translate-y-1/2 place-items-center rounded-md text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                    className="absolute bottom-2.5 right-3 grid size-7 place-items-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
                   >
                     <X className="size-3.5" />
                   </button>
                 )}
 
                 {showSuggestions && (
-                  <div id="hotel-search-suggestions" role="listbox" className="absolute left-0 right-0 top-[calc(100%+6px)] z-50 max-h-80 overflow-y-auto rounded-xl border border-slate-200 bg-white p-1.5 shadow-[0_16px_40px_rgba(15,45,65,.14)]">
+                  <div id="hotel-search-suggestions" role="listbox" className="absolute left-0 right-0 top-[calc(100%+8px)] z-50 max-h-80 overflow-y-auto rounded-2xl border border-[#087fbe]/15 bg-white p-2 shadow-[0_22px_55px_rgba(6,43,80,.18)]">
                     {spellingSuggestions.length > 0 && (
                       <div className="mb-1 rounded-lg bg-amber-50 p-1.5">
                         <p className="px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-amber-700">Did you mean?</p>
@@ -539,15 +550,15 @@ function HotelReservationsContent() {
               </div>
             </form>
 
-            <label className="block min-w-0 lg:col-span-2">
-              <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-[.12em] text-slate-500">City</span>
+            <label className="flex min-w-0 flex-col justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2.5 transition hover:border-[#087fbe]/35 focus-within:border-[#13a5d8] focus-within:shadow-[0_0_0_4px_rgba(19,165,216,.08)] lg:col-span-2">
+              <span className="flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-[.16em] text-slate-500"><Building2 className="size-3 text-[#087dbd]" />City</span>
               <select
                 value={cityFilter}
                 onChange={(event) => {
                   setCityFilter(event.target.value);
                   setCurrentPage(1);
                 }}
-                className="h-10 w-full cursor-pointer rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-[#122b42] outline-none transition hover:border-slate-300 focus:border-[#087dbd] focus:ring-3 focus:ring-[#087dbd]/10"
+                className="mt-1 h-7 w-full cursor-pointer bg-transparent text-sm font-bold text-[#122b42] outline-none"
               >
                 <option value="">All cities</option>
                 {cityFilter && !cityOptions.includes(cityFilter) && <option value={cityFilter}>{cityFilter}</option>}
@@ -555,15 +566,15 @@ function HotelReservationsContent() {
               </select>
             </label>
 
-            <label className="block min-w-0 lg:col-span-2">
-              <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-[.12em] text-slate-500">Location</span>
+            <label className="flex min-w-0 flex-col justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2.5 transition hover:border-[#087fbe]/35 focus-within:border-[#13a5d8] focus-within:shadow-[0_0_0_4px_rgba(19,165,216,.08)] lg:col-span-2">
+              <span className="flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-[.16em] text-slate-500"><MapPin className="size-3 text-[#087dbd]" />Location</span>
               <select
                 value={locationFilter}
                 onChange={(event) => {
                   setLocationFilter(event.target.value);
                   setCurrentPage(1);
                 }}
-                className="h-10 w-full cursor-pointer rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-[#122b42] outline-none transition hover:border-slate-300 focus:border-[#087dbd] focus:ring-3 focus:ring-[#087dbd]/10"
+                className="mt-1 h-7 w-full cursor-pointer bg-transparent text-sm font-bold text-[#122b42] outline-none"
               >
                 <option value="">All locations</option>
                 {locationFilter && !locationOptions.includes(locationFilter) && <option value={locationFilter}>{locationFilter}</option>}
@@ -571,15 +582,15 @@ function HotelReservationsContent() {
               </select>
             </label>
 
-            <label className="block min-w-0 lg:col-span-2">
-              <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-[.12em] text-slate-500">Rating</span>
+            <label className="flex min-w-0 flex-col justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2.5 transition hover:border-[#087fbe]/35 focus-within:border-[#13a5d8] focus-within:shadow-[0_0_0_4px_rgba(19,165,216,.08)] lg:col-span-2">
+              <span className="flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-[.16em] text-slate-500"><Star className="size-3 text-amber-500" />Rating</span>
               <select
                 value={ratingFilter}
                 onChange={(event) => {
                   setRatingFilter(event.target.value);
                   setCurrentPage(1);
                 }}
-                className="h-10 w-full cursor-pointer rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-[#122b42] outline-none transition hover:border-slate-300 focus:border-[#087dbd] focus:ring-3 focus:ring-[#087dbd]/10"
+                className="mt-1 h-7 w-full cursor-pointer bg-transparent text-sm font-bold text-[#122b42] outline-none"
               >
                 <option value="">All ratings</option>
                 {ratingFilter && !ratingOptions.includes(ratingFilter) && <option value={ratingFilter}>{ratingFilter}</option>}
@@ -591,16 +602,16 @@ function HotelReservationsContent() {
               type="button"
               onClick={exportHotels}
               disabled={filteredHotels.length === 0}
-              className="flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-[11px] font-bold uppercase tracking-wider text-[#087dbd] transition hover:border-[#087dbd]/30 hover:bg-sky-50 disabled:cursor-not-allowed disabled:opacity-40 md:col-span-2 lg:col-span-2"
+              className="group flex min-h-14 items-center justify-center gap-2 rounded-2xl border border-[#087dbd]/20 bg-[#062b50] px-4 text-[10px] font-extrabold uppercase tracking-[.14em] text-white shadow-md shadow-[#062b50]/10 transition hover:-translate-y-0.5 hover:bg-[#087dbd] hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-40 md:col-span-2 lg:col-span-2"
             >
-              <Download className="size-3.5" />
-              Export
+              <Download className="size-4 transition group-hover:-translate-y-0.5" />
+              Export results
             </button>
           </div>
 
-          <div className="mt-3 flex min-h-7 flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
+          <div className="mt-4 flex min-h-8 flex-wrap items-center gap-2 border-t border-slate-100 pt-4">
             {searchTerm && (
-              <span className="inline-flex items-center gap-1.5 rounded-md bg-sky-50 px-2.5 py-1 text-[11px] font-semibold text-[#087dbd]">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-100 bg-sky-50 px-3 py-1.5 text-[11px] font-bold text-[#087dbd]">
                 “{searchTerm}”
                 <button
                   type="button"
@@ -616,9 +627,9 @@ function HotelReservationsContent() {
                 </button>
               </span>
             )}
-            {cityFilter && <span className="rounded-md bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">{cityFilter}</span>}
-            {locationFilter && <span className="rounded-md bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">{locationFilter}</span>}
-            {ratingFilter && <span className="rounded-md bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">{ratingFilter}</span>}
+            {cityFilter && <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] font-bold text-slate-600">{cityFilter}</span>}
+            {locationFilter && <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] font-bold text-slate-600">{locationFilter}</span>}
+            {ratingFilter && <span className="rounded-full border border-amber-100 bg-amber-50 px-3 py-1.5 text-[11px] font-bold text-amber-700">{ratingFilter}</span>}
             {(searchTerm || cityFilter || locationFilter || ratingFilter) && (
               <button
                 type="button"
@@ -630,13 +641,13 @@ function HotelReservationsContent() {
                   setRatingFilter("");
                   setCurrentPage(1);
                 }}
-                className="text-[11px] font-semibold text-rose-600 transition hover:text-rose-700"
+                className="rounded-full px-2.5 py-1.5 text-[11px] font-bold text-rose-600 transition hover:bg-rose-50 hover:text-rose-700"
               >
                 Clear all
               </button>
             )}
-            <span className="ml-auto text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              {totalItems ? startIndex + 1 : 0}–{Math.min(startIndex + pageSize, totalItems)} of {totalItems.toLocaleString("en-IN")}
+            <span className="ml-auto rounded-full bg-slate-50 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              Showing {totalItems ? startIndex + 1 : 0}&ndash;{Math.min(startIndex + pageSize, totalItems)} of {totalItems.toLocaleString("en-IN")}
             </span>
           </div>
         </div>

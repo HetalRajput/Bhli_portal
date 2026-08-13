@@ -13,7 +13,6 @@ const links = [
   ["BHLI Events", "/events"],
   ["Clients", "/clients"],
   ["Channel Partners", "/channel-partners"],
-  ["Help & opportunities", "/help-centre"],
 ];
 const moreLinks = [
   ["Gallery", "/gallery"],
