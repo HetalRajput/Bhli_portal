@@ -20,6 +20,7 @@ import {
   X
 } from "lucide-react";
 import { cmsService } from "@/lib/api/cms";
+import { createXlsxBlob } from "@/lib/xlsx";
 
 interface HotelItem {
   id: number;
@@ -136,6 +137,7 @@ function HotelReservationsContent() {
   const [hotels, setHotels] = useState<HotelItem[]>([]);
   const [totalCount, setTotalCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const [usingFallback, setUsingFallback] = useState(false);
   const [availableCities, setAvailableCities] = useState<string[]>(() =>
     Array.from(new Set(fallbackHotels.map((hotel) => hotel.city).filter((value): value is string => Boolean(value)))).sort(),
@@ -339,8 +341,42 @@ function HotelReservationsContent() {
       ? hotels
       : filteredHotels.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
-  const exportHotels = () => {
-    const rows = filteredHotels.map((hotel) => [
+  const exportHotels = async () => {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      let hotelsToExport = filteredHotels;
+      if (isApiData) {
+        const allHotels: HotelItem[] = [];
+        const seen = new Set<number>();
+        const exportPageCount = Math.max(1, Math.ceil(totalItems / pageSize));
+
+        for (let page = 1; page <= exportPageCount; page += 1) {
+          const res = await cmsService.searchServiceItems("hotel-reservations", searchTerm.trim(), page, pageSize, {
+            city: cityFilter,
+            location: locationFilter,
+            rating: ratingFilter,
+          });
+          if (!res || res.success === false) throw new Error(`Could not load hotel results page ${page}. Please try the export again.`);
+          const pageHotels: HotelItem[] = Array.isArray(res?.data)
+            ? res.data
+            : Array.isArray(res?.data?.items)
+              ? res.data.items
+              : Array.isArray(res?.items)
+                ? res.items
+                : Array.isArray(res?.results)
+                  ? res.results
+                  : [];
+          pageHotels.forEach((hotel) => {
+            if (!seen.has(hotel.id)) { seen.add(hotel.id); allHotels.push(hotel); }
+          });
+        }
+        if (allHotels.length < totalItems) throw new Error("Not all filtered hotel pages could be loaded. Please try the export again.");
+        hotelsToExport = allHotels;
+      }
+
+      if (!hotelsToExport.length) throw new Error("No hotel records match the selected filters.");
+      const rows = hotelsToExport.map((hotel) => [
       hotel.title,
       hotel.city || "",
       hotel.location || "",
@@ -348,17 +384,20 @@ function HotelReservationsContent() {
       hotel.price || "",
       hotel.short_description || hotel.description || ""
     ]);
-    const escapeCell = (value: string) => `"${String(value).replace(/"/g, '""')}"`;
-    const csv = [["Hotel", "City", "Location", "Star Rating", "Price", "Description"], ...rows]
-      .map((row) => row.map(escapeCell).join(","))
-      .join("\r\n");
-    const blob = new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `hotel-reservations-${new Date().toISOString().slice(0, 10)}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
+      const blob = createXlsxBlob([["Hotel", "City", "Location", "Star Rating", "Price", "Description"], ...rows], "Hotel Results");
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `hotel-reservations-${hotelsToExport.length}-records-${new Date().toISOString().slice(0, 10)}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : "Hotel results could not be exported.");
+    } finally {
+      setExporting(false);
+    }
   };
 
   const startIndex = (currentPage - 1) * pageSize;
@@ -566,21 +605,7 @@ function HotelReservationsContent() {
               </select>
             </label>
 
-            <label className="flex min-w-0 flex-col justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2.5 transition hover:border-[#087fbe]/35 focus-within:border-[#13a5d8] focus-within:shadow-[0_0_0_4px_rgba(19,165,216,.08)] lg:col-span-2">
-              <span className="flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-[.16em] text-slate-500"><MapPin className="size-3 text-[#087dbd]" />Location</span>
-              <select
-                value={locationFilter}
-                onChange={(event) => {
-                  setLocationFilter(event.target.value);
-                  setCurrentPage(1);
-                }}
-                className="mt-1 h-7 w-full cursor-pointer bg-transparent text-sm font-bold text-[#122b42] outline-none"
-              >
-                <option value="">All locations</option>
-                {locationFilter && !locationOptions.includes(locationFilter) && <option value={locationFilter}>{locationFilter}</option>}
-                {locationOptions.map((location) => <option key={location} value={location}>{location}</option>)}
-              </select>
-            </label>
+
 
             <label className="flex min-w-0 flex-col justify-center rounded-2xl border border-slate-200 bg-white px-4 py-2.5 transition hover:border-[#087fbe]/35 focus-within:border-[#13a5d8] focus-within:shadow-[0_0_0_4px_rgba(19,165,216,.08)] lg:col-span-2">
               <span className="flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-[.16em] text-slate-500"><Star className="size-3 text-amber-500" />Rating</span>
@@ -600,13 +625,13 @@ function HotelReservationsContent() {
 
             <button
               type="button"
-              onClick={exportHotels}
-              disabled={filteredHotels.length === 0}
+              onClick={() => void exportHotels()}
+              disabled={filteredHotels.length === 0 || exporting}
               className="group flex min-h-14 items-center justify-center gap-2 rounded-2xl border border-[#087dbd]/20 bg-[#062b50] px-4 text-[10px] font-extrabold uppercase tracking-[.14em] text-white shadow-md shadow-[#062b50]/10 transition hover:-translate-y-0.5 hover:bg-[#087dbd] hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-40 md:col-span-2 lg:col-span-2"
             >
-              <Download className="size-4 transition group-hover:-translate-y-0.5" />
-              Export results
-            </button>
+              <Download className={`size-4 transition group-hover:-translate-y-0.5 ${exporting ? "animate-bounce" : ""}`} />
+              {exporting ? "Exporting all pages..." : "Export results"}
+                                    </button>
           </div>
 
           <div className="mt-4 flex min-h-8 flex-wrap items-center gap-2 border-t border-slate-100 pt-4">

@@ -25,6 +25,17 @@ type FaqResponse = Awaited<ReturnType<typeof cmsService.getFaqs>>;
 export type CruiseDestinationResponse = { success?: boolean; data?: Array<{ region_name: string; destinations: Array<{ name: string }> }> };
 export type CruisePortResponse = { success?: boolean; data?: Array<{ region_name: string; ports: Array<{ name: string }> }> };
 export type CurrencyMaster = { id: number; code: string; name: string; symbol: string; display_name: string };
+export type TravelInsuranceType = { id: number; name: string; slug: string };
+export type CountryMaster = { id: number; name: string; slug: string; country_code: string };
+export type VisaType = { id: number; name: string; slug: string };
+
+function responseData<T>(payload: unknown): T[] {
+  if (Array.isArray(payload)) return payload as T[];
+  if (payload && typeof payload === "object" && Array.isArray((payload as { data?: unknown }).data)) {
+    return (payload as { data: T[] }).data;
+  }
+  return [];
+}
 
 const failure = (error: unknown) => ({ error: { message: getErrorMessage(error) } });
 
@@ -68,6 +79,33 @@ export const websiteApi = createApi({
             sample: currencies.slice(0, 3).map(({ id, code, display_name }) => ({ id, code, display_name })),
           });
           return { data: currencies };
+        } catch (error) { return failure(error); }
+      },
+      keepUnusedDataFor: 1800,
+    }),
+    travelInsuranceTypes: builder.query<TravelInsuranceType[], string | void>({
+      queryFn: async (search) => {
+        try {
+          const response = await apiClient.get("/api/bookings/travel-insurance/types/", { params: search ? { search } : undefined });
+          return { data: responseData<TravelInsuranceType>(response.data) };
+        } catch (error) { return failure(error); }
+      },
+      keepUnusedDataFor: 1800,
+    }),
+    countries: builder.query<CountryMaster[], string | void>({
+      queryFn: async (search) => {
+        try {
+          const response = await apiClient.get("/api/bookings/countries/", { params: search ? { search } : undefined });
+          return { data: responseData<CountryMaster>(response.data) };
+        } catch (error) { return failure(error); }
+      },
+      keepUnusedDataFor: 1800,
+    }),
+    visaTypes: builder.query<VisaType[], string | void>({
+      queryFn: async (search) => {
+        try {
+          const response = await apiClient.get("/api/bookings/visa/types/", { params: search ? { search } : undefined });
+          return { data: responseData<VisaType>(response.data) };
         } catch (error) { return failure(error); }
       },
       keepUnusedDataFor: 1800,
@@ -187,6 +225,7 @@ export const {
   useAirportsQuery,
   useBusCitiesQuery,
   useCateringCitiesQuery,
+  useCountriesQuery,
   useCurrenciesQuery,
   useCreateCateringBookingMutation,
   useCreateBusBookingMutation,
@@ -208,4 +247,6 @@ export const {
   useServicesQuery,
   useSubmitRatingMutation,
   useSubmitServiceBookingMutation,
+  useTravelInsuranceTypesQuery,
+  useVisaTypesQuery,
 } = websiteApi;

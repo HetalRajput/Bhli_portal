@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronDown, Menu, X, User } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { type MouseEvent, useEffect, useRef, useState } from "react";
 import { useAppSelector } from "@/store/hooks";
 import { useProfileQuery } from "@/store/websiteApi";
+import { portalService } from "@/lib/api/portal";
 
 const links = [
   ["Home", "/"],
@@ -13,12 +14,13 @@ const links = [
   ["BHLI Events", "/events"],
   ["Clients", "/clients"],
   ["Channel Partners", "/channel-partners"],
+  ["Fauji Club", "/external-services"],
+  ["Become a Partner", "/become-a-partner"],
 ];
 const moreLinks = [
   ["Gallery", "/gallery"],
   ["About us", "/about-us"],
   ["Careers", "/careers"],
-  ["Become a Partner", "/become-a-partner"],
   ["Feedback", "/complaint-feedback"],
   ["Contact", "/contact-us"],
 ];
@@ -27,6 +29,7 @@ export default function Header() {
   const path = usePathname();
   const [open, setOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [openingFaujiClub, setOpeningFaujiClub] = useState(false);
   const [hidden, setHidden] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const session = useAppSelector((state) => state.session);
@@ -62,6 +65,20 @@ export default function Header() {
   const isLinkActive = (h: string) => {
     if (!path) return false;
     return path === h || (h !== "/" && path.startsWith(h));
+  };
+
+  const openFaujiClub = async (event: MouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault();
+    if (openingFaujiClub) return;
+    setOpeningFaujiClub(true);
+    try {
+      const vendor = await portalService.vendorUrl("fauji-club");
+      const target = new URL(vendor.url);
+      if (!["http:", "https:"].includes(target.protocol)) throw new Error("Invalid Fauji Club URL.");
+      window.location.assign(target.toString());
+    } catch {
+      window.location.assign("/external-services");
+    }
   };
 
   useEffect(() => {
@@ -105,11 +122,14 @@ export default function Header() {
             <Link
               key={h}
               href={h}
-              className={`relative py-2 text-sm font-medium transition duration-300 after:absolute after:inset-x-0 after:-bottom-0.5 after:h-0.5 after:origin-left after:rounded-full after:bg-[#078ccf] after:transition-transform ${
-                isLinkActive(h)
-                  ? "text-[#087dbd] after:scale-x-100"
-                  : "text-[#344a5c] after:scale-x-0 hover:text-[#087dbd] hover:after:scale-x-100"
-              }`}
+              onClick={h === "/external-services" ? openFaujiClub : undefined}
+              className={h === "/become-a-partner"
+                ? `rounded-full border border-[#b9dfef] bg-[#edf8fd] px-4 py-2 text-sm font-semibold text-[#0879b7] transition duration-300 hover:border-[#8bcde7] hover:bg-[#dff3fb] ${isLinkActive(h) ? "ring-2 ring-[#13a5d8]/20" : ""}`
+                : `relative py-2 text-sm font-medium transition duration-300 after:absolute after:inset-x-0 after:-bottom-0.5 after:h-0.5 after:origin-left after:rounded-full after:bg-[#078ccf] after:transition-transform ${
+                    isLinkActive(h)
+                      ? "text-[#087dbd] after:scale-x-100"
+                      : "text-[#344a5c] after:scale-x-0 hover:text-[#087dbd] hover:after:scale-x-100"
+                  }`}
             >
               {l}
             </Link>
@@ -175,12 +195,12 @@ export default function Header() {
               <Link
                 key={h}
                 href={h}
-                onClick={() => setOpen(false)}
-                className={`rounded-xl px-4 py-3 ${
-                  isLinkActive(h) ? "bg-[#e5f5fc] text-[#0879b7]" : "text-[#344a5c] hover:bg-[#f0f8fc]"
-                }`}
+                onClick={h === "/external-services" ? (event) => { setOpen(false); void openFaujiClub(event); } : () => setOpen(false)}
+                className={h === "/become-a-partner"
+                  ? `rounded-xl border border-[#b9dfef] bg-[#edf8fd] px-4 py-3 font-semibold text-[#0879b7] hover:bg-[#dff3fb] ${isLinkActive(h) ? "ring-2 ring-[#13a5d8]/20" : ""}`
+                  : `rounded-xl px-4 py-3 ${isLinkActive(h) ? "bg-[#e5f5fc] text-[#0879b7]" : "text-[#344a5c] hover:bg-[#f0f8fc]"}`}
               >
-                {l}
+                {h === "/external-services" && openingFaujiClub ? "Opening..." : l}
               </Link>
             ))}
             <div ref={mobileMoreRef} className="pt-1">

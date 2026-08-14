@@ -1,5 +1,5 @@
-import GenericServiceEnquiry from "@/components/GenericServiceEnquiry";
+import TravelInsuranceRequestForm from "@/components/TravelInsuranceRequestForm";
 
 export default function ServicePage() {
-  return <GenericServiceEnquiry serviceSlug="travel-insurance" />;
+  return <TravelInsuranceRequestForm />;
 }
