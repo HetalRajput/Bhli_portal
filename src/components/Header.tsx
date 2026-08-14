@@ -20,6 +20,7 @@ const links = [
 const moreLinks = [
   ["Gallery", "/gallery"],
   ["About us", "/about-us"],
+  ["Team", "/our-team"],
   ["Careers", "/careers"],
   ["Feedback", "/complaint-feedback"],
   ["Contact", "/contact-us"],

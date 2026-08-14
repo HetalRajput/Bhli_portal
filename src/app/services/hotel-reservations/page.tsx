@@ -502,7 +502,7 @@ function HotelReservationsContent() {
                 <input
                   id="hotel-search"
                   type="search"
-                  placeholder="Search hotel, city or destination"
+                  placeholder="Search hotel"
                   value={searchInput}
                   onChange={(event) => {
                     setSearchInput(event.target.value);
