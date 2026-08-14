@@ -19,6 +19,34 @@ const date = (key: string, label: string, required = true): BookingField => ({ k
 const time = (key: string, label: string, required = true): BookingField => ({ key, label, kind: "time", required });
 const text = (key: string, label: string, placeholder = "", required = true): BookingField => ({ key, label, placeholder, required });
 
+const taxiTripTypeOptions: [string, string][] = [
+  ["one_way", "One Way"],
+  ["round_trip", "Round Trip"],
+  ["airport_transfer", "Airport Transfer"],
+  ["local", "Local"],
+  ["outstation", "Outstation"],
+];
+
+const taxiVehicleTypeOptions: [string, string][] = [
+  ["hatchback", "Hatchback"],
+  ["sedan", "Sedan"],
+  ["compact_suv", "Compact SUV"],
+  ["suv", "SUV"],
+  ["premium_suv", "Premium SUV"],
+  ["luxury_sedan", "Luxury Sedan"],
+  ["luxury_suv", "Luxury SUV"],
+  ["muv_mpv", "MUV / MPV"],
+  ["premium_muv_mpv", "Premium MUV / MPV"],
+  ["convertible", "Convertible"],
+  ["electric_car_ev", "Electric Car (EV)"],
+  ["premium_luxury_car", "Premium / Luxury Car"],
+  ["4x4_off_road_vehicle", "4x4 / Off-Road Vehicle"],
+  ["7_seater", "7-Seater"],
+  ["8_seater", "8-Seater"],
+  ["9_seater", "9-Seater"],
+  ["12_seater_tempo_traveller", "12-Seater / Tempo Traveller"],
+];
+
 export const documentedBookingConfigs: Record<string, BookingConfig> = {
   "airport-transfers": { title: "Airport Transfer", description: "Share your pickup, journey and vehicle details.", fields: [text("pickup_location", "Pickup location"), text("drop_location", "Drop location"), date("pickup_date", "Pickup date"), time("pickup_time", "Pickup time"), { key: "transfer_type", label: "Transfer type", kind: "select", required: true, options: select("airport_to_hotel", "hotel_to_airport", "railway_to_hotel", "hotel_to_railway") }, { key: "vehicle_type", label: "Vehicle type", kind: "select", required: true, options: select("sedan", "suv", "premium", "tempo_traveller") }, count("number_of_passengers", "Number of passengers"), text("flight_or_train_number", "Flight or train number", "Optional", false)] },
   "bus-ticket-booking": { title: "Bus Ticket Booking", description: "Enter your route and preferred bus details.", fields: [text("from_city", "From city"), text("to_city", "To city"), date("travel_date", "Travel date"), time("preferred_time", "Preferred time", false), text("bus_type", "Bus type", "For example: AC Sleeper", false), count("number_of_passengers", "Number of passengers")] },
@@ -35,7 +63,7 @@ export const documentedBookingConfigs: Record<string, BookingConfig> = {
   "hotel-reservations": { title: "Hotel Reservation", description: "Complete the stay, tariff and guest information for the selected hotel.", fields: [date("check_in_date", "Check-in date"), time("check_in_time", "Check-in time"), date("check_out_date", "Check-out date"), time("check_out_time", "Check-out time"), count("number_of_rooms", "Number of rooms"), count("number_of_guests", "Number of guests"), { key: "budget_amount", label: "Budget amount", kind: "decimal", min: 0, required: false }, { key: "td_tariff_amount", label: "TD tariff amount", kind: "decimal", min: 0, required: false }] },
   "international-tours": { title: "International Tour", description: "Enter the countries, travel dates and visa requirement.", fields: [text("countries", "Countries", "Separate multiple countries with commas"), date("start_date", "Start date"), date("end_date", "End date"), count("number_of_people", "Number of people"), { key: "budget_amount", label: "Budget amount", kind: "decimal", min: 0, required: false }, { key: "visa_required", label: "Visa assistance required", kind: "checkbox", defaultValue: false }] },
   "self-drive-car-rentals": { title: "Self-Drive Car Rental", description: "Provide pickup, drop-off and licence details.", fields: [text("pickup_city", "Pickup city"), text("pickup_location", "Pickup location"), date("pickup_date", "Pickup date"), time("pickup_time", "Pickup time"), date("dropoff_date", "Drop-off date"), time("dropoff_time", "Drop-off time"), text("vehicle_type", "Vehicle type", "For example: SUV"), text("driving_license_number", "Driving licence number")] },
-  "taxi-services": { title: "Taxi Service", description: "Share your trip and preferred vehicle details.", fields: [text("pickup_location", "Pickup location"), text("drop_location", "Drop location"), date("pickup_date", "Pickup date"), time("pickup_time", "Pickup time"), { key: "trip_type", label: "Trip type", kind: "select", required: true, options: select("one_way", "round_trip", "local") }, text("vehicle_type", "Vehicle type", "For example: Sedan"), count("number_of_passengers", "Number of passengers")] },
+  "taxi-services": { title: "Taxi Service", description: "Share your trip and preferred vehicle details.", fields: [text("pickup_location", "Pickup location"), text("drop_location", "Drop location"), date("pickup_date", "Pickup date"), time("pickup_time", "Pickup time", false), { key: "trip_type", label: "Trip type", kind: "select", required: false, options: taxiTripTypeOptions }, { key: "vehicle_type", label: "Vehicle type", kind: "select", required: false, options: taxiVehicleTypeOptions }, { key: "number_of_passengers", label: "Number of passengers", kind: "number", required: false, min: 1, defaultValue: "1" }] },
   "train-ticket-booking": { title: "Train Ticket Booking", description: "Enter the stations and preferred train details.", fields: [text("from_station", "From station"), text("to_station", "To station"), date("travel_date", "Travel date"), text("preferred_train", "Preferred train", "Optional", false), text("travel_class", "Travel class", "For example: CC or 3A")] },
   "travel-insurance": { title: "Travel Insurance", description: "Share the destination, dates and coverage requirement.", fields: [text("destination_country", "Destination country"), date("travel_start_date", "Travel start date"), date("travel_end_date", "Travel end date"), count("number_of_travellers", "Number of travellers"), text("coverage_type", "Coverage type", "Individual or family")] },
   "visa-assistance": { title: "Visa Assistance", description: "Enter the destination and visa application details.", fields: [text("destination_country", "Destination country"), text("visa_type", "Visa type", "For example: Tourist"), date("travel_date", "Travel date"), text("appointment_city", "Appointment city"), count("number_of_applicants", "Number of applicants")] },

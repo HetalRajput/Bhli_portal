@@ -39,6 +39,7 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
   const isCorporateTravel = serviceSlug === "corporate-travel";
   const isEventManagement = serviceSlug === "event-management";
   const isHolidayPackage = serviceSlug === "holiday-packages";
+  const isTaxiBooking = serviceSlug === "taxi-services";
   const params = useSearchParams();
   const pathname = usePathname();
   const router = useRouter();
@@ -146,7 +147,7 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
     }
 
     if (step === 2) {
-      if (isHolidayPackage) return true;
+      if (isHolidayPackage || isTaxiBooking) return true;
       if (isCorporateTravel) {
         if (!config.fields.some((field) => field.kind === "checkbox" && Boolean(values[field.key]))) {
           setError("Select at least one service your organisation needs.");
@@ -204,7 +205,7 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
       message: message.trim(),
       consent_to_contact: consent,
     };
-    if (!isEventManagement && !isHolidayPackage) payload.guests = guests.map((guest) => ({ name: guest.name.trim(), age: Number(guest.age), gender: guest.gender }));
+    if (!isEventManagement && !isHolidayPackage && !isTaxiBooking) payload.guests = guests.map((guest) => ({ name: guest.name.trim(), age: Number(guest.age), gender: guest.gender }));
     if (selectedItemId) payload.service_item = Number(selectedItemId);
 
     if (isCruiseBooking) {
@@ -299,6 +300,10 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
       config.fields.forEach((field) => {
         const value = values[field.key];
         if (value === "" || value === undefined) return;
+        if (isTaxiBooking && field.key === "pickup_time" && /^\d{2}:\d{2}$/.test(String(value))) {
+          payload[field.key] = `${value}:00`;
+          return;
+        }
         payload[field.key] = field.kind === "number" ? Number(value) : value;
       });
     }
@@ -330,6 +335,10 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
   ] : isHolidayPackage ? [
     { number: 1, title: "Travel details", desc: "Contact, dates & travellers" },
     { number: 2, title: "Package review", desc: "Confirm your selection" },
+    { number: 3, title: "Send request", desc: "Preferences & consent" },
+  ] : isTaxiBooking ? [
+    { number: 1, title: "Ride details", desc: "Route, date & vehicle" },
+    { number: 2, title: "Trip review", desc: "Confirm your ride" },
     { number: 3, title: "Send request", desc: "Preferences & consent" },
   ] : [
     { number: 1, title: isCruiseBooking ? "Cruise Search" : "Service Details", desc: "Requirements & specs" },
@@ -388,7 +397,7 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
             <div className="mt-8 space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4 text-xs text-white/70">
               <p className="font-bold text-[#13a5d8] uppercase tracking-wider text-[10px]">Form Summary</p>
               <p className="flex justify-between"><span>Step:</span> <b className="text-white">Step {currentStep} of 3</b></p>
-              <p className="flex justify-between"><span>{isCorporateTravel ? "Services:" : "Travellers:"}</span> <b className="text-white">{isCorporateTravel ? `${config.fields.filter((field) => field.kind === "checkbox" && Boolean(values[field.key])).length} selected` : `${guests.length} guest(s)`}</b></p>
+              <p className="flex justify-between"><span>{isCorporateTravel ? "Services:" : isTaxiBooking ? "Passengers:" : "Travellers:"}</span> <b className="text-white">{isCorporateTravel ? `${config.fields.filter((field) => field.kind === "checkbox" && Boolean(values[field.key])).length} selected` : isTaxiBooking ? String(values.number_of_passengers || "1") : `${guests.length} guest(s)`}</b></p>
             </div>
 
             <div className="relative mt-auto rounded-2xl border border-white/10 bg-white/5 p-5">
@@ -513,6 +522,16 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
                     <p>Adults: <b className="text-[#061f3b]">{String(values.number_of_adults || "0")}</b></p>
                     <p>Children: <b className="text-[#061f3b]">{String(values.number_of_children || "0")}</b></p>
                   </div>
+                </FormSection> : isTaxiBooking ? <FormSection number="02" title="Review taxi request" description="Confirm the route, schedule and vehicle preference entered in Step 1.">
+                  <div className="grid gap-3 rounded-2xl border border-[#087fbe]/15 bg-[#f2f9fc] p-5 text-sm text-[#456078] sm:grid-cols-2">
+                    <p>Pickup: <b className="text-[#061f3b]">{String(values.pickup_location || "Not provided")}</b></p>
+                    <p>Drop: <b className="text-[#061f3b]">{String(values.drop_location || "Not provided")}</b></p>
+                    <p>Date: <b className="text-[#061f3b]">{String(values.pickup_date || "Not selected")}</b></p>
+                    <p>Time: <b className="text-[#061f3b]">{String(values.pickup_time || "Flexible")}</b></p>
+                    <p>Trip: <b className="capitalize text-[#061f3b]">{String(values.trip_type || "No preference").replaceAll("_", " ")}</b></p>
+                    <p>Vehicle: <b className="capitalize text-[#061f3b]">{String(values.vehicle_type || "No preference").replaceAll("_", " ")}</b></p>
+                    <p>Passengers: <b className="text-[#061f3b]">{String(values.number_of_passengers || "1")}</b></p>
+                  </div>
                 </FormSection> : isCorporateTravel ? <FormSection number="02" title="Services and planning preferences" description="Choose the support you need. Planning and billing details are optional, but help us tailor your proposal.">
                   <div className="rounded-2xl border border-slate-200 bg-[#fbfdff] p-4 md:p-5">
                     <MultiSelectServicesDropdown fields={config.fields.filter((field) => field.kind === "checkbox")} values={values} update={update} />
@@ -552,7 +571,7 @@ export default function UnifiedBookingForm({ serviceSlug }: { serviceSlug: strin
                     <p className="text-xs font-bold text-[#087fbe] uppercase tracking-wider">Request Review Summary</p>
                     <div className="grid gap-2 sm:grid-cols-2 text-xs text-slate-600">
                       <p>Service: <b className="text-[#061f3b]">{selectedTitle}</b></p>
-                      {isCorporateTravel ? <><p>Company: <b className="text-[#061f3b]">{String(values.company_name || "Not provided")}</b></p><p>Services selected: <b className="text-[#061f3b]">{config.fields.filter((field) => field.kind === "checkbox" && Boolean(values[field.key])).length}</b></p><p>Contact: <b className="text-[#061f3b]">{String(values.contact_person_name || "Not provided")}</b></p></> : isEventManagement ? <><p>Contact: <b className="text-[#061f3b]">{String(values.name || "Not provided")}</b></p><p>Event date: <b className="text-[#061f3b]">{String(values.event_date || "Not selected")}</b></p></> : <p>Total Travellers: <b className="text-[#061f3b]">{guests.length} guest(s) ({guests[0]?.name || "Primary guest"})</b></p>}
+                      {isCorporateTravel ? <><p>Company: <b className="text-[#061f3b]">{String(values.company_name || "Not provided")}</b></p><p>Services selected: <b className="text-[#061f3b]">{config.fields.filter((field) => field.kind === "checkbox" && Boolean(values[field.key])).length}</b></p><p>Contact: <b className="text-[#061f3b]">{String(values.contact_person_name || "Not provided")}</b></p></> : isEventManagement ? <><p>Contact: <b className="text-[#061f3b]">{String(values.name || "Not provided")}</b></p><p>Event date: <b className="text-[#061f3b]">{String(values.event_date || "Not selected")}</b></p></> : isTaxiBooking ? <><p>Route: <b className="text-[#061f3b]">{String(values.pickup_location)} to {String(values.drop_location)}</b></p><p>Passengers: <b className="text-[#061f3b]">{String(values.number_of_passengers || "1")}</b></p></> : <p>Total Travellers: <b className="text-[#061f3b]">{guests.length} guest(s) ({guests[0]?.name || "Primary guest"})</b></p>}
                     </div>
                   </div>
 
