@@ -1,6 +1,7 @@
 import { apiClient, showApiError, showFetchError } from './client';
 
 export type ContactLeadPayload = {
+  service?: number;
   enquiry_type?: number;
   name: string;
   email?: string;
@@ -11,6 +12,8 @@ export type ContactLeadPayload = {
 
 export type ContactLead = ContactLeadPayload & {
   id?: number;
+  service_name?: string;
+  service_slug?: string;
   enquiry_type_name?: string;
   enquiry_type_slug?: string;
   status?: 'new' | string;

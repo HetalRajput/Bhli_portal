@@ -61,7 +61,10 @@ export default function EnquiryWidget() {
       subject: "General Contact - " + (selectedType?.name || enquiryType),
       message,
     };
-    if (selectedType) payload.enquiry_type = selectedType.id;
+    if (selectedType) {
+      payload.service = selectedType.id;
+      payload.enquiry_type = selectedType.id;
+    }
 
     setError("");
     try {
@@ -120,7 +123,7 @@ export default function EnquiryWidget() {
                     <label className={labelClass}>Full name *<input name="name" autoComplete="name" className={fieldClass} placeholder="Your full name" /></label>
                     <label className={labelClass}>Phone number *<div className="relative"><Phone className="absolute left-4 top-1/2 size-4 -translate-y-1/2 text-[#087fbe]" /><input name="mobile" inputMode="numeric" autoComplete="tel" maxLength={10} className={fieldClass + " pl-11"} placeholder="10-digit mobile number" /></div></label>
                     <label className={labelClass}>Email address *<div className="relative"><Mail className="absolute left-4 top-1/2 size-4 -translate-y-1/2 text-[#087fbe]" /><input name="email" type="email" autoComplete="email" className={fieldClass + " pl-11"} placeholder="you@example.com" /></div></label>
-                    <label className={labelClass}>Enquiry type *<select name="enquiryType" className={fieldClass} defaultValue=""><option value="" disabled>Select enquiry type</option>{enquiryTypes.length > 0 ? enquiryTypes.map((type) => <option key={type.id} value={type.id}>{type.name}</option>) : <><option value="Leisure travel">Leisure travel</option><option value="Defence travel">Defence travel</option><option value="Government / Corporate">Government / Corporate</option><option value="Event management">Event management</option><option value="Catering services">Catering services</option></>}</select></label>
+                    <label className={labelClass}>Service *<select name="enquiryType" className={fieldClass} defaultValue=""><option value="" disabled>Select service</option>{enquiryTypes.length > 0 ? enquiryTypes.map((type) => <option key={type.id} value={type.id}>{type.name}</option>) : <><option value="Leisure travel">Leisure travel</option><option value="Defence travel">Defence travel</option><option value="Government / Corporate">Government / Corporate</option><option value="Event management">Event management</option><option value="Catering services">Catering services</option></>}</select></label>
                   </div>
                   <label className={labelClass}>Tell us about your requirement *<textarea name="message" rows={5} className={fieldClass + " resize-none"} placeholder="Destination, dates, travellers and anything we should know..." /></label>
                   <button type="submit" disabled={isSubmitting} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#0875b7] to-[#08a3d8] px-6 py-4 font-bold text-white shadow-lg shadow-[#087fbe]/20 transition hover:-translate-y-0.5 disabled:opacity-70">{isSubmitting ? "Sending..." : "Send enquiry"}<Send className="size-4" /></button>

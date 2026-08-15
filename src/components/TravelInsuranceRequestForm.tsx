@@ -11,7 +11,7 @@ import BookingSuccessModal from "@/components/BookingSuccessModal";
 import { useSuccessChime } from "@/hooks/useSuccessChime";
 import { getErrorMessage } from "@/lib/api/client";
 import {
-  useCountriesQuery, useServiceQuery, useSubmitServiceBookingMutation,
+  useCountriesQuery, useServiceQuery, useSubmitTravelInsuranceBookingMutation,
   useTravelInsuranceTypesQuery, useVisaTypesQuery,
 } from "@/store/websiteApi";
 
@@ -50,7 +50,7 @@ export default function TravelInsuranceRequestForm() {
   const { data: insuranceTypes = [], isLoading: loadingInsurance, error: insuranceError } = useTravelInsuranceTypesQuery();
   const { data: countries = [], isLoading: loadingCountries, error: countryError } = useCountriesQuery();
   const { data: visaTypes = [], isLoading: loadingVisas, error: visaError } = useVisaTypesQuery();
-  const [submitBooking, { isLoading: submitting }] = useSubmitServiceBookingMutation();
+  const [submitBooking, { isLoading: submitting }] = useSubmitTravelInsuranceBookingMutation();
   const successChime = useSuccessChime();
   const loading = loadingService || loadingInsurance || loadingCountries || loadingVisas;
   const update = <K extends keyof Values>(key: K, value: Values[K]) => setValues((current) => ({ ...current, [key]: value }));
@@ -74,6 +74,8 @@ export default function TravelInsuranceRequestForm() {
     if (!/^\S+@\S+\.\S+$/.test(values.email)) return setError("Please enter a valid email address.");
     if (!values.passport_number.trim()) return setError("Please enter the passport number.");
     if (!values.nationality || !values.traveller_type) return setError("Please select nationality and traveller type.");
+    const travellerCount = Number(values.number_of_travellers);
+    if (!Number.isInteger(travellerCount) || travellerCount < 1) return setError("Number of travellers must be at least 1.");
     if (!values.insurance_type || !values.destination_country) return setError("Please select an insurance type and destination country.");
     if (!values.trip_start_date || !values.trip_end_date) return setError("Please enter both trip dates.");
     if (values.trip_end_date < values.trip_start_date) return setError("Trip end date cannot be before the start date.");
@@ -100,7 +102,7 @@ export default function TravelInsuranceRequestForm() {
 
     successChime.arm();
     try {
-      const response = await submitBooking({ serviceSlug: "travel-insurance", payload: formData }).unwrap() as { data?: { booking?: number | { id?: number }; id?: number }; reference?: string };
+      const response = await submitBooking(formData).unwrap();
       const booking = response.data?.booking;
       const id = typeof booking === "number" ? booking : booking?.id ?? response.data?.id;
       setReference(id ? `BH${String(id).padStart(6, "0")}` : response.reference || "Submitted");

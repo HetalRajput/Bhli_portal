@@ -18,8 +18,9 @@ export default function CareersPage() {
   }, [jobs, search]);
   const open = async (job: Career) => { setSelected(job); setError(""); setSuccess(""); try { setSelected(await workflowService.career(job.slug)); } catch {} };
   const submit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault(); if (!selected) return; setSaving(true); setError("");
-    try { const fd = new FormData(e.currentTarget), file = fd.get("resume") as File; if (file.size > 5242880) throw new Error("Resume must be 5 MB or smaller."); await workflowService.apply(selected.slug, fd); setSuccess("Application submitted successfully. We will contact shortlisted candidates."); e.currentTarget.reset(); }
+    e.preventDefault(); if (!selected) return; setSaving(true); setError(""); setSuccess("");
+    const form = e.currentTarget;
+    try { const fd = new FormData(form), file = fd.get("resume"); if (file instanceof File && file.size > 5242880) throw new Error("Resume must be 5 MB or smaller."); await workflowService.apply(selected.slug, fd); form.reset(); setSuccess("Application submitted successfully. We will contact shortlisted candidates."); }
     catch (requestError) { setError(getErrorMessage(requestError)); } finally { setSaving(false); }
   };
 

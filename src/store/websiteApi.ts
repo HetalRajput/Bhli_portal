@@ -28,6 +28,20 @@ export type CurrencyMaster = { id: number; code: string; name: string; symbol: s
 export type TravelInsuranceType = { id: number; name: string; slug: string };
 export type CountryMaster = { id: number; name: string; slug: string; country_code: string };
 export type VisaType = { id: number; name: string; slug: string };
+export type TravelInsuranceBookingResponse = {
+  success: boolean;
+  message: string;
+  errors?: Record<string, string[]>;
+  data?: {
+    id: number;
+    booking: number | { id?: number };
+    full_name: string;
+    insurance_type: number;
+    destination_country: number;
+    [key: string]: unknown;
+  };
+  reference?: string;
+};
 
 function responseData<T>(payload: unknown): T[] {
   if (Array.isArray(payload)) return payload as T[];
@@ -141,6 +155,19 @@ export const websiteApi = createApi({
     createContactLead: builder.mutation<ContactLead, ContactLeadPayload>({
       queryFn: async (payload) => { try { return { data: await baseService.createContactLead(payload) }; } catch (error) { return failure(error); } },
     }),
+    submitTravelInsuranceBooking: builder.mutation<TravelInsuranceBookingResponse, FormData>({
+      queryFn: async (payload) => {
+        try {
+          const response = await apiClient.post<TravelInsuranceBookingResponse>(
+            "/api/bookings/travel-insurance/",
+            payload,
+            { headers: { "Content-Type": "multipart/form-data" } },
+          );
+          if (!response.data.success) return failure({ response: { data: response.data } });
+          return { data: response.data };
+        } catch (error) { return failure(error); }
+      },
+    }),
     submitServiceBooking: builder.mutation<Record<string, unknown>, { serviceSlug: string; payload: Record<string, unknown> | FormData }>({
       queryFn: async ({ serviceSlug, payload }) => {
         try {
@@ -246,6 +273,7 @@ export const {
   useServiceQuery,
   useServicesQuery,
   useSubmitRatingMutation,
+  useSubmitTravelInsuranceBookingMutation,
   useSubmitServiceBookingMutation,
   useTravelInsuranceTypesQuery,
   useVisaTypesQuery,

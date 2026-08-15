@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowRight, Building2, Bus, ShieldCheck, HeartHandshake, Stethoscope, Landmark, Phone, Search, X } from "lucide-react";
+import { ArrowRight, Building2, Bus, HeartHandshake, Stethoscope, Landmark, Phone, Search, X } from "lucide-react";
 import { cmsService, type ChannelPartner } from "@/lib/api/cms";
 import PartnerLogo from "@/components/PartnerLogo";
 
@@ -276,7 +276,7 @@ export default function ChannelPartnersPage() {
     };
   });
 
-  const allPartners = mappedApiPartners;
+  const allPartners = mappedApiPartners.length > 0 ? mappedApiPartners : partnersList;
 
   const filteredPartners = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
@@ -392,10 +392,10 @@ export default function ChannelPartnersPage() {
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-4">
             <Link
-              href="/contact-us"
+              href="/become-a-partner"
               className="inline-flex items-center gap-2 rounded-full bg-[#062b50] px-7 py-3.5 font-bold text-white shadow-lg shadow-[#062b50]/20 hover:-translate-y-0.5 hover:brightness-110"
             >
-              Partner with us <ArrowRight className="size-4" />
+              Start partner onboarding <ArrowRight className="size-4" />
             </Link>
             <a
               href="tel:+919916356691"

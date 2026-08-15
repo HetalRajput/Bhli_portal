@@ -100,8 +100,9 @@ export default function Contact() {
       };
 
       if (enquiryTypes.length > 0) {
-        payload.enquiry_type = parseInt(enquiryType);
-        const selectedType = enquiryTypes.find(t => t.id === payload.enquiry_type);
+        payload.service = parseInt(enquiryType);
+        payload.enquiry_type = payload.service;
+        const selectedType = enquiryTypes.find(t => t.id === payload.service);
         if (selectedType) {
           payload.subject = `General Contact - ${selectedType.name}`;
         }
@@ -227,7 +228,7 @@ export default function Contact() {
                 </label>
 
                 <label className="grid gap-2 text-sm font-semibold">
-                  Enquiry type *
+                  Service *
                   <select
                     value={enquiryType}
                     onChange={(e) => setEnquiryType(e.target.value)}

@@ -76,7 +76,10 @@ export default function DefenceEnquiryForm() {
       message: trimmedMessage,
     };
 
-    if (selectedType) payload.enquiry_type = selectedType.id;
+    if (selectedType) {
+      payload.service = selectedType.id;
+      payload.enquiry_type = selectedType.id;
+    }
 
     try {
       await createContactLead(payload).unwrap();
@@ -157,7 +160,7 @@ export default function DefenceEnquiryForm() {
               />
             </label>
             <label className="grid gap-2 text-sm font-semibold">
-              Enquiry type *
+              Service *
               <select
                 value={selectedEnquiryType}
                 onChange={(event) => setEnquiryType(event.target.value)}
