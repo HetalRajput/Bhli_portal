@@ -21,7 +21,7 @@ import {
   X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 
 const options = [
   { value: "hotels", label: "Hotel reservations", Icon: Building2, href: "/services/hotel-reservations" },
@@ -72,12 +72,39 @@ export default function BookingSearch({
   const [type, setType] = useState<SearchType>(initialType);
   const [destination, setDestination] = useState(initialDestination);
   const [error, setError] = useState("");
+  const serviceTabsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!error) return;
     const timer = window.setTimeout(() => setError(""), 3000);
     return () => window.clearTimeout(timer);
   }, [error]);
+
+  useEffect(() => {
+    const tabs = serviceTabsRef.current;
+    if (!tabs || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    let returnTimer: number | undefined;
+    const peekTimer = window.setTimeout(() => {
+      const availableScroll = tabs.scrollWidth - tabs.clientWidth;
+      if (availableScroll <= 0) return;
+      tabs.scrollTo({ left: Math.min(160, availableScroll), behavior: "smooth" });
+      returnTimer = window.setTimeout(() => tabs.scrollTo({ left: 0, behavior: "smooth" }), 900);
+    }, 650);
+
+    const cancelPeek = () => {
+      window.clearTimeout(peekTimer);
+      if (returnTimer !== undefined) window.clearTimeout(returnTimer);
+    };
+    tabs.addEventListener("pointerdown", cancelPeek, { once: true });
+    tabs.addEventListener("wheel", cancelPeek, { once: true });
+
+    return () => {
+      cancelPeek();
+      tabs.removeEventListener("pointerdown", cancelPeek);
+      tabs.removeEventListener("wheel", cancelPeek);
+    };
+  }, []);
 
   const selectedService = options.find((option) => option.value === type) ?? options[0];
   const copy = searchCopy[type] ?? { prompt: "Where do you need this service?", placeholder: "Enter a city or destination" };
@@ -109,7 +136,7 @@ export default function BookingSearch({
           <span className="hidden rounded-full bg-[#edf4ff] px-3 py-1.5 text-xs font-semibold text-[#145ea8] sm:block">All travel, One search</span>
         </div>
 
-        <div role="tablist" aria-label="Booking service" className="flex flex-nowrap gap-2 overflow-x-auto overscroll-x-contain px-1 py-2 pb-5 scroll-smooth">
+        <div ref={serviceTabsRef} role="tablist" aria-label="Booking service" className="flex flex-nowrap gap-2 overflow-x-auto overscroll-x-contain px-1 py-2 pb-3 scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {options.map(({ value, label, Icon }) => (
             <button
               key={value}
