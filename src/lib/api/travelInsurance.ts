@@ -64,6 +64,30 @@ export type TravelInsuranceBookingResponse = {
   reference?: string;
 };
 
+export type TravellerType = "adult" | "child" | "senior_citizen";
+
+export type TravelInsuranceBookingFields = {
+  service: string;
+  full_name: string;
+  dob: string;
+  mobile: string;
+  email: string;
+  passport_number: string;
+  nationality: string;
+  traveller_type: TravellerType;
+  number_of_travellers: string;
+  insurance_type: string;
+  destination_country: string;
+  trip_start_date: string;
+  trip_end_date: string;
+  purpose_of_travel: string;
+  declaration_accepted: "true";
+  visa_type?: string;
+  other_add_ons?: string;
+  coverage_amount_required?: string;
+  remarks?: string;
+};
+
 function lookupData<T>(response: LookupResponse<T>): T[] {
   if (!response.success) throw new Error(response.message || "Options could not be loaded.");
   return Array.isArray(response.data) ? response.data : [];
@@ -97,11 +121,12 @@ export const travelInsuranceService = {
   },
 
   createBooking: async (payload: FormData) => {
-    // Axios leaves the multipart boundary to the browser and the shared request
-    // interceptor supplies Authorization from the current access token.
+    // The shared client defaults to JSON, so explicitly select multipart for
+    // this endpoint. Axios supplies the browser-generated boundary.
     const response = await apiClient.post<TravelInsuranceBookingResponse>(
       "/api/bookings/travel-insurance/",
       payload,
+      { headers: { "Content-Type": "multipart/form-data" } },
     );
     return response.data;
   },

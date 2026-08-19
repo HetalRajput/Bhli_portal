@@ -1,0 +1,252 @@
+TRAVEL INSURANCE BOOKING API DOCUMENTATION
+==========================================
+
+Base URL:
+---------
+http://localhost:8000
+
+Production Base URL:
+--------------------
+https://bhli-backend.onrender.com
+
+Authentication:
+---------------
+Travel insurance booking creation requires user authentication.
+
+Header:
+Authorization: Bearer <access_token>
+
+
+1. Travel Insurance Type Dropdown
+=================================
+
+URL:
+GET /api/bookings/travel-insurance/types/
+
+Purpose:
+Fetch travel insurance types for dropdown.
+
+Query Parameters:
+- search: Optional. Search by insurance type name.
+
+Example:
+GET /api/bookings/travel-insurance/types/?search=Student
+
+Success Response:
+{
+  "success": true,
+  "message": "Data fetched successfully.",
+  "count": 1,
+  "data": [
+    {
+      "id": 3,
+      "name": "Student Travel Insurance",
+      "slug": "student-travel-insurance"
+    }
+  ]
+}
+
+
+2. Country Dropdown
+===================
+
+URL:
+GET /api/bookings/countries/
+
+Purpose:
+Fetch countries for destination country and nationality dropdowns.
+
+Query Parameters:
+- search: Optional. Search by country name or country code.
+
+Example:
+GET /api/bookings/countries/?search=India
+
+Success Response:
+{
+  "success": true,
+  "message": "Data fetched successfully.",
+  "count": 1,
+  "data": [
+    {
+      "id": 101,
+      "name": "India",
+      "slug": "india",
+      "country_code": "IN"
+    }
+  ]
+}
+
+Frontend Usage:
+- For destination_country, send the country id.
+- For nationality, send the country_code only, for example "IN".
+
+
+3. Visa Type Dropdown
+=====================
+
+URL:
+GET /api/bookings/visa/types/
+
+Purpose:
+Fetch visa types for dropdown.
+
+Query Parameters:
+- search: Optional. Search by visa type name.
+
+Example:
+GET /api/bookings/visa/types/?search=Tourist
+
+Success Response:
+{
+  "success": true,
+  "message": "Data fetched successfully.",
+  "count": 1,
+  "data": [
+    {
+      "id": 1,
+      "name": "Tourist Visa",
+      "slug": "tourist-visa"
+    }
+  ]
+}
+
+
+4. Create Travel Insurance Booking
+==================================
+
+URL:
+POST /api/bookings/travel-insurance/
+
+Content Type:
+multipart/form-data
+
+Authentication:
+Required
+
+Purpose:
+Submit travel insurance booking request.
+
+Required Fields:
+- service: Service id for Travel Insurance.
+- full_name: Full name of traveller.
+- dob: Date of birth. Format: YYYY-MM-DD.
+- mobile: Mobile number.
+- email: Email address.
+- passport_number: Passport number.
+- nationality: Country code only. Example: "IN".
+- traveller_type: One of adult, child, senior_citizen.
+- number_of_travellers: Number of travellers. Minimum 1.
+- insurance_type: TravelInsuranceType id.
+- destination_country: CountryMaster id.
+- trip_start_date: Trip start date. Format: YYYY-MM-DD.
+- trip_end_date: Trip end date. Format: YYYY-MM-DD.
+- purpose_of_travel: Purpose of travel.
+- declaration_accepted: Must be true.
+
+Optional Fields:
+- visa_type: VisaType id.
+- coverage_requirements: Array of selected coverage requirements.
+- other_add_ons: Any other add-ons requested by user.
+- coverage_amount_required: Required coverage amount.
+- passport_copy: File upload.
+- visa_copy: File upload.
+- other_document: File upload.
+- remarks: Additional user message or notes.
+
+Ignored From Public Payload:
+These fields are office/admin fields. If frontend sends them, backend will ignore them during public booking creation.
+- processed_by
+- insurer_provider
+- quote_premium
+
+Sample Payload:
+{
+  "service": 18,
+  "full_name": "Test Officer",
+  "dob": "1990-01-10",
+  "mobile": "9999999999",
+  "email": "user@example.com",
+  "passport_number": "Z1234567",
+  "nationality": "IN",
+  "traveller_type": "adult",
+  "number_of_travellers": 2,
+  "insurance_type": 1,
+  "destination_country": 195,
+  "trip_start_date": "2026-09-01",
+  "trip_end_date": "2026-09-10",
+  "purpose_of_travel": "Tourism",
+  "visa_type": 1,
+  "coverage_requirements": [
+    "Medical Expenses Cover",
+    "Passport Loss"
+  ],
+  "other_add_ons": "Adventure sports cover",
+  "coverage_amount_required": "USD 100000",
+  "remarks": "Need family quote.",
+  "declaration_accepted": true
+}
+
+Sample Success Response:
+{
+  "success": true,
+  "message": "Travel Insurance booking request submitted successfully.",
+  "data": {
+    "id": 1,
+    "booking": 25,
+    "full_name": "Test Officer",
+    "dob": "1990-01-10",
+    "mobile": "9999999999",
+    "email": "user@example.com",
+    "passport_number": "Z1234567",
+    "nationality": "IN",
+    "traveller_type": "adult",
+    "number_of_travellers": 2,
+    "insurance_type": 1,
+    "destination_country": 195,
+    "trip_start_date": "2026-09-01",
+    "trip_end_date": "2026-09-10",
+    "purpose_of_travel": "Tourism",
+    "visa_type": 1,
+    "coverage_requirements": [
+      "Medical Expenses Cover",
+      "Passport Loss"
+    ],
+    "other_add_ons": "Adventure sports cover",
+    "coverage_amount_required": "USD 100000",
+    "passport_copy": null,
+    "visa_copy": null,
+    "other_document": null,
+    "remarks": "Need family quote.",
+    "declaration_accepted": true,
+    "processed_by": "",
+    "insurer_provider": "",
+    "quote_premium": ""
+  }
+}
+
+Sample Validation Error Response:
+{
+  "success": false,
+  "message": "Validation failed.",
+  "errors": {
+    "declaration_accepted": [
+      "Declaration must be accepted."
+    ],
+    "nationality": [
+      "Select a valid active nationality country code."
+    ]
+  }
+}
+
+
+5. Notes For Frontend Developer
+===============================
+
+- First call /api/bookings/travel-insurance/types/ for insurance_type dropdown.
+- Call /api/bookings/countries/ for destination_country dropdown.
+- Use the same countries API for nationality dropdown, but send country_code in nationality.
+- Call /api/bookings/visa/types/ for visa_type dropdown.
+- Submit booking to /api/bookings/travel-insurance/ using multipart/form-data if files are included.
+- If no files are included, JSON can be used.
+- User must be logged in before submitting travel insurance booking.
