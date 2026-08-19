@@ -66,7 +66,7 @@ function UnifiedServiceEnquiryInner({ serviceSlug }: { serviceSlug?: string }) {
 
     // Instant parallel fetch for catering services to redirect immediately without waiting for service detail API
     if (slug === "catering-services" || slug.includes("catering")) {
-      apiClient.get("https://bhli-backend.onrender.com/api/base/vendors/catering/url/")
+      apiClient.get("https://api.bookinghospitality.com/api/base/vendors/catering/url/")
         .then((res) => {
           const finalUrl = res.data?.data?.url || res.data?.data?.redirect_url || res.data?.url || res.data?.redirect_url;
           if (finalUrl && active) {

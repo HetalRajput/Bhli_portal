@@ -578,3 +578,38 @@ section[class~="bg-[#f4f8fb]"] + section[class~="max-w-7xl"] > div:nth-child(2) 
     padding-bottom: 2.75rem;
   }
 }
+
+/* Compact icon-and-label list in the home hero. */
+ul[aria-label="Communities we serve"] {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 1.5rem;
+  row-gap: 1rem;
+}
+
+ul[aria-label="Communities we serve"] > li {
+  min-height: 0;
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: 0.5rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  text-align: left;
+  backdrop-filter: none;
+}
+
+ul[aria-label="Communities we serve"] > li > span:first-child {
+  display: inline-flex;
+  width: auto;
+  height: auto;
+  flex: none;
+  background: transparent;
+}
+
+ul[aria-label="Communities we serve"] > li > span:last-child {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}

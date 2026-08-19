@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BASE_URL = 'https://bhli-backend.onrender.com';
+const BASE_URL = 'https://api.bookinghospitality.com';
 let apiRequestSequence = 0;
 let refreshRequest: Promise<{ access: string; refresh?: string }> | null = null;
 

@@ -150,7 +150,7 @@ export const cmsService = {
     const searchParams = new URLSearchParams();
     Object.entries(params ?? {}).forEach(([key, value]) => searchParams.set(key, String(value)));
     const query = searchParams.toString();
-    const url = `https://bhli-backend.onrender.com/api/base/services/${query ? `?${query}` : ''}`;
+    const url = `https://api.bookinghospitality.com/api/base/services/${query ? `?${query}` : ''}`;
 
     try {
       const response = await fetch(url, {
@@ -179,7 +179,7 @@ export const cmsService = {
     const searchParams = new URLSearchParams();
     Object.entries(params ?? {}).forEach(([key, value]) => searchParams.set(key, String(value)));
     const query = searchParams.toString();
-    const url = `https://bhli-backend.onrender.com/api/base/services/${encodeURIComponent(slug)}/${query ? `?${query}` : ''}`;
+    const url = `https://api.bookinghospitality.com/api/base/services/${encodeURIComponent(slug)}/${query ? `?${query}` : ''}`;
 
     try {
       const response = await fetch(url, {
@@ -204,7 +204,7 @@ export const cmsService = {
   },
   getHotelReservationFilters: async (): Promise<HotelReservationFilters | null> => {
     try {
-      const response = await fetch('https://bhli-backend.onrender.com/api/base/services/hotel-reservations/filters/', {
+      const response = await fetch('https://api.bookinghospitality.com/api/base/services/hotel-reservations/filters/', {
         headers: { Accept: 'application/json' },
         signal: AbortSignal.timeout(5000),
         cache: 'no-store',
@@ -246,7 +246,7 @@ export const cmsService = {
     const endpoint = trimmed || hasFilters ? `${encodeURIComponent(slug)}/search/` : `${encodeURIComponent(slug)}/`;
 
     try {
-      const response = await fetch(`https://bhli-backend.onrender.com/api/base/services/${endpoint}?${params.toString()}`, {
+      const response = await fetch(`https://api.bookinghospitality.com/api/base/services/${endpoint}?${params.toString()}`, {
         headers: { Accept: 'application/json' },
         signal: AbortSignal.timeout(5000),
         cache: 'no-store',

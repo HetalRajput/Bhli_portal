@@ -6,6 +6,13 @@ import { authService, type UserProfile } from "@/lib/api/auth";
 import { busService, type BusBookingPayload, type BusBookingResponse, type BusCity } from "@/lib/api/bus";
 import { cateringService, type CateringBookingPayload, type CateringBookingResponse, type CateringCity } from "@/lib/api/catering";
 import {
+  travelInsuranceService,
+  type CountryMaster,
+  type TravelInsuranceBookingResponse,
+  type TravelInsuranceType,
+  type VisaType,
+} from "@/lib/api/travelInsurance";
+import {
   portalService,
   type Airport,
   type HolidayCategory,
@@ -25,31 +32,7 @@ type FaqResponse = Awaited<ReturnType<typeof cmsService.getFaqs>>;
 export type CruiseDestinationResponse = { success?: boolean; data?: Array<{ region_name: string; destinations: Array<{ name: string }> }> };
 export type CruisePortResponse = { success?: boolean; data?: Array<{ region_name: string; ports: Array<{ name: string }> }> };
 export type CurrencyMaster = { id: number; code: string; name: string; symbol: string; display_name: string };
-export type TravelInsuranceType = { id: number; name: string; slug: string };
-export type CountryMaster = { id: number; name: string; slug: string; country_code: string };
-export type VisaType = { id: number; name: string; slug: string };
-export type TravelInsuranceBookingResponse = {
-  success: boolean;
-  message: string;
-  errors?: Record<string, string[]>;
-  data?: {
-    id: number;
-    booking: number | { id?: number };
-    full_name: string;
-    insurance_type: number;
-    destination_country: number;
-    [key: string]: unknown;
-  };
-  reference?: string;
-};
-
-function responseData<T>(payload: unknown): T[] {
-  if (Array.isArray(payload)) return payload as T[];
-  if (payload && typeof payload === "object" && Array.isArray((payload as { data?: unknown }).data)) {
-    return (payload as { data: T[] }).data;
-  }
-  return [];
-}
+export type { CountryMaster, TravelInsuranceBookingResponse, TravelInsuranceType, VisaType };
 
 const failure = (error: unknown) => ({ error: { message: getErrorMessage(error) } });
 
@@ -99,28 +82,22 @@ export const websiteApi = createApi({
     }),
     travelInsuranceTypes: builder.query<TravelInsuranceType[], string | void>({
       queryFn: async (search) => {
-        try {
-          const response = await apiClient.get("/api/bookings/travel-insurance/types/", { params: search ? { search } : undefined });
-          return { data: responseData<TravelInsuranceType>(response.data) };
-        } catch (error) { return failure(error); }
+        try { return { data: await travelInsuranceService.types(search || undefined) }; }
+        catch (error) { return failure(error); }
       },
       keepUnusedDataFor: 1800,
     }),
     countries: builder.query<CountryMaster[], string | void>({
       queryFn: async (search) => {
-        try {
-          const response = await apiClient.get("/api/bookings/countries/", { params: search ? { search } : undefined });
-          return { data: responseData<CountryMaster>(response.data) };
-        } catch (error) { return failure(error); }
+        try { return { data: await travelInsuranceService.countries(search || undefined) }; }
+        catch (error) { return failure(error); }
       },
       keepUnusedDataFor: 1800,
     }),
     visaTypes: builder.query<VisaType[], string | void>({
       queryFn: async (search) => {
-        try {
-          const response = await apiClient.get("/api/bookings/visa/types/", { params: search ? { search } : undefined });
-          return { data: responseData<VisaType>(response.data) };
-        } catch (error) { return failure(error); }
+        try { return { data: await travelInsuranceService.visaTypes(search || undefined) }; }
+        catch (error) { return failure(error); }
       },
       keepUnusedDataFor: 1800,
     }),
@@ -158,13 +135,9 @@ export const websiteApi = createApi({
     submitTravelInsuranceBooking: builder.mutation<TravelInsuranceBookingResponse, FormData>({
       queryFn: async (payload) => {
         try {
-          const response = await apiClient.post<TravelInsuranceBookingResponse>(
-            "/api/bookings/travel-insurance/",
-            payload,
-            { headers: { "Content-Type": "multipart/form-data" } },
-          );
-          if (!response.data.success) return failure({ response: { data: response.data } });
-          return { data: response.data };
+          const response = await travelInsuranceService.createBooking(payload);
+          if (!response.success) return failure({ response: { data: response } });
+          return { data: response };
         } catch (error) { return failure(error); }
       },
     }),

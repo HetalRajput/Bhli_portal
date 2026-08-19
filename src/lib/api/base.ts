@@ -37,7 +37,7 @@ export const baseService = {
   getServices: async (params?: { is_featured?: boolean }) => {
     const query = params?.is_featured === undefined ? '' : `?is_featured=${params.is_featured}`;
     try {
-      const response = await fetch(`https://bhli-backend.onrender.com/api/base/services/${query}`, {
+      const response = await fetch(`https://api.bookinghospitality.com/api/base/services/${query}`, {
         headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(5000), cache: 'no-store',
       });
       if (!response.ok) { await showFetchError(response); return []; }
@@ -46,7 +46,7 @@ export const baseService = {
   },
   getServiceDetail: async (slug: string) => {
     try {
-      const response = await fetch(`https://bhli-backend.onrender.com/api/base/services/${encodeURIComponent(slug)}/`, {
+      const response = await fetch(`https://api.bookinghospitality.com/api/base/services/${encodeURIComponent(slug)}/`, {
         headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(5000), cache: 'no-store',
       });
       if (!response.ok) { await showFetchError(response); return null; }
