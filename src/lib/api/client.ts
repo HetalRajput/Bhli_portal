@@ -1,7 +1,16 @@
 import axios from 'axios';
 
-const BASE_URL = 'https://api.bookinghospitality.com';
+export const API_BASE_URL = 'https://api.bookinghospitality.com';
+const API_ORIGIN = new URL(API_BASE_URL).origin;
 let refreshRequest: Promise<{ access: string; refresh?: string }> | null = null;
+
+export function isTrustedApiUrl(url: string, baseURL = API_BASE_URL): boolean {
+  try {
+    return new URL(url, baseURL).origin === API_ORIGIN;
+  } catch {
+    return false;
+  }
+}
 
 const normalizeLogKey = (key: string) => key.toLowerCase().replace(/[^a-z0-9]/g, '');
 
@@ -68,7 +77,7 @@ export async function showFetchError(response: Response) {
 }
 
 export const apiClient = axios.create({
-  baseURL: BASE_URL,
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -89,7 +98,7 @@ export function refreshAccessToken(refreshOverride?: string): Promise<{ access: 
 
   if (!refreshRequest) {
     refreshRequest = axios
-      .post(`${BASE_URL}/api/accounts/auth/token/refresh/`, { refresh }, {
+      .post(`${API_BASE_URL}/api/accounts/auth/token/refresh/`, { refresh }, {
         headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
       })
       .then((response) => {
@@ -113,12 +122,17 @@ export function refreshAccessToken(refreshOverride?: string): Promise<{ access: 
 // Request interceptor to add the JWT token to headers.
 apiClient.interceptors.request.use(
   (config) => {
+    const trustedRequest = isTrustedApiUrl(config.url || '', config.baseURL || API_BASE_URL);
+
     // Only access localStorage if in browser environment
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && trustedRequest) {
       const token = localStorage.getItem('access_token');
       if (token && !config.headers.Authorization) {
         config.headers.Authorization = `Bearer ${token}`;
       }
+    } else if (!trustedRequest) {
+      // Never forward website or CRM credentials to vendor-controlled origins.
+      config.headers.delete('Authorization');
     }
 
     if (typeof window !== 'undefined') window.dispatchEvent(new Event('bhli:network-start'));
@@ -178,7 +192,8 @@ apiClient.interceptors.response.use(
     }
     
     // Refresh an expired access token once, then replay the original request.
-    if (error.response?.status === 401 && typeof window !== 'undefined') {
+    const trustedRequest = isTrustedApiUrl(error.config?.url || '', error.config?.baseURL || API_BASE_URL);
+    if (trustedRequest && error.response?.status === 401 && typeof window !== 'undefined') {
       const isCrmRequest = error.config?.url?.includes('/api/crm/');
       if (isCrmRequest) {
         showApiError(error);

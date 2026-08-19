@@ -7,6 +7,7 @@ import { type MouseEvent, useEffect, useRef, useState } from "react";
 import { useAppSelector } from "@/store/hooks";
 import { useProfileQuery } from "@/store/websiteApi";
 import { portalService } from "@/lib/api/portal";
+import { safeExternalUrl } from "@/lib/safe-url";
 
 const links = [
   ["Home", "/"],
@@ -74,9 +75,9 @@ export default function Header() {
     setOpeningFaujiClub(true);
     try {
       const vendor = await portalService.vendorUrl("fauji-club");
-      const target = new URL(vendor.url);
-      if (!["http:", "https:"].includes(target.protocol)) throw new Error("Invalid Fauji Club URL.");
-      window.location.assign(target.toString());
+      const target = safeExternalUrl(vendor.url);
+      if (!target) throw new Error("Invalid Fauji Club URL.");
+      window.location.assign(target);
     } catch {
       window.location.assign("/external-services");
     }

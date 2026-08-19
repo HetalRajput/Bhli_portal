@@ -6,8 +6,9 @@ import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import BookingSuccessModal from "@/components/BookingSuccessModal";
 import { bookingService } from "@/lib/api/bookings";
-import { apiClient, getErrorMessage } from "@/lib/api/client";
+import { apiClient, getErrorMessage, isTrustedApiUrl } from "@/lib/api/client";
 import { cmsService } from "@/lib/api/cms";
+import { safeExternalUrl } from "@/lib/safe-url";
 import { useSuccessChime } from "@/hooks/useSuccessChime";
 
 type VendorLink = {
@@ -69,8 +70,9 @@ function UnifiedServiceEnquiryInner({ serviceSlug }: { serviceSlug?: string }) {
       apiClient.get("https://api.bookinghospitality.com/api/base/vendors/catering/url/")
         .then((res) => {
           const finalUrl = res.data?.data?.url || res.data?.data?.redirect_url || res.data?.url || res.data?.redirect_url;
-          if (finalUrl && active) {
-            window.location.href = finalUrl;
+          const target = safeExternalUrl(finalUrl);
+          if (target && active) {
+            window.location.assign(target);
           }
         })
         .catch(() => {
@@ -94,10 +96,13 @@ function UnifiedServiceEnquiryInner({ serviceSlug }: { serviceSlug?: string }) {
             const updatedLinks = await Promise.all(
               serviceData.vendor_links.map(async (v) => {
                 if (!v.tracking_url) return v;
+                if (!isTrustedApiUrl(v.tracking_url)) {
+                  return { ...v, resolved_url: safeExternalUrl(v.tracking_url) || undefined };
+                }
                 try {
                   const res = await apiClient.get(v.tracking_url);
                   const finalUrl = res.data?.data?.url || res.data?.data?.redirect_url || res.data?.url || res.data?.redirect_url || v.tracking_url;
-                  return { ...v, resolved_url: finalUrl };
+                  return { ...v, resolved_url: safeExternalUrl(finalUrl) || undefined };
                 } catch {
                   return v;
                 }
@@ -150,8 +155,9 @@ function UnifiedServiceEnquiryInner({ serviceSlug }: { serviceSlug?: string }) {
   useEffect(() => {
     if (isCatering && vendorLinks.length > 0) {
       const targetUrl = vendorLinks[0]?.resolved_url;
-      if (targetUrl) {
-        window.location.href = targetUrl;
+      const safeTarget = safeExternalUrl(targetUrl);
+      if (safeTarget) {
+        window.location.assign(safeTarget);
       }
     }
   }, [isCatering, vendorLinks]);
@@ -159,16 +165,20 @@ function UnifiedServiceEnquiryInner({ serviceSlug }: { serviceSlug?: string }) {
   async function handleVendorRedirect(vendor: VendorLink, index: number) {
     if (!vendor.tracking_url) return;
     
-    // Open a new tab immediately to avoid popup blockers from async operations (do not pass 'noopener' so we retain window reference)
+    // Open immediately to avoid popup blockers, then sever the opener relationship.
     const newTab = window.open("about:blank", "_blank");
+    if (newTab) newTab.opener = null;
     
     setVendorLoading(index);
     setVendorError("");
     try {
-      const response = await apiClient.get(vendor.tracking_url);
-      const data = response.data;
-        
-      const finalUrl = data?.data?.url || data?.data?.redirect_url || data?.url || data?.redirect_url || data?.link || vendor.tracking_url;
+      let finalUrl = safeExternalUrl(vendor.tracking_url);
+      if (isTrustedApiUrl(vendor.tracking_url)) {
+        const response = await apiClient.get(vendor.tracking_url);
+        const data = response.data;
+        finalUrl = safeExternalUrl(data?.data?.url || data?.data?.redirect_url || data?.url || data?.redirect_url || data?.link);
+      }
+      if (!finalUrl) throw new Error("A secure vendor URL was not returned.");
       
       if (newTab && !newTab.closed) {
         newTab.location.href = finalUrl;
@@ -176,11 +186,14 @@ function UnifiedServiceEnquiryInner({ serviceSlug }: { serviceSlug?: string }) {
         window.open(finalUrl, "_blank", "noopener,noreferrer");
       }
     } catch {
-      // Fallback: use tracking_url directly
-      if (newTab && !newTab.closed) {
-        newTab.location.href = vendor.tracking_url;
+      const fallbackUrl = safeExternalUrl(vendor.tracking_url);
+      if (fallbackUrl && newTab && !newTab.closed) {
+        newTab.location.href = fallbackUrl;
+      } else if (fallbackUrl) {
+        window.open(fallbackUrl, "_blank", "noopener,noreferrer");
       } else {
-        window.open(vendor.tracking_url, "_blank", "noopener,noreferrer");
+        newTab?.close();
+        setVendorError("The provider returned an insecure URL.");
       }
     } finally {
       setVendorLoading(null);
@@ -262,11 +275,12 @@ function UnifiedServiceEnquiryInner({ serviceSlug }: { serviceSlug?: string }) {
 
               {vendorLinks.map((vendor, index) => {
                 const url = vendor.resolved_url || vendor.tracking_url;
-                if (!url) return null;
+                const safeUrl = safeExternalUrl(url);
+                if (!safeUrl) return null;
                 return (
                   <a
                     key={vendor.id ?? index}
-                    href={url}
+                    href={safeUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={(e) => {

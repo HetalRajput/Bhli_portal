@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { cmsService } from "@/lib/api/cms";
 import ServicesCatalog, { type ServiceCatalogItem } from "@/components/ServicesCatalog";
+import { safeExternalUrl } from "@/lib/safe-url";
 
 type ApiService = {
   name?: string;
@@ -56,7 +57,7 @@ export default async function Services() {
       const isCatering = s.slug === "catering-services" || s.slug?.includes("catering");
       const usesVendor = !isCatering && Boolean(vendorUrl) && s.booking_mode === "third_party";
       const targetLink = usesVendor
-        ? String(vendorUrl)
+        ? safeExternalUrl(vendorUrl) || `/services/${s.slug}`
         : isHolidayPackage(s) ? "/services/holiday-packages" : `/services/${s.slug}`;
 
       return {
@@ -65,7 +66,7 @@ export default async function Services() {
         slug: String(s.slug || "service"),
         serviceType: String(s.service_type || ""),
         link: targetLink,
-        isExternal: usesVendor,
+        isExternal: usesVendor && Boolean(safeExternalUrl(vendorUrl)),
         image: String(s.banner_image || s.image || fallbackItems[0][4])
       };
     })

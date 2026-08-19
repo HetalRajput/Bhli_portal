@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, ArrowRight, ExternalLink, LoaderCircle, ShieldCheck } from "lucide-react";
 import { apiClient, getErrorMessage } from "@/lib/api/client";
 import type { VendorLink } from "@/lib/api/portal";
+import { safeExternalUrl } from "@/lib/safe-url";
 
 type RedirectPayload = {
   success?: boolean;
@@ -41,10 +42,10 @@ export default function ExternalServicesShowcase({ vendors, mode = "carousel" }:
       const payload = response.data;
       const target = payload?.data?.url || payload?.data?.redirect_url || payload?.url || payload?.redirect_url;
       if (!target) throw new Error("The provider did not return a redirect URL.");
-      const parsed = new URL(target);
-      if (!(["http:", "https:"].includes(parsed.protocol))) throw new Error("The provider returned an invalid redirect URL.");
-      if (externalTab && !externalTab.closed) externalTab.location.href = parsed.toString();
-      else window.location.assign(parsed.toString());
+      const safeTarget = safeExternalUrl(target);
+      if (!safeTarget) throw new Error("The provider returned an insecure redirect URL.");
+      if (externalTab && !externalTab.closed) externalTab.location.href = safeTarget;
+      else window.location.assign(safeTarget);
     } catch (redirectError) {
       externalTab?.close();
       setError(getErrorMessage(redirectError));
