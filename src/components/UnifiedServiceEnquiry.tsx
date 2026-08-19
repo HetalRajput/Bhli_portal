@@ -226,20 +226,20 @@ function UnifiedServiceEnquiryInner({ serviceSlug }: { serviceSlug?: string }) {
     const targetUrl = primaryVendor?.resolved_url;
 
     return (
-      <div className="min-h-screen bg-[#edf5f9] pb-10 text-[#122b42]">
-        <section className="relative min-h-[390px] overflow-hidden bg-[#061f3b] px-5 pb-28 pt-8 text-white lg:px-8">
+      <div className="min-h-screen overflow-x-clip bg-[#edf5f9] pb-10 text-[#122b42]">
+        <section className="relative min-h-[350px] overflow-hidden bg-[#061f3b] px-4 pb-24 pt-8 text-white sm:min-h-[390px] sm:px-5 sm:pb-28 lg:px-8">
           <img src={service?.banner_image || fallbackBanner} alt="" className="absolute inset-0 h-full w-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-r from-[#061f3b]/95 via-[#061f3b]/76 to-[#061f3b]/25" />
           <div className="relative mx-auto max-w-[1360px]">
             <Link href="/services" className="inline-flex items-center gap-2 text-sm text-white/65 transition hover:text-white"><ArrowLeft className="size-4" /> All services</Link>
             <p className="mt-8 text-[11px] font-extrabold uppercase tracking-[.28em] text-[#13a5d8]">Catering Services</p>
-            <h1 className="mt-3 max-w-4xl font-serif text-5xl leading-none md:text-7xl">{loadingService ? "Loading service..." : title}</h1>
+            <h1 className="mt-3 max-w-4xl font-serif text-3xl leading-tight min-[380px]:text-4xl sm:text-5xl md:text-7xl">{loadingService ? "Loading service..." : title}</h1>
             <p className="mt-5 max-w-2xl text-sm leading-7 text-white/65">{description}</p>
           </div>
         </section>
 
-        <main className="relative z-10 mx-auto -mt-20 max-w-[860px] px-5 lg:px-8">
-          <div className="overflow-hidden rounded-[2rem] bg-white shadow-[0_28px_90px_rgba(6,31,59,.22)]">
+        <main className="relative z-10 mx-auto -mt-16 max-w-[860px] px-3 sm:-mt-20 sm:px-5 lg:px-8">
+          <div className="overflow-hidden rounded-[1.5rem] bg-white shadow-[0_28px_90px_rgba(6,31,59,.22)] sm:rounded-[2rem]">
             <div className="relative overflow-hidden bg-gradient-to-br from-[#061f3b] to-[#0a4070] p-8 text-center text-white sm:p-12">
               <div className="absolute -right-16 -top-16 size-56 rounded-full bg-[#13a5d8]/10 blur-3xl" />
               <div className="absolute -bottom-16 -left-16 size-56 rounded-full bg-emerald-400/10 blur-3xl" />
@@ -295,20 +295,20 @@ function UnifiedServiceEnquiryInner({ serviceSlug }: { serviceSlug?: string }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#edf5f9] pb-10 text-[#122b42]">
-      <section className="relative min-h-[390px] overflow-hidden bg-[#061f3b] px-5 pb-28 pt-8 text-white lg:px-8">
+    <div className="min-h-screen overflow-x-clip bg-[#edf5f9] pb-10 text-[#122b42]">
+      <section className="relative min-h-[350px] overflow-hidden bg-[#061f3b] px-4 pb-24 pt-8 text-white sm:min-h-[390px] sm:px-5 sm:pb-28 lg:px-8">
         <img src={service?.banner_image || fallbackBanner} alt="" className="absolute inset-0 h-full w-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-r from-[#061f3b]/95 via-[#061f3b]/76 to-[#061f3b]/25" />
         <div className="relative mx-auto max-w-[1360px]">
           <Link href="/services" className="inline-flex items-center gap-2 text-sm text-white/65 transition hover:text-white"><ArrowLeft className="size-4" /> All services</Link>
           <p className="mt-8 text-[11px] font-extrabold uppercase tracking-[.28em] text-[#13a5d8]">Booking Hospitality service</p>
-          <h1 className="mt-3 max-w-4xl font-serif text-5xl leading-none md:text-7xl">{loadingService ? "Loading service..." : title}</h1>
+          <h1 className="mt-3 max-w-4xl font-serif text-3xl leading-tight min-[380px]:text-4xl sm:text-5xl md:text-7xl">{loadingService ? "Loading service..." : title}</h1>
           <p className="mt-5 max-w-2xl text-sm leading-7 text-white/65">{description}</p>
         </div>
       </section>
 
-      <main className="relative z-10 mx-auto -mt-20 max-w-[1360px] px-5 lg:px-8">
-        <div className="grid overflow-hidden rounded-[2rem] bg-white shadow-[0_28px_90px_rgba(6,31,59,.22)] lg:grid-cols-[.72fr_1.28fr]">
+      <main className="relative z-10 mx-auto -mt-16 max-w-[1360px] px-3 sm:-mt-20 sm:px-5 lg:px-8">
+        <div className="grid overflow-hidden rounded-[1.5rem] bg-white shadow-[0_28px_90px_rgba(6,31,59,.22)] sm:rounded-[2rem] lg:grid-cols-[.72fr_1.28fr]">
           <aside className="relative hidden min-h-[760px] overflow-hidden bg-[#061f3b] p-9 text-white lg:flex lg:flex-col">
             <div className="absolute -bottom-24 -left-24 size-64 rounded-full border border-white/5 shadow-[0_0_0_45px_rgba(255,255,255,.025),0_0_0_90px_rgba(255,255,255,.018)]" />
             <span className="grid size-14 place-items-center rounded-2xl bg-white/10 text-[#13a5d8]"><Send className="size-7" /></span>
@@ -325,7 +325,7 @@ function UnifiedServiceEnquiryInner({ serviceSlug }: { serviceSlug?: string }) {
           </aside>
 
           <section className="flex min-w-0 flex-col bg-white">
-            <header className="flex items-center justify-between gap-4 border-b border-slate-100 px-6 py-5 md:px-9">
+            <header className="flex items-center justify-between gap-4 border-b border-slate-100 px-4 py-5 sm:px-6 md:px-9">
               <div><p className="text-[10px] font-extrabold uppercase tracking-[.2em] text-[#087fbe]">Service enquiry</p><h2 className="mt-1 font-serif text-2xl text-[#061f3b] md:text-3xl">Booking details</h2></div>
               <div className="hidden rounded-xl border border-[#087fbe]/15 bg-[#f2f9fc] px-4 py-2 text-right sm:block"><p className="text-[9px] font-bold uppercase tracking-wider text-[#087fbe]">Selected</p><p className="max-w-52 truncate text-xs font-bold text-[#061f3b]">{title}</p></div>
             </header>

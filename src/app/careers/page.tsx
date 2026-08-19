@@ -21,7 +21,7 @@ function JobCard({ job, onOpen }: { job: Career; onOpen: (job: Career) => void }
     },
   ].filter((detail) => detail.value);
 
-  return <article className="flex h-full flex-col rounded-3xl border border-sky-100 bg-white p-7 shadow-sm">
+  return <article className="flex h-full flex-col rounded-3xl border border-sky-100 bg-white p-5 shadow-sm sm:p-7">
     <div className="flex justify-between gap-4"><span className="grid size-12 place-items-center rounded-2xl bg-sky-50 text-[#087dbd]"><BriefcaseBusiness /></span><span className="h-fit rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">{job.vacancy_count} opening{job.vacancy_count === 1 ? "" : "s"}</span></div>
     <h3 className="mt-5 text-2xl font-bold">{job.title}</h3>
     <p className="mt-2 text-sm font-semibold text-[#087dbd]">{job.department_name}</p>
@@ -32,7 +32,7 @@ function JobCard({ job, onOpen }: { job: Career; onOpen: (job: Career) => void }
         <div className="min-w-0"><dt className="text-[11px] font-bold uppercase tracking-wide text-slate-400">{label}</dt><dd className="mt-0.5 text-sm font-medium text-slate-600">{value}</dd></div>
       </div>)}
     </dl>
-    <button type="button" onClick={() => onOpen(job)} className="mt-7 w-fit rounded-full bg-[#087dbd] px-6 py-3 font-bold text-white transition hover:bg-[#066a9f]">View &amp; apply</button>
+    <button type="button" onClick={() => onOpen(job)} className="mt-7 w-full rounded-full bg-[#087dbd] px-6 py-3 font-bold text-white transition hover:bg-[#066a9f] sm:w-fit">View &amp; apply</button>
   </article>;
 }
 
@@ -56,8 +56,8 @@ export default function CareersPage() {
   };
 
   return <div className="bg-[#f5faff]">
-    <section className="bg-gradient-to-br from-[#061f3b] via-[#075a91] to-[#10a4d5] px-5 py-24 text-white"><div className="mx-auto max-w-6xl"><p className="font-bold uppercase tracking-[.25em] text-sky-200">Build meaningful journeys</p><h1 className="mt-4 font-serif text-5xl font-bold md:text-7xl">Careers at Booking Hospitality</h1><p className="mt-5 max-w-2xl text-lg text-sky-50/85">Join a team shaping dependable travel and hospitality experiences across India.</p></div></section>
-    <section className="mx-auto max-w-6xl px-5 py-16">
+    <section className="bg-gradient-to-br from-[#061f3b] via-[#075a91] to-[#10a4d5] px-4 py-16 text-white sm:px-5 sm:py-24"><div className="mx-auto max-w-6xl"><p className="text-xs font-bold uppercase tracking-[.2em] text-sky-200 sm:text-base sm:tracking-[.25em]">Build meaningful journeys</p><h1 className="mt-4 font-serif text-4xl font-bold leading-tight sm:text-5xl md:text-7xl">Careers at Booking Hospitality</h1><p className="mt-5 max-w-2xl text-base leading-7 text-sky-50/85 sm:text-lg">Join a team shaping dependable travel and hospitality experiences across India.</p></div></section>
+    <section className="mx-auto max-w-6xl px-4 py-12 sm:px-5 sm:py-16">
       <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between"><div><h2 className="font-serif text-4xl font-bold">Open positions</h2><p className="mt-2 text-slate-600">Find the role where your experience can make an impact.</p></div>
         <div className="relative w-full md:max-w-md"><label htmlFor="career-search" className="sr-only">Search open positions</label><Search className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-[#087dbd]" /><input id="career-search" type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search role, department or location" className="h-14 w-full rounded-2xl border border-sky-100 bg-white pl-12 pr-12 text-sm font-semibold text-[#122b42] shadow-sm outline-none transition placeholder:font-normal placeholder:text-slate-400 focus:border-[#10a4d5] focus:ring-4 focus:ring-sky-100" />{search && <button type="button" onClick={() => setSearch("")} aria-label="Clear career search" className="absolute right-3 top-1/2 grid size-8 -translate-y-1/2 place-items-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-700"><X className="size-4" /></button>}</div>
       </div>

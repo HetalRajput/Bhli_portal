@@ -74,9 +74,9 @@ export default function UpcomingEventCard() {
   }, []);
 
   return (
-    <div className="w-full max-w-[400px]">
+    <div className="w-full max-w-[400px] overflow-x-clip sm:overflow-visible">
       {/* 3D Stacked Cards Viewport */}
-      <div className="relative mx-auto h-[530px] w-full overflow-visible flex items-center justify-center">
+      <div className="relative mx-auto flex h-[500px] w-full items-center justify-center overflow-visible sm:h-[530px]">
         <AnimatePresence initial={false}>
           {events.map((event, index) => {
             let offset = index - activeIndex;
@@ -103,7 +103,7 @@ export default function UpcomingEventCard() {
                 role="article"
                 key={event.title}
                 onClick={handleCardClick}
-                className={`absolute left-1/2 top-1/2 w-[280px] h-[480px] sm:w-[310px] sm:h-[490px] md:w-[320px] md:h-[500px] rounded-[1.75rem] border border-white/20 bg-white text-[#062b50] shadow-[0_25px_70px_rgba(0,15,35,.32)] select-none overflow-hidden ${
+                className={`absolute left-1/2 top-1/2 h-[460px] w-[min(280px,calc(100vw-2.5rem))] select-none overflow-hidden rounded-[1.5rem] border border-white/20 bg-white text-[#062b50] shadow-[0_25px_70px_rgba(0,15,35,.32)] sm:h-[490px] sm:w-[310px] sm:rounded-[1.75rem] md:h-[500px] md:w-[320px] ${
                   isActive ? "cursor-default" : isVisible ? "cursor-pointer" : "pointer-events-none"
                 }`}
                 initial={false}

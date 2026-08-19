@@ -23,7 +23,89 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-html { scroll-behavior: smooth; }
+html {
+  max-width: 100%;
+  overflow-x: clip;
+  scroll-behavior: smooth;
+  text-size-adjust: 100%;
+}
+
+body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+main,
+header,
+footer,
+section,
+form,
+fieldset,
+article,
+aside,
+nav,
+div {
+  min-width: 0;
+}
+
+img,
+picture,
+video,
+canvas,
+iframe {
+  max-width: 100%;
+}
+
+input,
+select,
+textarea,
+button {
+  min-width: 0;
+}
+
+@media (max-width: 639px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+
+  h1,
+  h2,
+  h3,
+  p,
+  a,
+  button,
+  label,
+  dt,
+  dd {
+    overflow-wrap: anywhere;
+  }
+
+  main h1[class~="text-5xl"],
+  main h1[class~="text-6xl"],
+  main h1[class~="text-7xl"],
+  main h1[class~="text-8xl"] {
+    font-size: clamp(2.25rem, 11vw, 2.75rem);
+    line-height: 1.08;
+  }
+
+  main h2[class~="text-5xl"],
+  main h2[class~="text-6xl"] {
+    font-size: clamp(2rem, 9vw, 2.5rem);
+    line-height: 1.12;
+  }
+
+  main aside[class~="sticky"] {
+    position: static;
+  }
+}
+
+[class*="overflow-x-auto"] {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
+}
 
 .flight-search-midpoint {
   --flight-hero-bottom-space: 1.75rem;
@@ -612,4 +694,29 @@ ul[aria-label="Communities we serve"] > li > span:first-child {
 ul[aria-label="Communities we serve"] > li > span:last-child {
   font-size: 0.875rem;
   line-height: 1.25rem;
+}
+
+@media (max-width: 639px) {
+  main section.isolate > div[class*="max-w-7xl"] {
+    gap: 2rem;
+    padding-top: 4rem;
+    padding-bottom: 4.5rem;
+  }
+
+  main section.isolate h1 {
+    font-size: clamp(2rem, 10vw, 2.5rem);
+  }
+
+  ul[aria-label="Communities we serve"] {
+    column-gap: 1rem;
+    row-gap: 0.875rem;
+  }
+
+  ul[aria-label="Communities we serve"] > li {
+    width: calc(50% - 0.5rem);
+  }
+
+  ul[aria-label="Communities we serve"] > li:last-child {
+    width: 100%;
+  }
 }

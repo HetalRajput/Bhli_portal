@@ -99,6 +99,13 @@ export default function Header() {
     return () => window.removeEventListener("scroll", onScroll);
   }, [open]);
 
+  useEffect(() => {
+    if (!open) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = previousOverflow; };
+  }, [open]);
+
   return (
     <header
       className={`sticky top-0 z-50 border-b border-[#0a79bf]/15 bg-white/95 text-[#07152d] backdrop-blur-xl transition-all duration-500 ease-[cubic-bezier(.22,1,.36,1)] ${
@@ -106,7 +113,7 @@ export default function Header() {
       } ${scrolled ? "shadow-[0_12px_35px_rgba(0,45,90,.28)]" : "shadow-none"}`}
     >
       <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-[#0a8fcf]/55 to-transparent" />
-      <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-5 lg:px-8">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:h-20 sm:px-5 lg:px-8">
         <Link
           href="/"
           onClick={() => setOpen(false)}
@@ -115,7 +122,7 @@ export default function Header() {
           <img
             src="/booking-hospitality-logo-transparent.png"
             alt="Booking Hospitality"
-            className="h-11 w-auto max-w-[215px] object-contain"
+            className="h-9 w-auto max-w-[175px] object-contain sm:h-11 sm:max-w-[215px]"
           />
         </Link>
         <nav className="hidden items-center gap-5 xl:flex">
@@ -184,13 +191,15 @@ export default function Header() {
         <button
           aria-label="Toggle menu"
           onClick={() => setOpen(!open)}
-          className="grid size-10 place-items-center rounded-full border border-[#0a86c8]/25 bg-[#edf8fd] text-[#0879b7] transition hover:bg-[#dff3fb] xl:hidden"
+          aria-expanded={open}
+          aria-controls="mobile-site-navigation"
+          className="grid size-11 shrink-0 place-items-center rounded-full border border-[#0a86c8]/25 bg-[#edf8fd] text-[#0879b7] transition hover:bg-[#dff3fb] xl:hidden"
         >
           {open ? <X /> : <Menu />}
         </button>
       </div>
       {open && (
-        <div className="border-t border-[#0a86c8]/15 bg-white/98 px-5 py-5 backdrop-blur-xl xl:hidden">
+        <div id="mobile-site-navigation" className="max-h-[calc(100dvh-4rem)] overflow-y-auto overscroll-contain border-t border-[#0a86c8]/15 bg-white/98 px-4 py-4 backdrop-blur-xl sm:max-h-[calc(100dvh-5rem)] sm:px-5 sm:py-5 xl:hidden">
           <nav className="flex flex-col gap-1">
             {links.map(([l, h]) => (
               <Link

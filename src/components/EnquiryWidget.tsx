@@ -85,17 +85,17 @@ export default function EnquiryWidget() {
 
   return (
     <>
-      <a href="https://wa.me/919945123211?text=Hello%20BHLI%2C%20I%20need%20help%20with%20a%20booking." target="_blank" rel="noopener noreferrer" aria-label="Chat with BHLI on WhatsApp" title="WhatsApp support" className="group fixed bottom-24 right-5 z-[70] grid size-14 place-items-center rounded-full border border-white/60 bg-gradient-to-br from-[#128C5B] to-[#25D366] text-white shadow-[0_12px_30px_rgba(16,120,65,.35)] transition duration-300 hover:-translate-y-1 sm:bottom-28 sm:right-7">
+      <a href="https://wa.me/919945123211?text=Hello%20BHLI%2C%20I%20need%20help%20with%20a%20booking." target="_blank" rel="noopener noreferrer" aria-label="Chat with BHLI on WhatsApp" title="WhatsApp support" className="group fixed bottom-[calc(6rem+env(safe-area-inset-bottom))] right-4 z-[70] grid size-14 place-items-center rounded-full border border-white/60 bg-gradient-to-br from-[#128C5B] to-[#25D366] text-white shadow-[0_12px_30px_rgba(16,120,65,.35)] transition duration-300 hover:-translate-y-1 sm:bottom-28 sm:right-7">
         <svg viewBox="0 0 32 32" aria-hidden="true" className="size-6 fill-current"><path d="M16.04 3.2A12.7 12.7 0 0 0 5.31 22.7L3.2 28.8l6.27-2.07A12.8 12.8 0 1 0 16.04 3.2Zm0 23.43c-2.1 0-4.15-.57-5.93-1.65l-.43-.25-3.72 1.23 1.25-3.62-.28-.45a10.63 10.63 0 1 1 9.11 4.74Zm5.83-7.96c-.32-.16-1.89-.93-2.18-1.04-.3-.11-.51-.16-.73.16-.21.32-.82 1.04-1.01 1.25-.19.21-.37.24-.69.08-.32-.16-1.35-.5-2.57-1.59a9.6 9.6 0 0 1-1.78-2.21c-.19-.32-.02-.49.14-.65.14-.14.32-.37.48-.56.16-.18.21-.32.32-.53.1-.21.05-.4-.03-.56-.08-.16-.72-1.73-.99-2.37-.26-.62-.52-.54-.72-.55h-.61c-.21 0-.56.08-.85.4-.29.32-1.12 1.09-1.12 2.66s1.15 3.09 1.31 3.3c.16.21 2.25 3.44 5.46 4.82.76.33 1.36.53 1.82.68.76.24 1.46.21 2.01.13.61-.09 1.89-.77 2.15-1.52.27-.74.27-1.38.19-1.52-.08-.13-.29-.21-.61-.37Z" /></svg>
       </a>
 
-      <button type="button" onClick={() => setOpen(true)} aria-label="Open contact form" title="Contact BHLI" className="group fixed bottom-5 right-5 z-[70] grid size-14 place-items-center rounded-full border border-white/40 bg-gradient-to-br from-[#03182e] via-[#062b50] to-[#074a78] text-white shadow-[0_12px_35px_rgba(2,20,40,.45)] transition duration-300 hover:-translate-y-1 sm:bottom-7 sm:right-7">
+      <button type="button" onClick={() => setOpen(true)} aria-label="Open contact form" title="Contact BHLI" className="group fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] right-4 z-[70] grid size-14 place-items-center rounded-full border border-white/40 bg-gradient-to-br from-[#03182e] via-[#062b50] to-[#074a78] text-white shadow-[0_12px_35px_rgba(2,20,40,.45)] transition duration-300 hover:-translate-y-1 sm:bottom-7 sm:right-7">
         <MessageSquareText className="size-5" />
       </button>
 
       {open && (
         <div className="fixed inset-0 z-[100] flex items-end justify-end bg-[#031629]/60 backdrop-blur-sm sm:p-5" role="dialog" aria-modal="true" aria-label="Contact form" onMouseDown={(event) => { if (event.target === event.currentTarget) close(); }}>
-          <div className="flex max-h-[96dvh] w-full animate-[enquiry-slide-up_.45s_cubic-bezier(.22,1,.36,1)] flex-col overflow-hidden rounded-t-[1.75rem] bg-white shadow-2xl sm:max-w-2xl sm:rounded-[1.75rem]">
+          <div className="flex max-h-[calc(100dvh-env(safe-area-inset-top))] w-full animate-[enquiry-slide-up_.45s_cubic-bezier(.22,1,.36,1)] flex-col overflow-hidden rounded-t-[1.5rem] bg-white pb-[env(safe-area-inset-bottom)] shadow-2xl sm:max-h-[96dvh] sm:max-w-2xl sm:rounded-[1.75rem] sm:pb-0">
             <header className="flex shrink-0 items-center justify-between border-b border-white/10 bg-gradient-to-r from-[#061f3b] to-[#087fbe] px-5 py-4 text-white">
               <div className="flex items-center gap-3">
                 <span className="grid size-10 place-items-center rounded-full bg-white/12"><MessageSquareText className="size-5" /></span>

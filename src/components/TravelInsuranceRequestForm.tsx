@@ -128,20 +128,20 @@ export default function TravelInsuranceRequestForm() {
   if (reference) return <BookingSuccessModal reference={reference} serviceName="Travel Insurance" heading="Travel insurance request received" description="Our team will contact you with suitable policy options, coverage details and premium information." backHref="/services" backLabel="Back to services" />;
 
   return (
-    <div className="min-h-screen bg-[#edf5f9] pb-10 text-[#122b42]">
-      <section className="relative overflow-hidden bg-[#061f3b] px-5 pb-28 pt-9 text-white lg:px-8">
+    <div className="min-h-screen overflow-x-clip bg-[#edf5f9] pb-8 text-[#122b42] sm:pb-10">
+      <section className="relative overflow-hidden bg-[#061f3b] px-4 pb-24 pt-8 text-white sm:px-5 sm:pb-28 sm:pt-9 lg:px-8">
         <div className="absolute -right-24 -top-40 size-[30rem] rounded-full bg-cyan-400/10 blur-3xl" />
         <div className="absolute -bottom-32 left-1/3 size-80 rounded-full bg-blue-400/10 blur-3xl" />
         <div className="relative mx-auto max-w-6xl">
           <Link href="/services" className="inline-flex items-center gap-2 text-sm text-white/65 transition hover:text-white"><ArrowLeft className="size-4" />All services</Link>
           <p className="mt-8 text-[11px] font-extrabold uppercase tracking-[.28em] text-[#4fc3ea]">BHLI travel protection</p>
-          <h1 className="mt-3 max-w-3xl font-serif text-4xl sm:text-5xl md:text-6xl">Travel with confidence, wherever you go.</h1>
+          <h1 className="mt-3 max-w-3xl font-serif text-3xl leading-tight min-[380px]:text-4xl sm:text-5xl md:text-6xl">Travel with confidence, wherever you go.</h1>
           <p className="mt-5 max-w-2xl text-sm leading-7 text-white/65">Tell us about your journey and coverage needs. We’ll help you compare suitable travel insurance options.</p>
         </div>
       </section>
 
-      <main className="relative z-10 mx-auto -mt-20 max-w-6xl px-5 lg:px-8">
-        <div className="grid overflow-hidden rounded-[2rem] bg-white shadow-[0_28px_90px_rgba(6,31,59,.2)] lg:grid-cols-[300px_minmax(0,1fr)]">
+      <main className="relative z-10 mx-auto -mt-16 max-w-6xl px-3 sm:-mt-20 sm:px-5 lg:px-8">
+        <div className="grid overflow-hidden rounded-[1.5rem] bg-white shadow-[0_28px_90px_rgba(6,31,59,.2)] sm:rounded-[2rem] lg:grid-cols-[300px_minmax(0,1fr)]">
           <aside className="relative hidden bg-gradient-to-b from-[#061f3b] to-[#073d69] p-7 text-white lg:flex lg:flex-col">
             <span className="grid size-14 place-items-center rounded-2xl bg-white/10 text-[#4fc3ea]"><ShieldCheck className="size-7" /></span>
             <h2 className="mt-7 font-serif text-3xl">Protection for the unexpected</h2>
@@ -156,9 +156,9 @@ export default function TravelInsuranceRequestForm() {
             </div>
           </aside>
 
-          <form id="travel-insurance-form" onSubmit={submit} className="p-5 sm:p-7 md:p-9" encType="multipart/form-data" noValidate>
+          <form id="travel-insurance-form" onSubmit={submit} className="p-4 min-[380px]:p-5 sm:p-7 md:p-9" encType="multipart/form-data" noValidate>
             <input type="hidden" name="service" value={service?.id || ""} />
-            <header className="mb-8"><p className="text-[10px] font-extrabold uppercase tracking-[.2em] text-[#087fbe]">BHLI LLP</p><h2 className="mt-2 font-serif text-3xl font-semibold text-[#061f3b]">Travel Insurance Request Form</h2><p className="mt-2 text-xs text-slate-400">Fields marked with an asterisk are required.</p></header>
+            <header className="mb-7 sm:mb-8"><p className="text-[10px] font-extrabold uppercase tracking-[.2em] text-[#087fbe]">BHLI LLP</p><h2 className="mt-2 font-serif text-2xl font-semibold leading-tight text-[#061f3b] sm:text-3xl">Travel Insurance Request Form</h2><p className="mt-2 text-xs text-slate-400">Fields marked with an asterisk are required.</p></header>
 
             {(insuranceError || countryError || visaError) && <p role="alert" className="mb-6 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-700">Some selection lists could not be loaded. Please refresh the page and try again.</p>}
 
@@ -208,7 +208,7 @@ export default function TravelInsuranceRequestForm() {
             </FormSection>
 
             {error && <p role="alert" className="mb-5 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">{error}</p>}
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-5"><button type="button" onClick={reset} className="rounded-xl border border-slate-200 px-5 py-3 text-xs font-bold text-slate-500 transition hover:border-slate-300">Reset Form</button><button type="submit" disabled={submitting || loading} className="inline-flex min-w-60 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#0875b7] to-[#13a5d8] px-6 py-3.5 text-xs font-bold text-white shadow-lg shadow-sky-600/20 disabled:opacity-60">{loading ? "Loading options..." : submitting ? "Submitting..." : "Submit Insurance Request"}<Send className="size-4" /></button></div>
+            <div className="flex flex-col-reverse gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between"><button type="button" onClick={reset} className="w-full rounded-xl border border-slate-200 px-5 py-3 text-xs font-bold text-slate-500 transition hover:border-slate-300 sm:w-auto">Reset Form</button><button type="submit" disabled={submitting || loading} className="inline-flex w-full min-w-0 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#0875b7] to-[#13a5d8] px-5 py-3.5 text-xs font-bold text-white shadow-lg shadow-sky-600/20 disabled:opacity-60 sm:w-auto sm:min-w-60 sm:px-6">{loading ? "Loading options..." : submitting ? "Submitting..." : "Submit Insurance Request"}<Send className="size-4" /></button></div>
           </form>
         </div>
         <p className="mt-4 flex items-center justify-center gap-2 text-center text-xs text-slate-400"><ShieldCheck className="size-4 shrink-0 text-[#087fbe]" />Your details and documents are securely sent to BHLI for quotation.</p>
@@ -218,13 +218,13 @@ export default function TravelInsuranceRequestForm() {
 }
 
 function FormSection({ number, title, children }: { number: string; title: string; children: ReactNode }) {
-  return <section className="mb-8"><div className="mb-4 flex items-center gap-3 border-b border-slate-100 pb-3"><span className="grid size-8 place-items-center rounded-xl bg-[#e4f5fb] text-[10px] font-extrabold text-[#087fbe]">{number}</span><h3 className="font-serif text-xl font-semibold text-[#061f3b]">{title}</h3></div>{children}</section>;
+  return <section className="mb-7 sm:mb-8"><div className="mb-4 flex min-w-0 items-center gap-3 border-b border-slate-100 pb-3"><span className="grid size-8 shrink-0 place-items-center rounded-xl bg-[#e4f5fb] text-[10px] font-extrabold text-[#087fbe]">{number}</span><h3 className="min-w-0 font-serif text-lg font-semibold leading-tight text-[#061f3b] sm:text-xl">{title}</h3></div>{children}</section>;
 }
 function Field({ label, required, icon, children }: { label: string; required?: boolean; icon: ReactNode; children: ReactNode }) {
-  return <label className="text-xs font-bold text-[#456078]">{label}{required && <b className="text-red-500"> *</b>}<span className="mt-2 flex h-12 items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 text-[#087fbe] transition focus-within:border-[#13a5d8] focus-within:ring-4 focus-within:ring-sky-100 [&_input]:min-w-0 [&_input]:flex-1 [&_input]:bg-transparent [&_input]:text-sm [&_input]:font-semibold [&_input]:text-[#122b42] [&_input]:outline-none">{icon}{children}</span></label>;
+  return <label className="min-w-0 text-xs font-bold text-[#456078]">{label}{required && <b className="text-red-500"> *</b>}<span className="mt-2 flex h-12 min-w-0 items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 text-[#087fbe] transition focus-within:border-[#13a5d8] focus-within:ring-4 focus-within:ring-sky-100 sm:px-4 [&>svg]:shrink-0 [&_input]:min-w-0 [&_input]:flex-1 [&_input]:bg-transparent [&_input]:text-sm [&_input]:font-semibold [&_input]:text-[#122b42] [&_input]:outline-none">{icon}{children}</span></label>;
 }
 function SelectField({ name, label, required, icon, value, onChange, loading, placeholder, children }: { name: string; label: string; required?: boolean; icon: ReactNode; value: string; onChange: (value: string) => void; loading: boolean; placeholder: string; children: ReactNode }) {
-  return <label className="text-xs font-bold text-[#456078]">{label}{required && <b className="text-red-500"> *</b>}<span className="mt-2 flex h-12 items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 text-[#087fbe] transition focus-within:border-[#13a5d8] focus-within:ring-4 focus-within:ring-sky-100">{icon}<select name={name} value={value} onChange={(event) => onChange(event.target.value)} disabled={loading} className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-[#122b42] outline-none"><option value="">{loading ? "Loading..." : placeholder}</option>{children}</select></span></label>;
+  return <label className="min-w-0 text-xs font-bold text-[#456078]">{label}{required && <b className="text-red-500"> *</b>}<span className="mt-2 flex h-12 min-w-0 items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 text-[#087fbe] transition focus-within:border-[#13a5d8] focus-within:ring-4 focus-within:ring-sky-100 sm:px-4 [&>svg]:shrink-0">{icon}<select name={name} value={value} onChange={(event) => onChange(event.target.value)} disabled={loading} className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-[#122b42] outline-none"><option value="">{loading ? "Loading..." : placeholder}</option>{children}</select></span></label>;
 }
 function Choice({ selected, children }: { selected: boolean; children: ReactNode }) {
   return <label className={`cursor-pointer rounded-xl border px-4 py-2.5 text-xs font-bold transition ${selected ? "border-[#087fbe] bg-[#087fbe] text-white" : "border-slate-200 bg-white text-slate-600 hover:border-sky-300"}`}>{children}</label>;

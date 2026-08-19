@@ -14,7 +14,7 @@ const socialLinks = [
 export default function Footer() {
   return (
     <footer className="border-t border-black/5 bg-white text-[#122b42]">
-      <div className="mx-auto grid max-w-7xl gap-10 px-5 py-14 md:grid-cols-2 lg:grid-cols-4 lg:px-8">
+      <div className="mx-auto grid max-w-7xl gap-9 px-4 py-10 sm:px-5 sm:py-14 md:grid-cols-2 lg:grid-cols-4 lg:px-8">
         <div>
           <img src="/booking-hospitality-logo-transparent.png" alt="Booking Hospitality" className="h-14 w-auto max-w-full object-contain" />
           <p className="mt-5 text-sm leading-7 text-[#344a5c]/75">
@@ -35,7 +35,7 @@ export default function Footer() {
 
         <div>
           <h3 className="mb-4 text-sm font-bold uppercase tracking-widest text-[#087dbd]">Explore</h3>
-          <div className="grid gap-3 text-sm text-[#344a5c]/75">
+          <div className="grid gap-3 break-words text-sm text-[#344a5c]/75">
             <Link href="/services" className="transition-colors hover:text-[#087dbd]">Services</Link>
             <Link href="/events" className="transition-colors hover:text-[#087dbd]">  BHLI Events</Link>
             <Link href="/about-us" className="transition-colors hover:text-[#087dbd]">About us</Link>
@@ -94,7 +94,7 @@ export default function Footer() {
         </div>
       </div>
 
-      <div className="border-t border-black/5 px-5 py-5 text-center text-xs text-[#344a5c]/50">
+      <div className="border-t border-black/5 px-4 py-5 text-center text-xs leading-5 text-[#344a5c]/50 sm:px-5">
         &copy; {new Date().getFullYear()} Booking Hospitality &amp; Leisure Infra LLP.
       </div>
     </footer>

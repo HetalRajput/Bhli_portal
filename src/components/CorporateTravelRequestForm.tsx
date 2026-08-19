@@ -197,19 +197,19 @@ export default function CorporateTravelRequestForm() {
   if (reference) return <BookingSuccessModal reference={reference} serviceName={title} heading="Corporate request received" description="Our corporate travel team will review your requirements and prepare a customized quotation." backHref="/services" backLabel="Back to services" />;
 
   return (
-    <div className="min-h-screen bg-[#edf5f9] pb-10 text-[#122b42]">
-      <section className="relative overflow-hidden bg-[#061f3b] px-5 pb-28 pt-9 text-white lg:px-8">
+    <div className="min-h-screen overflow-x-clip bg-[#edf5f9] pb-10 text-[#122b42]">
+      <section className="relative overflow-hidden bg-[#061f3b] px-4 pb-24 pt-8 text-white sm:px-5 sm:pb-28 sm:pt-9 lg:px-8">
         <div className="absolute -right-32 -top-40 size-[32rem] rounded-full bg-[#13a5d8]/15 blur-3xl" />
         <div className="relative mx-auto max-w-[1360px]">
           <Link href="/services" className="inline-flex items-center gap-2 text-sm text-white/65 transition hover:text-white"><ArrowLeft className="size-4" />All services</Link>
           <p className="mt-8 text-[11px] font-extrabold uppercase tracking-[.28em] text-[#4fc3ea]">BHLI corporate travel solutions</p>
-          <h1 className="mt-3 max-w-4xl font-serif text-4xl leading-tight sm:text-5xl md:text-6xl">Corporate Travel Desk – B2B Request Form</h1>
+          <h1 className="mt-3 max-w-4xl font-serif text-3xl leading-tight min-[380px]:text-4xl sm:text-5xl md:text-6xl">Corporate Travel Desk – B2B Request Form</h1>
           <p className="mt-5 max-w-3xl text-sm leading-7 text-white/65">Partner with Booking Hospitality &amp; Leisure Infra LLP for seamless corporate travel management, customized quotations and dedicated travel support.</p>
         </div>
       </section>
 
-      <main className="relative z-10 mx-auto -mt-20 max-w-[1360px] px-5 lg:px-8">
-        <div className="grid overflow-hidden rounded-[2rem] bg-white shadow-[0_28px_90px_rgba(6,31,59,.2)] lg:grid-cols-[320px_minmax(0,1fr)]">
+      <main className="relative z-10 mx-auto -mt-16 max-w-[1360px] px-3 sm:-mt-20 sm:px-5 lg:px-8">
+        <div className="grid overflow-hidden rounded-[1.5rem] bg-white shadow-[0_28px_90px_rgba(6,31,59,.2)] sm:rounded-[2rem] lg:grid-cols-[320px_minmax(0,1fr)]">
           <aside className="relative hidden bg-gradient-to-b from-[#061f3b] to-[#073d69] p-7 text-white lg:flex lg:flex-col">
             <Building2 className="size-10 text-[#4fc3ea]" />
             <h2 className="mt-6 font-serif text-3xl">Build your corporate travel programme</h2>
@@ -225,7 +225,7 @@ export default function CorporateTravelRequestForm() {
           </aside>
 
           <section className="min-w-0 bg-white">
-            <div className="border-b border-slate-100 bg-[#f7fbfd] px-5 py-5 md:px-8">
+            <div className="border-b border-slate-100 bg-[#f7fbfd] px-3 py-4 sm:px-5 sm:py-5 md:px-8">
               <div className="grid grid-cols-4 gap-2">
                 {steps.map((item) => {
                   const active = step === item.number;
@@ -236,7 +236,7 @@ export default function CorporateTravelRequestForm() {
               <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-100"><div className="h-full bg-gradient-to-r from-[#0875b7] to-[#13a5d8] transition-all" style={{ width: `${step * 25}%` }} /></div>
             </div>
 
-            <form id="corporate-b2b-form" onSubmit={submit} className="p-5 md:p-8" noValidate>
+            <form id="corporate-b2b-form" onSubmit={submit} className="p-4 sm:p-5 md:p-8" noValidate>
               {step === 1 && <div className="space-y-9">
                 <FormSection number="01" title="Company Information" description="Legal, registration and office details for your organisation.">
                   <div className="grid gap-4 md:grid-cols-2">

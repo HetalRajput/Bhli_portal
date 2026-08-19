@@ -3,20 +3,23 @@
 import {
   AlertCircle,
   ArrowRight,
-  Building2,
-  Bus,
+  BadgeIndianRupee,
+  BusFront,
   CalendarDays,
-  Car,
-  Coins,
+  CarTaxiFront,
+  ChevronLeft,
+  ChevronRight,
   Compass,
-  Map,
+  Hotel,
+  KeyRound,
   MapPin,
-  Plane,
+  Palmtree,
+  PlaneTakeoff,
   Search,
   ShieldCheck,
-  Ship,
-  Ticket,
-  Train,
+  ShipWheel,
+  Stamp,
+  TrainFront,
   UtensilsCrossed,
   X,
 } from "lucide-react";
@@ -24,17 +27,17 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useRef, useState } from "react";
 
 const options = [
-  { value: "hotels", label: "Hotel reservations", Icon: Building2, href: "/services/hotel-reservations" },
-  { value: "flights", label: "Flight bookings", Icon: Plane, href: "/services/flight-booking" },
-  { value: "trains", label: "Train tickets", Icon: Train, href: "/services/train-ticket-booking" },
-  { value: "buses", label: "Bus tickets", Icon: Bus, href: "/services/bus-ticket-booking" },
-  { value: "taxis", label: "Taxi services", Icon: Car, href: "/services/taxi-services" },
-  { value: "self-drive", label: "Self-drive rentals", Icon: Car, href: "/services/self-drive-car-rentals" },
-  { value: "holidays", label: "Holiday packages", Icon: Map, href: "/services/holiday-packages" },
-  { value: "cruises", label: "Cruise holidays", Icon: Ship, href: "/services/cruise-holidays" },
-  { value: "visa", label: "Visa assistance", Icon: Ticket, href: "/services/visa-assistance" },
+  { value: "hotels", label: "Hotel reservations", Icon: Hotel, href: "/services/hotel-reservations" },
+  { value: "flights", label: "Flight bookings", Icon: PlaneTakeoff, href: "/services/flight-booking" },
+  { value: "trains", label: "Train tickets", Icon: TrainFront, href: "/services/train-ticket-booking" },
+  { value: "buses", label: "Bus tickets", Icon: BusFront, href: "/services/bus-ticket-booking" },
+  { value: "taxis", label: "Taxi services", Icon: CarTaxiFront, href: "/services/taxi-services" },
+  { value: "self-drive", label: "Self-drive rentals", Icon: KeyRound, href: "/services/self-drive-car-rentals" },
+  { value: "holidays", label: "Holiday packages", Icon: Palmtree, href: "/services/holiday-packages" },
+  { value: "cruises", label: "Cruise holidays", Icon: ShipWheel, href: "/services/cruise-holidays" },
+  { value: "visa", label: "Visa assistance", Icon: Stamp, href: "/services/visa-assistance" },
   { value: "insurance", label: "Travel insurance", Icon: ShieldCheck, href: "/services/travel-insurance" },
-  { value: "currency", label: "Currency exchange", Icon: Coins, href: "/services/currency-exchange" },
+  { value: "currency", label: "Currency exchange", Icon: BadgeIndianRupee, href: "/services/currency-exchange" },
   { value: "events", label: "Event management", Icon: CalendarDays, href: "/services/event-management" },
   { value: "catering", label: "Catering services", Icon: UtensilsCrossed, href: "/services/catering-services" },
   { value: "consultancy", label: "Travel consultancy", Icon: Compass, href: "/services/travel-consultancy" },
@@ -72,6 +75,8 @@ export default function BookingSearch({
   const [type, setType] = useState<SearchType>(initialType);
   const [destination, setDestination] = useState(initialDestination);
   const [error, setError] = useState("");
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
   const serviceTabsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -106,6 +111,36 @@ export default function BookingSearch({
     };
   }, []);
 
+  useEffect(() => {
+    const tabs = serviceTabsRef.current;
+    if (!tabs) return;
+
+    const updateScrollButtons = () => {
+      const maximumScroll = tabs.scrollWidth - tabs.clientWidth;
+      setCanScrollLeft(tabs.scrollLeft > 2);
+      setCanScrollRight(tabs.scrollLeft < maximumScroll - 2);
+    };
+
+    updateScrollButtons();
+    tabs.addEventListener("scroll", updateScrollButtons, { passive: true });
+    const resizeObserver = new ResizeObserver(updateScrollButtons);
+    resizeObserver.observe(tabs);
+
+    return () => {
+      tabs.removeEventListener("scroll", updateScrollButtons);
+      resizeObserver.disconnect();
+    };
+  }, []);
+
+  const scrollServices = (direction: -1 | 1) => {
+    const tabs = serviceTabsRef.current;
+    if (!tabs) return;
+    tabs.scrollBy({
+      left: direction * Math.max(320, tabs.clientWidth * 0.7),
+      behavior: "smooth",
+    });
+  };
+
   const selectedService = options.find((option) => option.value === type) ?? options[0];
   const copy = searchCopy[type] ?? { prompt: "Where do you need this service?", placeholder: "Enter a city or destination" };
 
@@ -126,7 +161,7 @@ export default function BookingSearch({
   }
 
   return (
-    <div className="search-glow relative rounded-[1.7rem] p-[2px]">
+    <div className="search-glow relative rounded-[1.7rem] p-px">
       <form onSubmit={submit} noValidate className={`relative z-10 rounded-[1.6rem] bg-white ${compact ? "p-4" : "p-5 sm:p-7"} shadow-2xl shadow-[#061f3b]/15`}>
         <div className="mb-5 flex items-center justify-between gap-4">
           <div>
@@ -136,23 +171,58 @@ export default function BookingSearch({
           <span className="hidden rounded-full bg-[#edf4ff] px-3 py-1.5 text-xs font-semibold text-[#145ea8] sm:block">All travel, One search</span>
         </div>
 
-        <div ref={serviceTabsRef} role="tablist" aria-label="Booking service" className="flex flex-nowrap gap-2 overflow-x-auto overscroll-x-contain px-1 py-2 pb-3 scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {options.map(({ value, label, Icon }) => (
-            <button
-              key={value}
-              type="button"
-              role="tab"
-              aria-selected={type === value}
-              onClick={() => {
-                setType(value);
-                if (error) setError("");
-              }}
-              className={`group flex min-w-fit items-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold transition-all duration-300 ${type === value ? "border-[#11a3d7] bg-[#061f3b] text-white shadow-[0_8px_24px_rgba(7,21,45,.22)]" : "border-black/8 bg-[#f3f8fc] text-[#344a5c] hover:border-[#11a3d7]/60 hover:bg-white hover:shadow-md"}`}
-            >
-              <Icon aria-hidden="true" className={`size-4 shrink-0 transition-transform duration-300 ${type === value ? "text-[#11a3d7]" : "text-[#087fbe] group-hover:scale-110"}`} />
-              {label}
-            </button>
-          ))}
+        <div className="-mx-2 flex items-center gap-1 sm:-mx-4 sm:gap-2">
+          <button
+            type="button"
+            aria-label="Scroll services left"
+            onClick={() => scrollServices(-1)}
+            disabled={!canScrollLeft}
+            className="grid size-10 shrink-0 place-items-center rounded-full border border-[#087fbe]/20 bg-white text-[#087fbe] shadow-md transition hover:scale-105 hover:bg-[#eef9fd] disabled:cursor-not-allowed disabled:opacity-30 sm:size-11"
+          >
+            <ChevronLeft className="size-6" />
+          </button>
+
+          <div
+            ref={serviceTabsRef}
+            role="tablist"
+            aria-label="Booking service"
+            onWheel={(event) => {
+              if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+              event.currentTarget.scrollBy({ left: event.deltaY, behavior: "smooth" });
+            }}
+            className="flex min-w-0 flex-1 flex-nowrap items-stretch gap-1 overflow-x-auto overscroll-x-contain px-1 py-1 pb-3 scroll-smooth [scrollbar-width:none] sm:gap-4 sm:px-2 [&::-webkit-scrollbar]:hidden"
+          >
+            {options.map(({ value, label, Icon }) => (
+              <button
+                key={value}
+                type="button"
+                role="tab"
+                aria-label={label}
+                title={label}
+                aria-selected={type === value}
+                onClick={() => {
+                  setType(value);
+                  if (error) setError("");
+                }}
+                className={`group relative flex h-28 w-24 shrink-0 flex-col items-center justify-center gap-2 bg-transparent px-1 pb-3 pt-2 transition-all duration-300 after:absolute after:bottom-0 after:left-1/2 after:h-0.5 after:-translate-x-1/2 after:rounded-full after:bg-[#0788cc] after:transition-all ${type === value ? "after:w-16" : "after:w-0 hover:after:w-10"}`}
+              >
+                <Icon aria-hidden="true" className={`size-10 shrink-0 stroke-[1.65] transition-all duration-300 ${type === value ? "scale-110 text-[#0788cc]" : "text-[#122b42] group-hover:scale-110 group-hover:text-[#0788cc]"}`} />
+                <span className={`line-clamp-2 min-h-9 text-center text-sm font-medium leading-[1.15] transition-colors ${type === value ? "font-semibold text-[#0788cc]" : "text-[#253f55] group-hover:text-[#0788cc]"}`}>
+                  {label}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            aria-label="Scroll services right"
+            onClick={() => scrollServices(1)}
+            disabled={!canScrollRight}
+            className="grid size-10 shrink-0 place-items-center rounded-full border border-[#087fbe]/20 bg-white text-[#087fbe] shadow-md transition hover:scale-105 hover:bg-[#eef9fd] disabled:cursor-not-allowed disabled:opacity-30 sm:size-11"
+          >
+            <ChevronRight className="size-6" />
+          </button>
         </div>
 
         <div className="rounded-[1.35rem] border border-[#087fbe]/15 bg-gradient-to-r from-[#f5fbff] to-white p-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,.9),0_12px_35px_rgba(6,64,105,.08)] transition duration-300 focus-within:border-[#11a3d7]/70 focus-within:shadow-[0_0_0_5px_rgba(17,163,215,.11),0_16px_40px_rgba(6,64,105,.13)]">
