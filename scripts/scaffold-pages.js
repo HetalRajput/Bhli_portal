@@ -168,8 +168,5 @@ export default function ${pageName.replace(/[^a-zA-Z]/g, '')}Page() {
 }
 `;
     fs.writeFileSync(filePath, content);
-    console.log(`Created: src/app/${route}/page.tsx`);
   }
 });
-
-console.log('Scaffolding complete.');

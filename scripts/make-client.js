@@ -11,7 +11,6 @@ function processDir(dir) {
       const content = fs.readFileSync(fullPath, 'utf8');
       if (!content.includes('"use client"')) {
         fs.writeFileSync(fullPath, '"use client";\n\n' + content);
-        console.log('Updated ' + fullPath);
       }
     }
   }

@@ -218,7 +218,6 @@ export default function ChannelPartnersPage() {
     const fetchPartners = async () => {
       try {
         const res = await cmsService.getChannelPartners();
-        console.log("Channel Partners API Response:", res);
         setApiPartners(res.filter((partner) => partner.is_active !== false));
       } catch (err) {
         console.warn("Failed to fetch channel partners", err);

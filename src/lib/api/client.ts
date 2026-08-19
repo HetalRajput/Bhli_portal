@@ -1,7 +1,6 @@
 import axios from 'axios';
 
 const BASE_URL = 'https://api.bookinghospitality.com';
-let apiRequestSequence = 0;
 let refreshRequest: Promise<{ access: string; refresh?: string }> | null = null;
 
 const normalizeLogKey = (key: string) => key.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -111,7 +110,7 @@ export function refreshAccessToken(refreshOverride?: string): Promise<{ access: 
   return refreshRequest;
 }
 
-// Request interceptor to add the JWT token to headers and log every API hit
+// Request interceptor to add the JWT token to headers.
 apiClient.interceptors.request.use(
   (config) => {
     // Only access localStorage if in browser environment
@@ -120,19 +119,6 @@ apiClient.interceptors.request.use(
       if (token && !config.headers.Authorization) {
         config.headers.Authorization = `Bearer ${token}`;
       }
-    }
-
-    const fullUrl = config.url?.startsWith('http') ? config.url : `${config.baseURL || ''}${config.url || ''}`;
-    const requestNumber = ++apiRequestSequence;
-    if (process.env.NODE_ENV !== 'production') {
-      console.log(`[API ${requestNumber}] ${config.method?.toUpperCase()} ${fullUrl}`);
-      console.log(
-        `🚀 [API Request] ${config.method?.toUpperCase()} ${fullUrl}`,
-        {
-          params: redactForLog(config.params),
-          data: redactForLog(config.data),
-        }
-      );
     }
 
     if (typeof window !== 'undefined') window.dispatchEvent(new Event('bhli:network-start'));
@@ -149,16 +135,9 @@ apiClient.interceptors.request.use(
   }
 );
 
-// Response interceptor to log every API response and error
+// Response interceptor to handle API responses and errors.
 apiClient.interceptors.response.use(
   (response) => {
-    const fullUrl = `${response.config.baseURL || ''}${response.config.url || ''}`;
-    if (process.env.NODE_ENV !== 'production') {
-      console.log(
-        `✅ [API Response] ${response.config.method?.toUpperCase()} ${fullUrl} [Status: ${response.status}]`,
-        redactForLog(response.data)
-      );
-    }
     if (response.data && typeof response.data === 'object' && response.data.success === false) {
       showApiError({ response: { status: response.status, data: response.data } });
     }

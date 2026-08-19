@@ -160,14 +160,6 @@ export const cmsService = {
       });
       if (!response.ok) { await showFetchError(response); return []; }
       const payload = await response.json();
-      console.log('[Services API] Response:', payload);
-      const services = Array.isArray(payload) ? payload : payload?.data;
-      const cateringService = Array.isArray(services)
-        ? services.find((service: { slug?: string; name?: string }) =>
-            service.slug === 'catering-services' || service.name?.toLowerCase().includes('catering')
-          )
-        : undefined;
-      console.log('[Services API] Catering service:', cateringService ?? 'Catering service not found');
       return payload;
     } catch (error) {
       showApiError(error);
@@ -189,12 +181,6 @@ export const cmsService = {
       });
       if (!response.ok) { await showFetchError(response); return null; }
       const payload = await response.json();
-      console.log('[Service Detail API] ' + slug + ':', payload);
-      if (slug === 'catering-services') {
-        const serviceData = payload?.data ?? payload;
-        console.log('[Service Detail API] Catering vendor links:', serviceData?.vendor_links ?? 'No vendor links returned');
-        console.log('[Service Detail API] Catering service:', serviceData);
-      }
       return payload;
     } catch (error) {
       showApiError(error);

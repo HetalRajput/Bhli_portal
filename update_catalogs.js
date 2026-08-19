@@ -172,7 +172,4 @@ const endIndex = content.indexOf('export default function HolidayPackageDetail({
 if (startIndex !== -1 && endIndex !== -1) {
   const newContent = content.substring(0, startIndex) + newCatalogs + '\\n\\n' + content.substring(endIndex);
   fs.writeFileSync(file, newContent, 'utf8');
-  console.log('Successfully updated catalogs object.');
-} else {
-  console.log('Could not find injection boundaries.');
 }

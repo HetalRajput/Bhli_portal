@@ -38,7 +38,6 @@ export default function Contact() {
     const fetchEnquiryTypes = async () => {
       try {
         const res = await baseService.getEnquiryTypes();
-        console.log("Enquiry Types API Response:", res);
         if (res && res.success && Array.isArray(res.data)) {
           setEnquiryTypes(res.data);
           if (res.data.length > 0) {
@@ -110,9 +109,7 @@ export default function Contact() {
         payload.subject = `General Contact - ${enquiryType}`;
       }
 
-      console.log("Contact Lead Submission Payload:", payload);
-      const res = await baseService.createContactLead(payload);
-      console.log("Contact Lead Submission Response:", res);
+      await baseService.createContactLead(payload);
 
       setIsSuccess(true);
       setName("");
